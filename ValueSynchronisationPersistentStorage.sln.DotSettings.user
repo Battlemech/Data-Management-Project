@@ -1,9 +1,0 @@
-﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=fa2e0867_002D6b01_002D43b3_002Da3a3_002D7d8378df2738/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TestPersistence" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::5F55EF8F-BD8E-4D78-BD36-FD58732A894E::net5.0::Tests.PersistenceTests.TestPersistence&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::5F55EF8F-BD8E-4D78-BD36-FD58732A894E::net5.0::Tests.TestUtility.TestUtilityFunctions&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::5F55EF8F-BD8E-4D78-BD36-FD58732A894E::net5.0::DataManagementProjectTests.SQLiteTests&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;NUnit3x::5F55EF8F-BD8E-4D78-BD36-FD58732A894E::net5.0::Tests.SQLiteTests&lt;/TestId&gt;&#xD;
-  &lt;/TestAncestor&gt;&#xD;
-&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
