@@ -150,20 +150,29 @@ namespace Tests
             }
             saveTime.Stop();
             
+            Stopwatch internalSaveTime = Stopwatch.StartNew();
+            
             //wait for data to be saved
             TestUtility.AreEqual(true, (() =>
             {
                 loadTime.Restart();
                 bool success = PersistentData.TryLoadDatabase(nameof(LoadDatabase), out savedObjects);
                 loadTime.Stop();
-                return success && saveCount == savedObjects.Count;
+
+                //keep testing if data wasn't saved internally yet
+                if (!success || saveCount != savedObjects.Count) return false;
+                
+                internalSaveTime.Stop();
+                return true;
+
             }), "Load saved objects");
 
             PersistentData.DeleteDatabase(nameof(LoadDatabase));
             Assert.IsFalse(PersistentData.TryLoadDatabase(nameof(LoadDatabase), out savedObjects));
             
-            Console.WriteLine($"Saved {saveCount} items in "+saveTime.ElapsedMilliseconds + " ms");
-            Console.WriteLine($"Loaded {saveCount} items in "+loadTime.ElapsedMilliseconds + " ms");
+            Console.WriteLine($"Saved {saveCount} items in {saveTime.ElapsedMilliseconds} ms. {(float) saveTime.ElapsedMilliseconds / saveCount} ms/item");
+            Console.WriteLine($"Saved {saveCount} items internally in {internalSaveTime.ElapsedMilliseconds} ms. {(float) internalSaveTime.ElapsedMilliseconds / saveCount} ms/item");
+            Console.WriteLine($"Loaded {saveCount} items in {loadTime.ElapsedMilliseconds} ms. {(float) loadTime.ElapsedMilliseconds / saveCount} ms/item");
         }
 
         private static void Save<T>(string databaseId, string valueStorageId, T value)
