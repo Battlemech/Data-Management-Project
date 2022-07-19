@@ -35,4 +35,7 @@ Desktop.ini
 
 **/[Bb]in/
 **/[Oo]bj/
-
+Main/bin/
+Main/obj/
+Tests/bin/
+Tests/obj/
