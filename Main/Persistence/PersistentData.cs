@@ -103,10 +103,10 @@ namespace Data_Management_Project.Databases.Base
             return true;
         }
 
-        public static bool TryLoadDatabase(string databaseId, out List<SavedObject> savedObjects)
+        public static bool TryLoadDatabase(string databaseId, out List<SerializedObject> serializedObjects)
         {
             //init return lists
-            savedObjects = new List<SavedObject>();
+            serializedObjects = new List<SerializedObject>();
             using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
             connection.Open();
             
@@ -115,13 +115,7 @@ namespace Data_Management_Project.Databases.Base
                 //todo: fix for 1000000 addCount in LoadDatabase, "database is locked" SQLite Exception
                 //https://stackoverflow.com/questions/17592671/sqlite-database-locked-exception
                 
-                var result = connection.Query<SerializedObject>($"select id as ValueStorageId, bytes as Buffer from '{databaseId}'");
-
-                foreach (var obj in result)
-                {
-                    savedObjects.Add(new SavedObject(obj.ValueStorageId, Serialization.Deserialize<object>(obj.Buffer)));
-                }
-
+                serializedObjects = connection.Query<SerializedObject>($"select id as ValueStorageId, bytes as Buffer from '{databaseId}'").AsList();
             }
             catch (SQLiteException e)
             {
@@ -132,6 +126,24 @@ namespace Data_Management_Project.Databases.Base
             }
 
             return true;
+        }
+
+        public static bool TryLoadDatabase(string databaseId, out List<SavedObject> savedObjects)
+        {
+            savedObjects = new List<SavedObject>();
+            
+            bool success = TryLoadDatabase(databaseId, out List<SerializedObject> serializedObjects);
+
+            //if objects exist: serialize them
+            if (success)
+            {
+                foreach (var serializedObject in serializedObjects)
+                {
+                    savedObjects.Add(new SavedObject(serializedObject.ValueStorageId, Serialization.Deserialize<object>(serializedObject.Buffer)));
+                }
+            }
+
+            return success;
         }
 
         #endregion
