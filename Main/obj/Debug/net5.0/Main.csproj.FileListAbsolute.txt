@@ -1,0 +1,12 @@
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\bin\Debug\net5.0\Main.deps.json
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\bin\Debug\net5.0\Main.dll
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\bin\Debug\net5.0\ref\Main.dll
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\bin\Debug\net5.0\Main.pdb
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\Main.csproj.AssemblyReference.cache
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\Main.GeneratedMSBuildEditorConfig.editorconfig
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\Main.AssemblyInfoInputs.cache
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\Main.AssemblyInfo.cs
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\Main.csproj.CoreCompileInputs.cache
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\Main.dll
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\ref\Main.dll
+E:\Users\Battl\RiderProjects\ValueSynchronisationPersistentStorage\Main\obj\Debug\net5.0\Main.pdb

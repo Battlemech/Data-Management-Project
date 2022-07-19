@@ -1,0 +1,141 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v5.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v5.0": {
+      "Main/1.0.0": {
+        "dependencies": {
+          "Dapper": "2.0.123",
+          "GroBuf": "1.8.1",
+          "System.Data.SQLite.Core": "1.0.116"
+        },
+        "runtime": {
+          "Main.dll": {}
+        }
+      },
+      "Dapper/2.0.123": {
+        "runtime": {
+          "lib/net5.0/Dapper.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.123.33578"
+          }
+        }
+      },
+      "GrEmit/3.4.10": {
+        "runtime": {
+          "lib/netstandard2.1/GrEmit.dll": {
+            "assemblyVersion": "3.4.10.0",
+            "fileVersion": "3.4.10.45896"
+          }
+        }
+      },
+      "GroBuf/1.8.1": {
+        "dependencies": {
+          "GrEmit": "3.4.10",
+          "Mono.Reflection": "2.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/GroBuf.dll": {
+            "assemblyVersion": "1.8.1.0",
+            "fileVersion": "1.8.1.44789"
+          }
+        }
+      },
+      "Mono.Reflection/2.0.0": {
+        "runtime": {
+          "lib/netstandard2.0/Mono.Reflection.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "Stub.System.Data.SQLite.Core.NetStandard/1.0.116": {
+        "runtime": {
+          "lib/netstandard2.1/System.Data.SQLite.dll": {
+            "assemblyVersion": "1.0.116.0",
+            "fileVersion": "1.0.116.0"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/linux-x64/native/SQLite.Interop.dll": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/SQLite.Interop.dll": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/SQLite.Interop.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "1.0.116.0"
+          },
+          "runtimes/win-x86/native/SQLite.Interop.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "1.0.116.0"
+          }
+        }
+      },
+      "System.Data.SQLite.Core/1.0.116": {
+        "dependencies": {
+          "Stub.System.Data.SQLite.Core.NetStandard": "1.0.116"
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Main/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Dapper/2.0.123": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-RDFF4rBLLmbpi6pwkY7q/M6UXHRJEOerplDGE5jwEkP/JGJnBauAClYavNKJPW1yOTWRPIyfj4is3EaJxQXILQ==",
+      "path": "dapper/2.0.123",
+      "hashPath": "dapper.2.0.123.nupkg.sha512"
+    },
+    "GrEmit/3.4.10": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+Y6C/C7WxqHh3TiDgdxyu0pZIs2u5xfwR+DewjJ3BmHLj+gHV0E5GOQD6jfK4Yhi3Ecs0uafYLVL/7hgZK6AUw==",
+      "path": "gremit/3.4.10",
+      "hashPath": "gremit.3.4.10.nupkg.sha512"
+    },
+    "GroBuf/1.8.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-qCMS8x/pmItRR4bLHBG6dxBdBIJN0G6lREgLYXKCjOWGyOkIFRMwHFXV9jI6Pt5ddetKfiD3LlOqV/jHigMt0w==",
+      "path": "grobuf/1.8.1",
+      "hashPath": "grobuf.1.8.1.nupkg.sha512"
+    },
+    "Mono.Reflection/2.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-gipqt3dO1NsgM9wfUsQeNVLYmSskDfaN+muNQHLJYkCuYxx2bIp6gAA8j2Rp+Ey6YNHloZv+BJY56r9fl3tfew==",
+      "path": "mono.reflection/2.0.0",
+      "hashPath": "mono.reflection.2.0.0.nupkg.sha512"
+    },
+    "Stub.System.Data.SQLite.Core.NetStandard/1.0.116": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-VEe/vzvn2ECKovtyb+nf8fsnNQ4EYOUms7gnp9729NN7FSR/0v/uVoBDO7DETzV7YCquRVwRnSnYuoOwAoTEKA==",
+      "path": "stub.system.data.sqlite.core.netstandard/1.0.116",
+      "hashPath": "stub.system.data.sqlite.core.netstandard.1.0.116.nupkg.sha512"
+    },
+    "System.Data.SQLite.Core/1.0.116": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-djwmo97syWCpUPJbDS0e2qUFUa8cDLeIfMotVkaRkAC5gpfBSZLMzvoLkLp1prY8waAuH1jEC3wcB2ymVVQWtA==",
+      "path": "system.data.sqlite.core/1.0.116",
+      "hashPath": "system.data.sqlite.core.1.0.116.nupkg.sha512"
+    }
+  }
+}

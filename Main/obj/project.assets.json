@@ -1,0 +1,261 @@
+{
+  "version": 3,
+  "targets": {
+    "net5.0": {
+      "Dapper/2.0.123": {
+        "type": "package",
+        "compile": {
+          "lib/net5.0/Dapper.dll": {}
+        },
+        "runtime": {
+          "lib/net5.0/Dapper.dll": {}
+        }
+      },
+      "GrEmit/3.4.10": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.1/GrEmit.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.1/GrEmit.dll": {}
+        }
+      },
+      "GroBuf/1.8.1": {
+        "type": "package",
+        "dependencies": {
+          "GrEmit": "3.4.10",
+          "Mono.Reflection": "2.0.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/GroBuf.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/GroBuf.dll": {}
+        }
+      },
+      "Mono.Reflection/2.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/Mono.Reflection.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/Mono.Reflection.dll": {}
+        }
+      },
+      "Stub.System.Data.SQLite.Core.NetStandard/1.0.116": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.1/System.Data.SQLite.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.1/System.Data.SQLite.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/linux-x64/native/SQLite.Interop.dll": {
+            "assetType": "native",
+            "rid": "linux-x64"
+          },
+          "runtimes/osx-x64/native/SQLite.Interop.dll": {
+            "assetType": "native",
+            "rid": "osx-x64"
+          },
+          "runtimes/win-x64/native/SQLite.Interop.dll": {
+            "assetType": "native",
+            "rid": "win-x64"
+          },
+          "runtimes/win-x86/native/SQLite.Interop.dll": {
+            "assetType": "native",
+            "rid": "win-x86"
+          }
+        }
+      },
+      "System.Data.SQLite.Core/1.0.116": {
+        "type": "package",
+        "dependencies": {
+          "Stub.System.Data.SQLite.Core.NetStandard": "[1.0.116]"
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Dapper/2.0.123": {
+      "sha512": "RDFF4rBLLmbpi6pwkY7q/M6UXHRJEOerplDGE5jwEkP/JGJnBauAClYavNKJPW1yOTWRPIyfj4is3EaJxQXILQ==",
+      "type": "package",
+      "path": "dapper/2.0.123",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Dapper.png",
+        "dapper.2.0.123.nupkg.sha512",
+        "dapper.nuspec",
+        "lib/net461/Dapper.dll",
+        "lib/net461/Dapper.xml",
+        "lib/net5.0/Dapper.dll",
+        "lib/net5.0/Dapper.xml",
+        "lib/netstandard2.0/Dapper.dll",
+        "lib/netstandard2.0/Dapper.xml"
+      ]
+    },
+    "GrEmit/3.4.10": {
+      "sha512": "+Y6C/C7WxqHh3TiDgdxyu0pZIs2u5xfwR+DewjJ3BmHLj+gHV0E5GOQD6jfK4Yhi3Ecs0uafYLVL/7hgZK6AUw==",
+      "type": "package",
+      "path": "gremit/3.4.10",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "gremit.3.4.10.nupkg.sha512",
+        "gremit.nuspec",
+        "lib/net45/GrEmit.dll",
+        "lib/net45/GrEmit.pdb",
+        "lib/net45/GrEmit.xml",
+        "lib/netstandard2.0/GrEmit.dll",
+        "lib/netstandard2.0/GrEmit.pdb",
+        "lib/netstandard2.0/GrEmit.xml",
+        "lib/netstandard2.1/GrEmit.dll",
+        "lib/netstandard2.1/GrEmit.pdb",
+        "lib/netstandard2.1/GrEmit.xml"
+      ]
+    },
+    "GroBuf/1.8.1": {
+      "sha512": "qCMS8x/pmItRR4bLHBG6dxBdBIJN0G6lREgLYXKCjOWGyOkIFRMwHFXV9jI6Pt5ddetKfiD3LlOqV/jHigMt0w==",
+      "type": "package",
+      "path": "grobuf/1.8.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "grobuf.1.8.1.nupkg.sha512",
+        "grobuf.nuspec",
+        "lib/net45/GroBuf.dll",
+        "lib/net45/GroBuf.pdb",
+        "lib/netstandard2.0/GroBuf.dll",
+        "lib/netstandard2.0/GroBuf.pdb"
+      ]
+    },
+    "Mono.Reflection/2.0.0": {
+      "sha512": "gipqt3dO1NsgM9wfUsQeNVLYmSskDfaN+muNQHLJYkCuYxx2bIp6gAA8j2Rp+Ey6YNHloZv+BJY56r9fl3tfew==",
+      "type": "package",
+      "path": "mono.reflection/2.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net40/Mono.Reflection.dll",
+        "lib/net40/Mono.Reflection.pdb",
+        "lib/netstandard2.0/Mono.Reflection.dll",
+        "lib/netstandard2.0/Mono.Reflection.pdb",
+        "mono.reflection.2.0.0.nupkg.sha512",
+        "mono.reflection.nuspec"
+      ]
+    },
+    "Stub.System.Data.SQLite.Core.NetStandard/1.0.116": {
+      "sha512": "VEe/vzvn2ECKovtyb+nf8fsnNQ4EYOUms7gnp9729NN7FSR/0v/uVoBDO7DETzV7YCquRVwRnSnYuoOwAoTEKA==",
+      "type": "package",
+      "path": "stub.system.data.sqlite.core.netstandard/1.0.116",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/netstandard2.0/System.Data.SQLite.dll",
+        "lib/netstandard2.0/System.Data.SQLite.dll.altconfig",
+        "lib/netstandard2.0/System.Data.SQLite.xml",
+        "lib/netstandard2.1/System.Data.SQLite.dll",
+        "lib/netstandard2.1/System.Data.SQLite.dll.altconfig",
+        "lib/netstandard2.1/System.Data.SQLite.xml",
+        "runtimes/linux-x64/native/SQLite.Interop.dll",
+        "runtimes/osx-x64/native/SQLite.Interop.dll",
+        "runtimes/win-x64/native/SQLite.Interop.dll",
+        "runtimes/win-x86/native/SQLite.Interop.dll",
+        "stub.system.data.sqlite.core.netstandard.1.0.116.nupkg.sha512",
+        "stub.system.data.sqlite.core.netstandard.nuspec"
+      ]
+    },
+    "System.Data.SQLite.Core/1.0.116": {
+      "sha512": "djwmo97syWCpUPJbDS0e2qUFUa8cDLeIfMotVkaRkAC5gpfBSZLMzvoLkLp1prY8waAuH1jEC3wcB2ymVVQWtA==",
+      "type": "package",
+      "path": "system.data.sqlite.core/1.0.116",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "system.data.sqlite.core.1.0.116.nupkg.sha512",
+        "system.data.sqlite.core.nuspec"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net5.0": [
+      "Dapper >= 2.0.123",
+      "GroBuf >= 1.8.1",
+      "System.Data.SQLite.Core >= 1.0.116"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\Battl\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "E:\\Users\\Battl\\RiderProjects\\ValueSynchronisationPersistentStorage\\Main\\Main.csproj",
+      "projectName": "Main",
+      "projectPath": "E:\\Users\\Battl\\RiderProjects\\ValueSynchronisationPersistentStorage\\Main\\Main.csproj",
+      "packagesPath": "C:\\Users\\Battl\\.nuget\\packages\\",
+      "outputPath": "E:\\Users\\Battl\\RiderProjects\\ValueSynchronisationPersistentStorage\\Main\\obj\\",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "C:\\Users\\Battl\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net5.0"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net5.0": {
+          "targetAlias": "net5.0",
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "net5.0": {
+        "targetAlias": "net5.0",
+        "dependencies": {
+          "Dapper": {
+            "target": "Package",
+            "version": "[2.0.123, )"
+          },
+          "GroBuf": {
+            "target": "Package",
+            "version": "[1.8.1, )"
+          },
+          "System.Data.SQLite.Core": {
+            "target": "Package",
+            "version": "[1.0.116, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.409\\RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

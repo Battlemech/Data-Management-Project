@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "dgSpecHash": "pFVmx8SoBqK9eNVfGthizaRSG6C/xZb92jObCYk+Gi+5OFKqyue75egU0OAaF71Y3pHH04F20vI3MmDo3eGBTA==",
+  "success": true,
+  "projectFilePath": "E:\\Users\\Battl\\RiderProjects\\ValueSynchronisationPersistentStorage\\Main\\Main.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Battl\\.nuget\\packages\\dapper\\2.0.123\\dapper.2.0.123.nupkg.sha512",
+    "C:\\Users\\Battl\\.nuget\\packages\\gremit\\3.4.10\\gremit.3.4.10.nupkg.sha512",
+    "C:\\Users\\Battl\\.nuget\\packages\\grobuf\\1.8.1\\grobuf.1.8.1.nupkg.sha512",
+    "C:\\Users\\Battl\\.nuget\\packages\\mono.reflection\\2.0.0\\mono.reflection.2.0.0.nupkg.sha512",
+    "C:\\Users\\Battl\\.nuget\\packages\\stub.system.data.sqlite.core.netstandard\\1.0.116\\stub.system.data.sqlite.core.netstandard.1.0.116.nupkg.sha512",
+    "C:\\Users\\Battl\\.nuget\\packages\\system.data.sqlite.core\\1.0.116\\system.data.sqlite.core.1.0.116.nupkg.sha512"
+  ],
+  "logs": []
+}
