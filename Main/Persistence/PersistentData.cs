@@ -200,17 +200,19 @@ namespace Data_Management_Project.Databases.Base
             using SQLiteTransaction transaction = connection.BeginTransaction();
 
             //execute all queued changes
-            while (DataToSaveQueue.TryDequeue(out SerializedObject o))
+            while (DataToSaveQueue.TryDequeue(out SerializedObject obj))
             {
                 //set new value
-                string command = $"insert or replace into '{o.DataBaseId}'(id, bytes) values ('{o.ValueStorageId}', @Buffer)";
-                connection.Execute(command, o);
+                string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes) values ('{obj.ValueStorageId}', @Buffer)";
+                connection.Execute(command, obj);
                 
                 //increment modification count
                 //todo: combine statements? find other way to track mod count?
                 //todo: quicker if list of ids to update is collected, then where statement is expanded? (check for duplicate valueStorageIds!)
                 
-                connection.Execute($"update '{o.DataBaseId}' set modCount = modCount + 1 where id = '{o.ValueStorageId}'");
+                connection.Execute($"update '{obj.DataBaseId}' set modCount = modCount + 1 where id = '{obj.ValueStorageId}'");
+                
+                Console.WriteLine($"Increasing ModCount of {obj.ValueStorageId}");
             }
 
             //commit the queued changes

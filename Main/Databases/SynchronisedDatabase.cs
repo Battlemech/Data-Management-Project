@@ -57,6 +57,8 @@ namespace Main.Databases
         /// </summary>
         private void OnLoaded(string id, byte[] value, ulong modCount)
         {
+            Console.WriteLine($"{id} loaded mod count {modCount}");
+            
             //update local mod count
             lock (_modificationCount)
             {
