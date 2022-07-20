@@ -28,7 +28,7 @@ namespace Main.Databases
 
                 //see if database exists
                 bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSerializedObject> savedObjects);
-                
+
                 if (!databaseExists) OnNoData();
                 else OnDataFound(savedObjects);
             }
@@ -92,13 +92,17 @@ namespace Main.Databases
                     toSynchronise.Add(tso);
                 }
             }
-            
-            //inform peers that data was loaded
+
+            //no need to inform peers if database is not synchronised
+            if(!_isSynchronised) return;
+
+            //delegate task to increase performance
             Task synchronisationTask = new Task((() =>
             {
+                //inform peers that data was loaded
                 foreach (var tso in toSynchronise)
                 {
-                    OnSetSynchronised(tso.ValueStorageId, tso.Buffer, tso.ModificationCount);
+                    OnLoaded(tso.ValueStorageId, tso.Buffer, tso.ModificationCount);
                 }
             }));
             synchronisationTask.Start(_scheduler);

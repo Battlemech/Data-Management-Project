@@ -18,7 +18,7 @@ namespace Tests
 
             for (int i = 0; i < 10; i++)
             {
-                Database database = new Database(id, true);
+                Database database = new Database(id, true, true);
                 
                 //load expected old value
                 Assert.AreEqual(i, database.Get<int>(id));
@@ -32,8 +32,10 @@ namespace Tests
                 TestUtility.AreEqual(true, () =>
                     PersistentData.TryLoad(id, id, out int value) && value == i + 1, 
                     "PersistentSave");
+                
+                Console.WriteLine("---");
+                //todo: why is mod count not increasing?
             }
-            
         }
     }
 }

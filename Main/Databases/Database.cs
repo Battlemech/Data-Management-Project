@@ -15,8 +15,17 @@ namespace Main.Databases
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
         {
             Id = id;
-            IsPersistent = isPersistent;
+            
+            /*
+             * Setting these properties will enable/disable synchronisation and persistence.
+             * Potentially enabling synchronisation first allows send serialized data(bytes) directly,
+             * avoiding additional (de)serialization.
+             *
+             * Performance is barely affected since synchronisation is delegated to Tasks
+             */
+            
             IsSynchronised = isSynchronised;
+            IsPersistent = isPersistent;
         }
 
         public T Get<T>(string id)

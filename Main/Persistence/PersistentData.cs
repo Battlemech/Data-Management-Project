@@ -208,6 +208,8 @@ namespace Data_Management_Project.Databases.Base
                 
                 //increment modification count
                 //todo: combine statements? find other way to track mod count?
+                //todo: quicker if list of ids to update is collected, then where statement is expanded? (check for duplicate valueStorageIds!)
+                
                 connection.Execute($"update '{o.DataBaseId}' set modCount = modCount + 1 where id = '{o.ValueStorageId}'");
             }
 
