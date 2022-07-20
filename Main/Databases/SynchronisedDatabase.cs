@@ -9,5 +9,12 @@
         {
             
         }
+
+        private void OnSetSynchronised(string id, byte[] value, ulong modCount)
+        {
+            
+        }
+        
+        
     }
 }

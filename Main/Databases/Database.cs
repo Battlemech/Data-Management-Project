@@ -50,12 +50,12 @@ namespace Main.Databases
             lock (_values)
             {
                 _values[id] = value;
-                
+
                 //create serialized object if necessary
                 if (!_isPersistent && !_isSynchronised) return;
                 serializedBytes = Serialization.Serialize(value);
             }
-            
+
             //process the set if database is synchronised or persistent
             Task internalTask = new Task((() =>
             {

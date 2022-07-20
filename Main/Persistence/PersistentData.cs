@@ -39,7 +39,7 @@ namespace Data_Management_Project.Databases.Base
         /// <param name="databaseId"></param>
         public static void CreateDatabase(string databaseId)
         {
-            ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB)");
+            ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB, modCount INTEGER DEFAULT 0)");
         }
 
         /// <summary>
@@ -103,10 +103,10 @@ namespace Data_Management_Project.Databases.Base
             return true;
         }
 
-        public static bool TryLoadDatabase(string databaseId, out List<SerializedObject> serializedObjects)
+        public static bool TryLoadDatabase(string databaseId, out List<TrackedSerializedObject> serializedObjects)
         {
             //init return lists
-            serializedObjects = new List<SerializedObject>();
+            serializedObjects = new List<TrackedSerializedObject>();
             using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
             connection.Open();
             
@@ -115,7 +115,7 @@ namespace Data_Management_Project.Databases.Base
                 //todo: fix for 1000000 addCount in LoadDatabase, "database is locked" SQLite Exception
                 //https://stackoverflow.com/questions/17592671/sqlite-database-locked-exception
                 
-                serializedObjects = connection.Query<SerializedObject>($"select id as ValueStorageId, bytes as Buffer from '{databaseId}'").AsList();
+                serializedObjects = connection.Query<TrackedSerializedObject>($"select id as ValueStorageId, bytes as Buffer, modCount as ModificationCount from '{databaseId}'").AsList();
             }
             catch (SQLiteException e)
             {
@@ -130,20 +130,31 @@ namespace Data_Management_Project.Databases.Base
 
         public static bool TryLoadDatabase(string databaseId, out List<SavedObject> savedObjects)
         {
+            //init return list
             savedObjects = new List<SavedObject>();
-            
-            bool success = TryLoadDatabase(databaseId, out List<SerializedObject> serializedObjects);
 
-            //if objects exist: serialize them
-            if (success)
+            //open connection
+            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+            connection.Open();
+            
+            try
             {
+                var serializedObjects = connection.Query<SerializedObject>($"select id as ValueStorageId, bytes as Buffer, modCount as ModificationCount from '{databaseId}'").AsList();
+
                 foreach (var serializedObject in serializedObjects)
                 {
                     savedObjects.Add(new SavedObject(serializedObject.ValueStorageId, Serialization.Deserialize<object>(serializedObject.Buffer)));
                 }
             }
+            catch (SQLiteException e)
+            {
+                //make sure it was the right exception: database didn't exist
+                if (!e.Message.Contains($"no such table: {databaseId}")) throw;
+                    
+                return false;
+            }
 
-            return success;
+            return true;
         }
 
         #endregion
@@ -165,7 +176,7 @@ namespace Data_Management_Project.Databases.Base
                 SavingData = true;
             }
 
-            //start processing data in new task //todo: allow multiple threads to execute commands?
+            //start processing data in new task
             Task.Factory.StartNew((() =>
             {
                 try
@@ -189,10 +200,15 @@ namespace Data_Management_Project.Databases.Base
             using SQLiteTransaction transaction = connection.BeginTransaction();
 
             //execute all queued changes
-            while (DataToSaveQueue.TryDequeue(out SerializedObject result))
+            while (DataToSaveQueue.TryDequeue(out SerializedObject o))
             {
-                string command = $"insert or replace into '{result.DataBaseId}'(id, bytes) values ('{result.ValueStorageId}', @Buffer)";
-                connection.Execute(command, result);        
+                //set new value
+                string command = $"insert or replace into '{o.DataBaseId}'(id, bytes) values ('{o.ValueStorageId}', @Buffer)";
+                connection.Execute(command, o);
+                
+                //increment modification count
+                //todo: combine statements? find other way to track mod count?
+                connection.Execute($"update '{o.DataBaseId}' set modCount = modCount + 1 where id = '{o.ValueStorageId}'");
             }
 
             //commit the queued changes

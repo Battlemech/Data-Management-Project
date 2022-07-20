@@ -166,9 +166,6 @@ namespace Tests
                 return true;
 
             }), "Load saved objects");
-
-            PersistentData.DeleteDatabase(nameof(LoadDatabase));
-            Assert.IsFalse(PersistentData.TryLoadDatabase(nameof(LoadDatabase), out savedObjects));
             
             Console.WriteLine($"Saved {saveCount} items in {saveTime.ElapsedMilliseconds} ms. {(float) saveTime.ElapsedMilliseconds / saveCount} ms/item");
             Console.WriteLine($"Saved {saveCount} items internally in {internalSaveTime.ElapsedMilliseconds} ms. {(float) internalSaveTime.ElapsedMilliseconds / saveCount} ms/item");

@@ -25,4 +25,18 @@
             DataBaseId = dataBaseId;
         }
     }
+    
+    public struct TrackedSerializedObject
+    {
+        public string ValueStorageId { get; }
+        public byte[] Buffer { get; }
+        public ulong ModificationCount { get; }
+
+        public TrackedSerializedObject(string valueStorageId, byte[] buffer, ulong modificationCount)
+        {
+            Buffer = buffer;
+            ValueStorageId = valueStorageId;
+            ModificationCount = modificationCount;
+        }
+    }
 }

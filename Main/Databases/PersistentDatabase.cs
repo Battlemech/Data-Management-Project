@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Data_Management_Project.Databases.Base;
 
 namespace Main.Databases
@@ -26,43 +27,10 @@ namespace Main.Databases
                 }
 
                 //see if database exists
-                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<SavedObject> savedObjects);
+                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSerializedObject> savedObjects);
                 
-                //if it doesnt, create it
-                if (!databaseExists)
-                {
-                    PersistentData.CreateDatabase(Id);
-                    SaveDataPersistently();
-                    return;
-                }
-                
-                //if it does, load persistently saved values locally
-                string[] savedIds = new string[savedObjects.Count];
-                lock (_values)
-                {
-                    for (int i = 0; i < savedObjects.Count; i++)
-                    {
-                        SavedObject savedObject = savedObjects[i];
-                        string id = savedObject.ValueStorageId;
-
-                        savedIds[i] = id;
-                        _values.Add(id, savedObject.Data);
-                    }
-
-                    //save all values persistently which were not saved before
-                    foreach (var localId in _values.Keys)
-                    {
-                        //id was saved persistently. No need to overwrite it with potentially outdated value 
-                        if (savedIds.Contains(localId)) continue;
-
-                        byte[] serializedBytes = Serialization.Serialize(_values[localId]);
-                        
-                        PersistentData.Save(Id, localId, serializedBytes);
-                        
-                        //inform peers of potentially new data
-                        if(_isSynchronised) OnSetSynchronised(localId, serializedBytes);
-                    }
-                }
+                if (!databaseExists) OnNoData();
+                else OnDataFound(savedObjects);
             }
         }
 
@@ -72,9 +40,16 @@ namespace Main.Databases
         {
             PersistentData.Save(Id, id, value);
         }
-
-        private void SaveDataPersistently()
+        
+        /// <summary>
+        /// Invoked when no persistent data was found
+        /// </summary>
+        private void OnNoData()
         {
+            //create database persistently
+            PersistentData.CreateDatabase(Id);
+            
+            //save its values
             lock (_values)
             {
                 foreach (var kv in _values)
@@ -82,6 +57,51 @@ namespace Main.Databases
                     PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value));
                 }
             }
+        }
+        
+        /// <summary>
+        /// Invoked when persistent data was found
+        /// </summary>
+        private void OnDataFound(List<TrackedSerializedObject> savedObjects)
+        {
+            List<TrackedSerializedObject> toSynchronise = new List<TrackedSerializedObject>(savedObjects.Count);
+
+            lock (_values)
+            {
+                //get list of currently known ids
+                List<string> existingIds = _values.Keys.ToList();
+
+                //save all current values persistently
+                foreach (var kv in _values)
+                {
+                    PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value));
+                }
+
+                //load all values from database which didn't already exist
+                foreach (var tso in savedObjects)
+                {
+                    string id = tso.ValueStorageId;
+                    
+                    //id is known, skip it
+                    if (existingIds.Contains(id)) continue;
+                    
+                    //previously unknown data has been found. Load it
+                    _values[id] = Serialization.Deserialize<object>(tso.Buffer);
+                    
+                    //queue object for synchronisation
+                    toSynchronise.Add(tso);
+                }
+            }
+            
+            //inform peers that data was loaded
+            Task synchronisationTask = new Task((() =>
+            {
+                foreach (var tso in toSynchronise)
+                {
+                    OnSetSynchronised(tso.ValueStorageId, tso.Buffer, tso.ModificationCount);
+                }
+            }));
+            synchronisationTask.Start(_scheduler);
         }
     }
 }
