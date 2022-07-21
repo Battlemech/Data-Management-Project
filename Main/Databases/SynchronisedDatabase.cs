@@ -22,7 +22,7 @@ namespace Main.Databases
 
         private bool _isSynchronised;
 
-        private readonly Dictionary<string, ulong> _modificationCount = new Dictionary<string, ulong>();
+        private readonly Dictionary<string, uint> _modificationCount = new Dictionary<string, uint>();
 
         /// <summary>
         /// Invoked when a value is set
@@ -30,7 +30,7 @@ namespace Main.Databases
         private void OnSetSynchronised(string id, byte[] value)
         {
             //increase modification count by one
-            ulong modCount;
+            uint modCount;
             lock (_modificationCount)
             {
                 bool success = _modificationCount.TryGetValue(id, out modCount);
@@ -45,37 +45,21 @@ namespace Main.Databases
                     modCount = 1;
                     _modificationCount.Add(id, modCount);
                 }
-                
-                Console.WriteLine($"{id}: Mod count = {modCount}. Found: {success}");
             }
 
             OnSetSynchronised(id, value, modCount);
         }
 
         /// <summary>
-        /// Invoked when a value is loaded by the persistence module
+        /// Invoked when a value is loaded by the persistence module.
+        /// The value was modified while no connection was established.
         /// </summary>
-        private void OnLoaded(string id, byte[] value, ulong modCount)
+        private void OnOfflineModification(string id, byte[] value)
         {
-            Console.WriteLine($"{id} loaded mod count {modCount}");
-            
-            //update local mod count
-            lock (_modificationCount)
-            {
-                bool success = _modificationCount.TryAdd(id, modCount);
-
-                if (!success)
-                {
-                    _modificationCount[id] = Math.Max(_modificationCount[id], modCount);
-                }
-            }
-            
-            //todo: add is-synchronised bool to table, tracking if data was synchronised or not
-            
-            OnSetSynchronised(id, value, modCount);
+            //todo: request change from server. Change instantly if host
         }
         
-        private void OnSetSynchronised(string id, byte[] value, ulong modCount)
+        private void OnSetSynchronised(string id, byte[] value, uint modCount)
         {
             
         }

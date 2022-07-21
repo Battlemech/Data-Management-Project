@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using Data_Management_Project.Databases.Base;
 using Main.Databases;
@@ -29,12 +30,7 @@ namespace Tests
                 Assert.AreEqual(i + 1, database.Get<int>(id));
                 
                 //make sure the value was saved correctly in persistent data
-                TestUtility.AreEqual(true, () =>
-                    PersistentData.TryLoad(id, id, out int value) && value == i + 1, 
-                    "PersistentSave");
-                
-                Console.WriteLine("---");
-                //todo: why is mod count not increasing?
+                TestUtility.AreEqual(true, () => PersistentData.TryLoad(id, id, out int value) && value == i + 1, "PersistentSave");
             }
         }
     }

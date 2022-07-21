@@ -18,7 +18,7 @@ namespace Main.Databases
                 
                 //update value
                 _isPersistent = value;
-                
+
                 //delete database if persistence is no longer required 
                 if (!value)
                 {
@@ -27,7 +27,7 @@ namespace Main.Databases
                 }
 
                 //see if database exists
-                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSerializedObject> savedObjects);
+                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSavedObject> savedObjects);
 
                 if (!databaseExists) OnNoData();
                 else OnDataFound(savedObjects);
@@ -38,7 +38,7 @@ namespace Main.Databases
 
         private void OnSetPersistent(string id, byte[] value)
         {
-            PersistentData.Save(Id, id, value);
+            PersistentData.Save(Id, id, value, !_isSynchronised);
         }
         
         /// <summary>
@@ -48,13 +48,15 @@ namespace Main.Databases
         {
             //create database persistently
             PersistentData.CreateDatabase(Id);
+
+            bool syncRequired = !IsSynchronised;
             
             //save its values
             lock (_values)
             {
                 foreach (var kv in _values)
                 {
-                    PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value));
+                    PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
                 }
             }
         }
@@ -62,9 +64,10 @@ namespace Main.Databases
         /// <summary>
         /// Invoked when persistent data was found
         /// </summary>
-        private void OnDataFound(List<TrackedSerializedObject> savedObjects)
+        private void OnDataFound(List<TrackedSavedObject> savedObjects)
         {
-            List<TrackedSerializedObject> toSynchronise = new List<TrackedSerializedObject>(savedObjects.Count);
+            List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
+            bool syncRequired = !IsSynchronised;
 
             lock (_values)
             {
@@ -74,7 +77,7 @@ namespace Main.Databases
                 //save all current values persistently
                 foreach (var kv in _values)
                 {
-                    PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value));
+                    PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
                 }
 
                 //load all values from database which didn't already exist
@@ -82,11 +85,14 @@ namespace Main.Databases
                 {
                     string id = tso.ValueStorageId;
                     
-                    //id is known, skip it
+                    //Skip if object with loaded id already exists
                     if (existingIds.Contains(id)) continue;
                     
-                    //previously unknown data has been found. Load it
+                    //- Load it
                     _values[id] = Serialization.Deserialize<object>(tso.Buffer);
+                    
+                    //skip objects which don't have to be synchronised
+                    if(!tso.SyncRequired) continue;
                     
                     //queue object for synchronisation
                     toSynchronise.Add(tso);
@@ -99,10 +105,10 @@ namespace Main.Databases
             //delegate task to increase performance
             Task synchronisationTask = new Task((() =>
             {
-                //inform peers that data was loaded
+                //inform peers that data was modified while no connection was established
                 foreach (var tso in toSynchronise)
                 {
-                    OnLoaded(tso.ValueStorageId, tso.Buffer, tso.ModificationCount);
+                    OnOfflineModification(tso.ValueStorageId, tso.Buffer);
                 }
             }));
             synchronisationTask.Start(_scheduler);

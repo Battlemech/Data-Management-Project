@@ -39,7 +39,7 @@ namespace Data_Management_Project.Databases.Base
         /// <param name="databaseId"></param>
         public static void CreateDatabase(string databaseId)
         {
-            ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB, modCount INTEGER DEFAULT 0)");
+            ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB, syncRequired BOOLEAN DEFAULT FALSE)");
         }
 
         /// <summary>
@@ -103,10 +103,10 @@ namespace Data_Management_Project.Databases.Base
             return true;
         }
 
-        public static bool TryLoadDatabase(string databaseId, out List<TrackedSerializedObject> serializedObjects)
+        public static bool TryLoadDatabase(string databaseId, out List<TrackedSavedObject> serializedObjects)
         {
             //init return lists
-            serializedObjects = new List<TrackedSerializedObject>();
+            serializedObjects = new List<TrackedSavedObject>();
             using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
             connection.Open();
             
@@ -115,7 +115,7 @@ namespace Data_Management_Project.Databases.Base
                 //todo: fix for 1000000 addCount in LoadDatabase, "database is locked" SQLite Exception
                 //https://stackoverflow.com/questions/17592671/sqlite-database-locked-exception
                 
-                serializedObjects = connection.Query<TrackedSerializedObject>($"select id as ValueStorageId, bytes as Buffer, modCount as ModificationCount from '{databaseId}'").AsList();
+                serializedObjects = connection.Query<TrackedSavedObject>($"select id as ValueStorageId, bytes as Buffer, syncRequired as SyncRequired from '{databaseId}'").AsList();
             }
             catch (SQLiteException e)
             {
@@ -128,10 +128,10 @@ namespace Data_Management_Project.Databases.Base
             return true;
         }
 
-        public static bool TryLoadDatabase(string databaseId, out List<SavedObject> savedObjects)
+        public static bool TryLoadDatabase(string databaseId, out List<DeSerializedObject> savedObjects)
         {
             //init return list
-            savedObjects = new List<SavedObject>();
+            savedObjects = new List<DeSerializedObject>();
 
             //open connection
             using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
@@ -139,11 +139,11 @@ namespace Data_Management_Project.Databases.Base
             
             try
             {
-                var serializedObjects = connection.Query<SerializedObject>($"select id as ValueStorageId, bytes as Buffer, modCount as ModificationCount from '{databaseId}'").AsList();
+                var serializedObjects = connection.Query<SavedObject>($"select id as ValueStorageId, bytes as Buffer from '{databaseId}'").AsList();
 
                 foreach (var serializedObject in serializedObjects)
                 {
-                    savedObjects.Add(new SavedObject(serializedObject.ValueStorageId, Serialization.Deserialize<object>(serializedObject.Buffer)));
+                    savedObjects.Add(new DeSerializedObject(serializedObject.ValueStorageId, Serialization.Deserialize<object>(serializedObject.Buffer)));
                 }
             }
             catch (SQLiteException e)
@@ -164,10 +164,10 @@ namespace Data_Management_Project.Databases.Base
         /// <summary>
         /// Saves an value locally. Requires a database to be created before
         /// </summary>
-        public static void Save(string databaseId, string valueStorageId, byte[] bytes)
+        public static void Save(string databaseId, string valueStorageId, byte[] bytes, bool syncRequired)
         {
             //enqueue it to be saved in sql table by working thread
-            DataToSaveQueue.Enqueue(new SerializedObject(databaseId, valueStorageId, bytes));
+            DataToSaveQueue.Enqueue(new SerializedObject(databaseId, valueStorageId, bytes, syncRequired));
 
             //return if another thread is already writing the data to the sql database
             lock (DataToSaveQueue)
@@ -203,16 +203,8 @@ namespace Data_Management_Project.Databases.Base
             while (DataToSaveQueue.TryDequeue(out SerializedObject obj))
             {
                 //set new value
-                string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes) values ('{obj.ValueStorageId}', @Buffer)";
+                string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes, syncRequired) values ('{obj.ValueStorageId}', @Buffer, '{obj.SyncRequired}')";
                 connection.Execute(command, obj);
-                
-                //increment modification count
-                //todo: combine statements? find other way to track mod count?
-                //todo: quicker if list of ids to update is collected, then where statement is expanded? (check for duplicate valueStorageIds!)
-                
-                connection.Execute($"update '{obj.DataBaseId}' set modCount = modCount + 1 where id = '{obj.ValueStorageId}'");
-                
-                Console.WriteLine($"Increasing ModCount of {obj.ValueStorageId}");
             }
 
             //commit the queued changes
