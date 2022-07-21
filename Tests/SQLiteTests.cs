@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace Tests
 {
-    public class SQLiteTests
+    public static class SqLiteTests
     {
         [Test]
         public static void TableCreation()

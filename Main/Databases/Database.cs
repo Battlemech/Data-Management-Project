@@ -38,16 +38,17 @@ namespace Main.Databases
                 //if it wasn't found: Add default value
                 if (!success)
                 {
-                    _values.Add(id, default);
-                    return default;
+                    T defaultObject = default;
+                    _values.Add(id, defaultObject);
+                    return defaultObject;
                 }
 
-                if (value is T result)
+                return value switch
                 {
-                    return result;
-                }
-                
-                throw new ArgumentException($"Saved value has type {value.GetType()}, not {typeof(T)}");
+                    T result => result,
+                    null => throw new ArgumentException($"Saved value is null and can't be converted to {typeof(T)}"),
+                    _ => throw new ArgumentException($"Saved value has type {value.GetType()}, not {typeof(T)}")
+                };
             }
         }
 
@@ -59,15 +60,14 @@ namespace Main.Databases
             lock (_values)
             {
                 _values[id] = value;
-
-                //create serialized object if necessary
-                if (!_isPersistent && !_isSynchronised) return;
+                Console.WriteLine($"{id}={value}");
                 serializedBytes = Serialization.Serialize(value);
             }
 
             //process the set if database is synchronised or persistent
             Task internalTask = new Task((() =>
             {
+                InvokeCallbacks(id, serializedBytes);
                 if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));

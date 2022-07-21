@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace Tests
 {
-    public class PersistenceTests
+    public static class PersistenceTests
     {
         [Test]
         public static void TestPersistence()

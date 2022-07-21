@@ -1,4 +1,5 @@
-﻿using GroBuf;
+﻿using System;
+using GroBuf;
 using GroBuf.DataMembersExtracters;
 
 namespace Main
@@ -15,6 +16,11 @@ namespace Main
         public static T Deserialize<T>(byte[] bytes)
         {
             return Serializer.Deserialize<T>(bytes);
+        }
+
+        public static object Deserialize(byte[] bytes, Type type)
+        {
+            return Serializer.Deserialize(type, bytes);
         }
     }
 }
