@@ -16,7 +16,7 @@ namespace Main.Databases
                 //value doesn't need to be adjusted
                 if (value == _isPersistent) return;
                 
-                //update value
+                //update value //todo: wait for other task to finish to avoid exceptions?
                 _isPersistent = value;
 
                 //delete database if persistence is no longer required 

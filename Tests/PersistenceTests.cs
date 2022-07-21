@@ -33,5 +33,28 @@ namespace Tests
                 TestUtility.AreEqual(true, () => PersistentData.TryLoad(id, id, out int value) && value == i + 1, "PersistentSave");
             }
         }
+
+        [Test]
+        public static void TestSyncRequired()
+        {
+            string id = nameof(TestSyncRequired);
+
+            //create persistent and synchronised database
+            Database database = new Database(id, true, true);
+            database.Set(id, false);
+            
+            //database was synchronised. Sync not required
+            TestUtility.AreEqual(false, () => PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects) &&
+                                              tsoObjects.Count == 1 && tsoObjects[0].SyncRequired);
+
+            //disable synchronisation
+            database.IsSynchronised = false;
+            database.Set(id, false);
+            
+            //database wasn't synchronised. Sync required
+            TestUtility.AreEqual(true, () => PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects) &&
+                                              tsoObjects.Count == 1 && tsoObjects[0].SyncRequired);
+
+        }
     }
 }
