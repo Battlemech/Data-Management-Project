@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Main.Threading;
 
@@ -46,7 +47,6 @@ namespace Main.Databases
                 return value switch
                 {
                     T result => result,
-                    null => throw new ArgumentException($"Saved value is null and can't be converted to {typeof(T)}"),
                     _ => throw new ArgumentException($"Saved value has type {value.GetType()}, not {typeof(T)}")
                 };
             }
@@ -60,14 +60,17 @@ namespace Main.Databases
             lock (_values)
             {
                 _values[id] = value;
-                Console.WriteLine($"{id}={value}");
                 serializedBytes = Serialization.Serialize(value);
             }
-
+            
             //process the set if database is synchronised or persistent
             Task internalTask = new Task((() =>
             {
+                //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
+                //allowing the delegation of callbacks to a task
+                
                 InvokeCallbacks(id, serializedBytes);
+                
                 if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
