@@ -68,7 +68,6 @@ namespace Main.Databases
             {
                 //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
                 //allowing the delegation of callbacks to a task
-                
                 InvokeCallbacks(id, serializedBytes);
                 
                 if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
