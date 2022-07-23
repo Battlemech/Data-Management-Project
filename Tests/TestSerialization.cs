@@ -2,6 +2,7 @@
 using GroBuf;
 using GroBuf.DataMembersExtracters;
 using Main;
+using Main.Utility;
 using NUnit.Framework;
 
 namespace Tests

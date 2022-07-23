@@ -2,7 +2,7 @@
 using GroBuf;
 using GroBuf.DataMembersExtracters;
 
-namespace Main
+namespace Main.Utility
 {
     public static class Serialization
     {
