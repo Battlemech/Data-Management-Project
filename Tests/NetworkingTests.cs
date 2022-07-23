@@ -3,6 +3,7 @@ using Main;
 using Main.Networking;
 using Main.Networking.Client;
 using Main.Networking.Messages;
+using Main.Networking.Server;
 using NUnit.Framework;
 
 namespace Tests
@@ -27,11 +28,6 @@ namespace Tests
             Thread.Sleep(1000);
             
             //todo: receive message of type TestMessage
-        }
-        
-        public class TestMessage : Message
-        {
-            public string Content;
         }
     }
 }

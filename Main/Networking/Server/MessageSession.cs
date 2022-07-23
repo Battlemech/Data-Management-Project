@@ -3,7 +3,7 @@ using Main.Networking.Messages;
 using Main.Submodules.NetCoreServer;
 using Main.Utility;
 
-namespace Main.Networking
+namespace Main.Networking.Server
 {
     public class MessageSession : TcpSession
     {
@@ -28,7 +28,7 @@ namespace Main.Networking
 
         protected void OnReceived(Message message)
         {
-            Console.WriteLine($"Session received {message.GetType()}");
+            Console.WriteLine($"Session received {message.SerializedType}");
         }
     }
 }

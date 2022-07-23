@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using Main.Submodules.NetCoreServer;
 
-namespace Main.Networking
+namespace Main.Networking.Server
 {
     public class MessageServer : TcpServer
     {

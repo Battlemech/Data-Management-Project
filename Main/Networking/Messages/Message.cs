@@ -5,7 +5,21 @@ namespace Main.Networking.Messages
 {
     public class Message
     {
-        
+        public readonly string SerializedType;
+        protected Message()
+        {
+            SerializedType = GetType().FullName;
+        }
+    }
+    
+    public class TestMessage : Message
+    {
+        public string Content;
+
+        public TestMessage()
+        {
+            Console.WriteLine($"Test message type: {GetType()}");
+        }
     }
 
     public static class MessageUtility

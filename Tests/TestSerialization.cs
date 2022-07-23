@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
 using Main;
+using Main.Networking.Messages;
 using Main.Utility;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 
 namespace Tests
 {
@@ -62,6 +66,83 @@ namespace Tests
         {
             public int Count { get; set; }
             public string Message { get; set; }
+        }
+
+        [Test]
+        public static void TestTypeSerialization()
+        {
+            Stopwatch serializationTime = new Stopwatch();
+            Stopwatch deserializationTime = new Stopwatch();
+
+            Type original = typeof(TestClass);
+
+            //serialize type
+            serializationTime.Start();
+            string typeName = original.FullName;
+            byte[] bytes = Serialization.Serialize(typeName);
+            serializationTime.Stop();
+            
+            //deserialize type
+            deserializationTime.Start();
+            string deserializedName = Serialization.Deserialize<string>(bytes);
+            Type copy = Type.GetType(deserializedName);
+            deserializationTime.Stop();
+            
+            //make sure names equal
+            Assert.AreEqual(typeName, deserializedName);
+            Assert.AreEqual(original, copy);
+
+            Console.WriteLine($"Deserialized type: {deserializedName}. Serialized: {serializationTime.ElapsedMilliseconds} ms. Deserialized: {deserializationTime.ElapsedMilliseconds} ms");
+        }
+
+        [Test]
+        public static void TestSerializationPerformance()
+        {
+            string text = "Tests.TestSerialization+TestClass";
+            
+            int count = 10000;
+            long[] serializationTime = new long[count];
+            long[] deserializationTime = new long[count];
+
+            Stopwatch measurer = new Stopwatch();
+
+            for (int i = 0; i < count; i++)
+            {
+                //measure serialization
+                measurer.Restart();
+                byte[] bytes = Serialization.Serialize(text);
+                measurer.Stop();
+                serializationTime[i] = measurer.ElapsedMilliseconds;
+
+                //measure deserialization
+                measurer.Restart();
+                string copy = Serialization.Deserialize<string>(bytes);
+                measurer.Stop();
+                deserializationTime[i] = measurer.ElapsedMilliseconds;
+                
+                Assert.AreEqual(text, copy);
+            }
+
+            long totalSerializationTime = serializationTime.Sum();
+            long totalDeserializationTime = deserializationTime.Sum();
+            long totalTime = totalDeserializationTime + totalSerializationTime;
+            
+            Console.WriteLine($"(de)serialized {count} items in {totalTime} ms ({totalTime / count} ms/string)");
+            Console.WriteLine($"Average serialization time: {serializationTime.Average()} ms");
+            Console.WriteLine($"Average deserialization time: {deserializationTime.Average()} ms");
+        }
+
+        [Test]
+        public static void TestMessageTypeSerialization()
+        {
+            TestMessage testMessage = new TestMessage() { Content = "Test" };
+            
+            //test serialization without network
+            byte[] bytes = Serialization.Serialize(testMessage);
+
+            TestMessage copyTestMessage = Serialization.Deserialize<TestMessage>(bytes);
+            
+            Assert.AreEqual(testMessage.Content, copyTestMessage.Content);
         }
     }
 }
