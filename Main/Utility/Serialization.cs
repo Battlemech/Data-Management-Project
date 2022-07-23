@@ -10,10 +10,7 @@ namespace Main.Utility
 
         public static byte[] Serialize<T>(T o)
         {
-            /*
-             * Using type parameter to avoid an additional cast and allow the serializer to properly read object type.
-             */
-            
+            //Using type parameter to avoid an additional cast and allow the serializer to properly read object type.            
             return Serializer.Serialize(o);
         }
 
