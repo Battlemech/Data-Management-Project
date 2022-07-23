@@ -12,7 +12,7 @@ namespace Tests
 
         private static readonly Stopwatch Stopwatch = new Stopwatch();
         
-        public static void AreEqual(object expected, GetValueDelegate getValueDelegate, string testName = "Test", int timeInMs = 3000, int waitTimeInMs = 0)
+        public static void AreEqual(object expected, GetValueDelegate getValueDelegate, string testName = "Test", int timeInMs = 3000, int waitTimeInMs = 1)
         {
             int tryCount = 0;
             Stopwatch.Restart();

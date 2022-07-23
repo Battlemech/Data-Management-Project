@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Main.Databases;
 using NUnit.Framework;
 
@@ -10,6 +11,7 @@ namespace Tests
         public static void TestCallbacks()
         {
             string id = nameof(TestCallbacks);
+            string lastCallbackSet = "string with length 21";
             
             Database database = new Database(id);
             
@@ -19,7 +21,8 @@ namespace Tests
                 database.Set("stringLength", data.Length);
             });
 
-            foreach (var input in new []{"", "test", "my master", "fck yeah boy"})
+            //test if callback was added
+            foreach (var input in new []{"", "test", "my master", "fck yeah boy", lastCallbackSet})
             {
                 database.Set("string", input);
                 TestUtility.AreEqual(input.Length, () =>
@@ -28,14 +31,15 @@ namespace Tests
                 });
             }
             
-        }
-
-        [Test]
-        public static void TestGetNull()
-        {
-            Database database = new Database(nameof(TestGetNull));
-            Console.WriteLine(database.Get<int>(""));
-            Console.WriteLine(database.Get<int>(""));
+            //test if callback was removed
+            Assert.AreEqual(1, database.RemoveCallbacks("string"));
+            
+            database.Set("string", "42");
+            //wait for callbacks to execute
+            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount, "Callbacks are executed");
+            
+            //make sure string length is still 21
+            Assert.AreEqual(lastCallbackSet.Length, database.Get<int>("stringLength"));
         }
     }
 }

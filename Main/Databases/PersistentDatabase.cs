@@ -111,7 +111,7 @@ namespace Main.Databases
                     OnOfflineModification(tso.ValueStorageId, tso.Buffer);
                 }
             }));
-            synchronisationTask.Start(_scheduler);
+            synchronisationTask.Start(Scheduler);
         }
     }
 }

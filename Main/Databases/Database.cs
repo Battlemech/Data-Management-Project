@@ -9,9 +9,9 @@ namespace Main.Databases
     public partial class Database
     {
         public readonly string Id;
+        public readonly QueuedScheduler Scheduler = new QueuedScheduler();
 
         private readonly Dictionary<string, object> _values = new Dictionary<string, object>();
-        private readonly QueuedScheduler _scheduler = new QueuedScheduler();
 
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
         {
@@ -68,12 +68,12 @@ namespace Main.Databases
             {
                 //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
                 //allowing the delegation of callbacks to a task
-                InvokeCallbacks(id, serializedBytes);
+                _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
                 if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
-            internalTask.Start(_scheduler);
+            internalTask.Start(Scheduler);
         }
     }
 }
