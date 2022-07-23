@@ -7,9 +7,13 @@ namespace Main
     public static class Serialization
     {
         private static readonly Serializer Serializer = new Serializer(new AllPropertiesExtractor(), options : GroBufOptions.WriteEmptyObjects);
-        
-        public static byte[] Serialize(object o)
+
+        public static byte[] Serialize<T>(T o)
         {
+            /*
+             * Using type parameter to avoid an additional cast and allow the serializer to properly read object type.
+             */
+            
             return Serializer.Serialize(o);
         }
 

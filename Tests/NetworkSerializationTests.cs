@@ -9,11 +9,11 @@ using NUnit.Framework;
 
 namespace Tests
 {
-    public static class SerializationTests
+    public static class NetworkSerializationTests
     {
-        private struct NetworkNotificationMessage
+        public struct NetworkNotificationMessage
         {
-            public string Notification { get; init; }
+            public string Notification { get; set; }
         }
         
         [Test]
@@ -123,40 +123,6 @@ namespace Tests
             Assert.AreEqual(0, serializer.Deserialize(new byte[] {0,1,2,3,4,5,6}).Count);
             Assert.AreEqual(0, serializer.Deserialize(new byte[] {0,1,2,3,4,5,6}).Count);
             Assert.AreEqual(0, serializer.Deserialize(new byte[] {0,1,2,3,4,5,6}).Count);
-        }
-
-        [Test]
-        public static void TestSimpleSerialisation()
-        {
-            string content = "Fck yeah";
-            NetworkSerializer serializer = new NetworkSerializer();
-            NetworkNotificationMessage message = new NetworkNotificationMessage() { Notification = content };
-            
-            //check if message content was set
-            Assert.AreEqual(content, message.Notification, "Message content set");
-
-            //test serialization without network
-            byte[] messageAsBytes = Serialization.Serialize(message);
-            Assert.AreEqual(message.Notification, 
-                Serialization.Deserialize<NetworkNotificationMessage>(messageAsBytes).Notification, 
-                "Simple serialization failed");
-            
-            //serialize message
-            byte[] networkBytes = NetworkSerializer.Serialize(messageAsBytes);
-            
-            Console.WriteLine($"Serializing: Message:{message.Notification}. Bytes: {messageAsBytes.Length}. Network bytes: {networkBytes.Length}");
-            
-            //deserialize it
-            List<byte[]> deserializedBytes = serializer.Deserialize(networkBytes);
-            Console.WriteLine($"Deserializing: Network bytes: {networkBytes.Length}. Bytes: {deserializedBytes[0].Length}");
-            
-            Assert.AreEqual(1, deserializedBytes.Count, "deserialized one message");
-            Assert.IsTrue(ObjectComparer.CollectionsAreEqual(deserializedBytes[0], messageAsBytes));
-
-            NetworkNotificationMessage deserializedMessage =
-                Serialization.Deserialize<NetworkNotificationMessage>(deserializedBytes[0]);
-            Assert.AreEqual(content, deserializedMessage.Notification, "Network message deserialization failed");
-
         }
     }
 }
