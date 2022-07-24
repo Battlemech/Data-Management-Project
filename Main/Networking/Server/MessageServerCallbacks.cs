@@ -5,6 +5,9 @@ namespace Main.Networking.Server
 {
     public partial class MessageServer
     {
+        //todo: setup delegate for server
+        public delegate void OnMessageReceived<T>(T message, MessageSession session);
+        
         private readonly CallbackHandler<string> _callbackHandler = new CallbackHandler<string>();
 
         public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Message

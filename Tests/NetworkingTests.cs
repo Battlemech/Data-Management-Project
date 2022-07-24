@@ -26,7 +26,6 @@ namespace Tests
             Assert.IsTrue(client.WaitForConnect());
             
             //wait for message to be received: Server
-            client.SendMessage(new TestMessage() { Content = messageContent });
             ManualResetEvent receivedMessage = new ManualResetEvent(false);
             server.AddCallback<TestMessage>((data) =>
             {
@@ -35,12 +34,13 @@ namespace Tests
 
                 receivedMessage.Set();
             });
+            client.SendMessage(new TestMessage() { Content = messageContent });
             Assert.IsTrue(receivedMessage.WaitOne(Options.DefaultTimeout), "Received message: Server");
             
             receivedMessage.Reset();
             
             //wait for message to be received: Client
-            client.SendMessage(new TestMessage() { Content = messageContent });
+            server.Broadcast(new TestMessage() { Content = messageContent });
             client.AddCallback<TestMessage>((value =>
             {
                 //make sure the received message is correct

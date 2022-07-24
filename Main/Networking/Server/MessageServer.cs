@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Main.Networking.Messages;
 using Main.Submodules.NetCoreServer;
 
 namespace Main.Networking.Server
@@ -29,6 +30,11 @@ namespace Main.Networking.Server
         {
         }
 
+        public bool Broadcast<T>(T message) where T : Message
+        {
+            return Multicast(message.Serialize());
+        }
+        
         protected override TcpSession CreateSession()
         {
             return new MessageSession(this);
