@@ -22,7 +22,7 @@ namespace Tests
 
             MessageClient client = new MessageClient(localhost);
             client.ConnectAsync();
-            
+
             Assert.IsTrue(client.WaitForConnect());
             
             //wait for message to be received: Server

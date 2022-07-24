@@ -17,7 +17,7 @@ namespace Main.Networking.Server
             return _callbackHandler.RemoveCallbacks(typeof(T).FullName, name);
         }
 
-        public void InvokeCallbacks(string id, byte[] serializedBytes)
+        protected internal void InvokeCallbacks(string id, byte[] serializedBytes)
         {
             _callbackHandler.InvokeCallbacks(id, serializedBytes);
         }
