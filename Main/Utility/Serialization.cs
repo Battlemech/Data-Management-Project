@@ -6,7 +6,7 @@ namespace Main.Utility
 {
     public static class Serialization
     {
-        private static readonly Serializer Serializer = new Serializer(new AllPropertiesExtractor(), options : GroBufOptions.WriteEmptyObjects);
+        private static readonly Serializer Serializer = new Serializer(new AllFieldsExtractor(), options : GroBufOptions.WriteEmptyObjects);
 
         public static byte[] Serialize<T>(T o)
         {

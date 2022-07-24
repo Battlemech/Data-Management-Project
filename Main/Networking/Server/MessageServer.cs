@@ -3,7 +3,7 @@ using Main.Submodules.NetCoreServer;
 
 namespace Main.Networking.Server
 {
-    public class MessageServer : TcpServer
+    public partial class MessageServer : TcpServer
     {
         public MessageServer(IPAddress address) : this(address, Options.DefaultPort)
         {

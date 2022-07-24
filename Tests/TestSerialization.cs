@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography.X509Certificates;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
 using Main;
@@ -50,10 +53,7 @@ namespace Tests
             //use global serializer
             byte[] globalBytes = Serialization.Serialize(original);
             copy = Serialization.Deserialize<TestClass>(globalBytes);
-            
-            //compare bytes
-            Assert.AreEqual(localBytes, globalBytes);
-            
+
             //test global serializer
             Assert.AreEqual(original.GetType(), copy.GetType(), "Global serializer failed");
             Assert.AreEqual(original.Count, copy.Count, "Global serializer failed");
@@ -66,6 +66,11 @@ namespace Tests
         {
             public int Count { get; set; }
             public string Message { get; set; }
+        }
+        
+        public class TestClass2 : TestClass
+        {
+            public bool IsTrue { get; set; }
         }
 
         [Test]
@@ -133,16 +138,23 @@ namespace Tests
         }
 
         [Test]
-        public static void TestMessageTypeSerialization()
+        public static void TestSuperClassSerialization()
         {
-            TestMessage testMessage = new TestMessage() { Content = "Test" };
-            
-            //test serialization without network
-            byte[] bytes = Serialization.Serialize(testMessage);
+            //create test object
+            TestClass2 testClass2 = new TestClass2() { Count = 10, IsTrue = false, Message = "Yeah!" };
 
-            TestMessage copyTestMessage = Serialization.Deserialize<TestMessage>(bytes);
+            //copy super object
+            byte[] localBytes = Serialization.Serialize(testClass2);
+            TestClass2 copy = Serialization.Deserialize<TestClass2>(localBytes);
             
-            Assert.AreEqual(testMessage.Content, copyTestMessage.Content);
+            Assert.AreEqual(testClass2.IsTrue, copy.IsTrue);
+            Assert.AreEqual(testClass2.Count, copy.Count);
+            Assert.AreEqual(testClass2.Message, copy.Message);
+            
+            //try accessing data from lower object
+            TestClass derivedCopy = Serialization.Deserialize<TestClass>(localBytes);
+            Assert.AreEqual(testClass2.Count, derivedCopy.Count);
+            Assert.AreEqual(testClass2.Message, derivedCopy.Message);
         }
     }
 }

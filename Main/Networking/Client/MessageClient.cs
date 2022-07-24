@@ -43,13 +43,13 @@ namespace Main.Networking.Client
         {
             foreach (byte[] bytes in _networkSerializer.Deserialize(buffer, offset, size))
             {
-                OnReceived(Serialization.Deserialize<Message>(bytes));    
+                OnReceived(Serialization.Deserialize<Message>(bytes), bytes);    
             }
         }
 
-        protected void OnReceived(Message message)
+        protected void OnReceived(Message message, byte[] serializedBytes)
         {
-            Console.WriteLine($"Client received {message.GetType()}");
+            _callbackHandler.InvokeCallbacks(message.SerializedType, serializedBytes);
         }
     }
 }

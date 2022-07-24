@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Main;
 using Main.Networking;
 using Main.Networking.Client;
@@ -14,6 +15,7 @@ namespace Tests
         public static void TestSimpleSend()
         {
             string localhost = "127.0.0.1";
+            string messageContent = "Yes this is very fun!";
             
             MessageServer server = new MessageServer(localhost);
             server.Start();
@@ -22,12 +24,42 @@ namespace Tests
             client.ConnectAsync();
             
             Assert.IsTrue(client.WaitForConnect());
+            
+            //wait for message to be received: Server
+            client.SendMessage(new TestMessage() { Content = messageContent });
+            ManualResetEvent receivedMessage = new ManualResetEvent(false);
+            server.AddCallback<TestMessage>((data) =>
+            {
+                //make sure the received message is correct
+                Assert.AreEqual(messageContent, data.Content);
 
-            client.SendMessage(new TestMessage() { Content = "Yes this is very fun!" });
+                receivedMessage.Set();
+            });
+            Assert.IsTrue(receivedMessage.WaitOne(Options.DefaultTimeout), "Received message: Server");
             
-            Thread.Sleep(1000);
+            receivedMessage.Reset();
             
-            //todo: receive message of type TestMessage
+            //wait for message to be received: Client
+            client.SendMessage(new TestMessage() { Content = messageContent });
+            client.AddCallback<TestMessage>((value =>
+            {
+                //make sure the received message is correct
+                Assert.AreEqual(messageContent, value.Content);
+
+                receivedMessage.Set();
+            }));
+            Assert.IsTrue(receivedMessage.WaitOne(Options.DefaultTimeout), "Received message: Client");
+        }
+        
+        public class TestMessage : Message
+        {
+            public string Content { get; set; }
+            public string Test;
+
+            public TestMessage()
+            {
+            
+            }
         }
     }
 }

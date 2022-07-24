@@ -11,16 +11,6 @@ namespace Main.Networking.Messages
             SerializedType = GetType().FullName;
         }
     }
-    
-    public class TestMessage : Message
-    {
-        public string Content;
-
-        public TestMessage()
-        {
-            Console.WriteLine($"Test message type: {GetType()}");
-        }
-    }
 
     public static class MessageUtility
     {
