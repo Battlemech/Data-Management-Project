@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using Data_Management_Project.Databases.Base;
+﻿using System.Collections.Generic;
 using Main.Databases;
+using Main.Persistence;
 using NUnit.Framework;
 
 namespace Tests

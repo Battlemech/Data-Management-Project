@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Main;
-using Main.Networking;
+using Main.Networking.Base;
 using Main.Utility;
 using NUnit.Framework;
 

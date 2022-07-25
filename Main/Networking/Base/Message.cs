@@ -1,7 +1,6 @@
-﻿using System;
-using Main.Utility;
+﻿using Main.Utility;
 
-namespace Main.Networking.Messages
+namespace Main.Networking.Base
 {
     public class Message
     {

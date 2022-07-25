@@ -1,7 +1,6 @@
 ﻿using Main.Callbacks;
-using Main.Networking.Messages;
 
-namespace Main.Networking.Client
+namespace Main.Networking.Base.Client
 {
     public partial class MessageClient
     {

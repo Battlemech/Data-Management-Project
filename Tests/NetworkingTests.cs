@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Main;
-using Main.Networking.Client;
-using Main.Networking.Messages;
-using Main.Networking.Server;
+using Main.Networking.Base;
+using Main.Networking.Base.Client;
+using Main.Networking.Base.Server;
 using NUnit.Framework;
 
 namespace Tests

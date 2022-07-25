@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Main
+﻿namespace Main
 {
     public static class Options
     {

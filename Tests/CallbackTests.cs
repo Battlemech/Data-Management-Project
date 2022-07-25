@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading;
-using Main.Databases;
+﻿using Main.Databases;
 using NUnit.Framework;
 
 namespace Tests

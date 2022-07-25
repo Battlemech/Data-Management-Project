@@ -1,9 +1,7 @@
-﻿using System;
-using Main.Networking.Messages;
-using Main.Submodules.NetCoreServer;
+﻿using Main.Submodules.NetCoreServer;
 using Main.Utility;
 
-namespace Main.Networking.Server
+namespace Main.Networking.Base.Server
 {
     public class MessageSession : TcpSession
     {

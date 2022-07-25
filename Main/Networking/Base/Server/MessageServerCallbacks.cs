@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Main.Callbacks;
-using Main.Networking.Messages;
 using Main.Utility;
 
-namespace Main.Networking.Server
+namespace Main.Networking.Base.Server
 {
     public delegate void OnMessageReceived<T>(T message, MessageSession session) where T : Message;
     

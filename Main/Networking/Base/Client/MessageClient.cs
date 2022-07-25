@@ -1,10 +1,8 @@
-﻿using System;
-using System.Net;
-using Main.Networking.Messages;
+﻿using System.Net;
 using Main.Submodules.NetCoreServer;
 using Main.Utility;
 
-namespace Main.Networking.Client
+namespace Main.Networking.Base.Client
 {
     public partial class MessageClient : TcpClient
     {

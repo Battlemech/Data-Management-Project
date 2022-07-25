@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Cryptography.X509Certificates;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
-using Main;
-using Main.Networking.Messages;
 using Main.Utility;
 using NUnit.Framework;
-using NUnit.Framework.Internal;
 
 namespace Tests
 {

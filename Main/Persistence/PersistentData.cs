@@ -2,17 +2,12 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Data.SQLite;
-using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
-using Main;
 using Main.Utility;
 
-namespace Data_Management_Project.Databases.Base
+namespace Main.Persistence
 {
     public static class PersistentData
     {

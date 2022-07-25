@@ -1,4 +1,4 @@
-﻿namespace Data_Management_Project.Databases.Base
+﻿namespace Main.Persistence
 {
     /// <summary>
     /// Object which will be saved persistently
