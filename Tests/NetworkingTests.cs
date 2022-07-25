@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Main;
-using Main.Networking;
 using Main.Networking.Client;
 using Main.Networking.Messages;
 using Main.Networking.Server;
