@@ -123,6 +123,7 @@ namespace Tests
             Console.WriteLine($"Received {messagesToSend * clientCount} messages in {receiveMessages.ElapsedMilliseconds} ms." +
                               $" { (float) receiveMessages.ElapsedMilliseconds / (messagesToSend * clientCount)} ms/message");
             
+            //stop background threads
             messageServer.Stop();
             foreach (var messageClient in messageClients)
             {
