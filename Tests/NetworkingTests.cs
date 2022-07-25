@@ -114,7 +114,7 @@ namespace Tests
             //saves messages received previously
             TestUtility.AreEqual(messagesToSend * clientCount, (() =>
             {
-                Console.WriteLine($"Current received messages: {receivedMessages}");
+                Console.WriteLine($"[{receiveMessages.ElapsedMilliseconds} ms]Current received messages: {receivedMessages}");
                 return receivedMessages;
             }), "Receive messages", 5000 * clientCount, 100);
             
