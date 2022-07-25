@@ -14,7 +14,7 @@ namespace Main.Networking.Server
             new Dictionary<string, List<ServerCallback>>();
         
         /// <summary>
-        /// 
+        /// Add a function to be executed when a message of a certain type was received
         /// </summary>
         /// <remarks>The servers callbacks are not thread-save per default!</remarks>
         public void AddCallback<T>(OnMessageReceived<T> onValueChange, string name = "") where T : Message
@@ -36,6 +36,10 @@ namespace Main.Networking.Server
             }
         }
 
+        /// <summary>
+        /// Remove previously added callbacks
+        /// </summary>
+        /// <returns>The number of callbacks removed</returns>
         public int RemoveCallbacks<T>(string name = "") where T : Message
         {
             int removedCallbacks = 0;
