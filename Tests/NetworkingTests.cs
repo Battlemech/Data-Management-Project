@@ -65,5 +65,41 @@ namespace Tests
             
             }
         }
+        
+        [Test]
+        public static void TestNetworkLoad()
+        {
+            int messagesToSend = 100000;
+            
+            int receivedMessages = 0;
+            //start client and server
+            MessageServer messageServer = new MessageServer("127.0.0.1");
+            messageServer.AddCallback<TestMessage>(((message, connection) =>
+            {
+                Interlocked.Increment(ref receivedMessages);
+            }));
+            messageServer.Start();
+
+            MessageClient client1 = new MessageClient("127.0.0.1");
+            client1.Connect();
+            MessageClient client2 = new MessageClient("127.0.0.1");
+            client2.Connect();
+
+            for (int i = 0; i < messagesToSend; i++)
+            {
+                client1.SendMessage(new TestMessage());
+                client2.SendMessage(new TestMessage());
+            }
+
+            TestUtility.AreEqual(messagesToSend * 2, (() =>
+            {
+                Console.WriteLine($"Current received messages: {receivedMessages}");
+                return receivedMessages;
+            }), "Receive messages", messagesToSend, 50);
+            
+            messageServer.Stop();
+            client1.Disconnect();
+            client2.Disconnect();
+        }
     }
 }

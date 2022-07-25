@@ -13,6 +13,10 @@ namespace Main.Networking.Server
         private readonly Dictionary<string, List<ServerCallback>> _callbacks =
             new Dictionary<string, List<ServerCallback>>();
         
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <remarks>The servers callbacks are not thread-save per default!</remarks>
         public void AddCallback<T>(OnMessageReceived<T> onValueChange, string name = "") where T : Message
         {
             ServerCallback<T> callback = new ServerCallback<T>(name, onValueChange);
