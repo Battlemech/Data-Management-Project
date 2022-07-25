@@ -27,7 +27,7 @@ namespace Tests
             
             //wait for message to be received: Server
             ManualResetEvent receivedMessage = new ManualResetEvent(false);
-            server.AddCallback<TestMessage>((data) =>
+            server.AddCallback<TestMessage>((data, session) =>
             {
                 //make sure the received message is correct
                 Assert.AreEqual(messageContent, data.Content);

@@ -28,9 +28,9 @@ namespace Main.Networking.Server
             }
         }
 
-        protected void OnReceived(Message message, byte[] serializedBytes)
+        protected void OnReceived(Message message, byte[] serializedMessage)
         {
-            _server.InvokeCallbacks(message.SerializedType, serializedBytes);
+            _server.InvokeCallbacks(message.SerializedType, serializedMessage,this);
         }
     }
 }
