@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using Main;
 using Main.Networking;
 using Main.Networking.Client;
@@ -69,7 +72,8 @@ namespace Tests
         [Test]
         public static void TestNetworkLoad()
         {
-            int messagesToSend = 100000;
+            const int messagesToSend = 100000;
+            const int clientCount = 5;
             
             int receivedMessages = 0;
             //start client and server
@@ -80,26 +84,50 @@ namespace Tests
             }));
             messageServer.Start();
 
-            MessageClient client1 = new MessageClient("127.0.0.1");
-            client1.Connect();
-            MessageClient client2 = new MessageClient("127.0.0.1");
-            client2.Connect();
-
-            for (int i = 0; i < messagesToSend; i++)
+            List<MessageClient> messageClients = new List<MessageClient>(clientCount);
+            for (int i = 0; i < clientCount; i++)
             {
-                client1.SendMessage(new TestMessage());
-                client2.SendMessage(new TestMessage());
+                MessageClient messageClient = new MessageClient("127.0.0.1");
+                messageClient.Connect();
+                
+                messageClients.Add(messageClient);
             }
 
-            TestUtility.AreEqual(messagesToSend * 2, (() =>
+            Task.Factory.StartNew((() =>
+            {
+                Stopwatch sendMessages = Stopwatch.StartNew();
+                for (int i = 0; i < messagesToSend; i++)
+                {
+                    foreach (var messageClient in messageClients)
+                    {
+                        messageClient.SendMessage(new TestMessage());
+                    }
+                }
+                sendMessages.Stop();
+                
+                Console.WriteLine($"Sent {messagesToSend * clientCount} messages in {sendMessages.ElapsedMilliseconds} ms." +
+                                  $"{ (float) sendMessages.ElapsedMilliseconds / (messagesToSend * clientCount)} ms/message");
+            }));
+            
+            Stopwatch receiveMessages = Stopwatch.StartNew();
+            
+            //saves messages received previously
+            TestUtility.AreEqual(messagesToSend * clientCount, (() =>
             {
                 Console.WriteLine($"Current received messages: {receivedMessages}");
                 return receivedMessages;
-            }), "Receive messages", messagesToSend, 50);
+            }), "Receive messages", 5000 * clientCount, 100);
+            
+            receiveMessages.Stop();
+            
+            Console.WriteLine($"Received {messagesToSend * clientCount} messages in {receiveMessages.ElapsedMilliseconds} ms." +
+                              $" {(float) receiveMessages.ElapsedMilliseconds / (messagesToSend * clientCount)} ms/message");
             
             messageServer.Stop();
-            client1.Disconnect();
-            client2.Disconnect();
+            foreach (var messageClient in messageClients)
+            {
+                messageClient.Disconnect();
+            }
         }
     }
 }
