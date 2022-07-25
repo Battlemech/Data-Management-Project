@@ -1,4 +1,5 @@
 ﻿using Main.Callbacks;
+using Main.Networking.Base.Messages;
 
 namespace Main.Networking.Base.Client
 {

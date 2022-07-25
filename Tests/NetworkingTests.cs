@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Main;
 using Main.Networking.Base;
 using Main.Networking.Base.Client;
+using Main.Networking.Base.Messages;
 using Main.Networking.Base.Server;
 using NUnit.Framework;
 
@@ -128,6 +129,58 @@ namespace Tests
             {
                 messageClient.DisconnectAsync();
             }
+        }
+
+        public class TestRequest : RequestMessage<TestReply>
+        {
+            public int PleaseTransform;
+        }
+        
+        public class TestReply : ReplyMessage
+        {
+            public string Transformed;
+            public TestReply(RequestMessage requestMessage) : base(requestMessage)
+            {
+            }
+        }
+        
+        [Test]
+        public static void TestRequestReply()
+        {
+            string localhost = "127.0.0.1";
+            int toTransform = 100;
+
+            MessageServer server = new MessageServer(localhost);
+            server.Start();
+
+            MessageClient client = new MessageClient(localhost);
+            client.ConnectAsync();
+
+            Assert.IsTrue(client.WaitForConnect());
+
+            TestRequest request = new TestRequest() { PleaseTransform = toTransform };
+            
+            //add request callback to server
+            server.AddCallback<TestRequest>(((message, session) =>
+            {
+                //transform int
+                message.ReplyMessage = new TestReply(message) { Transformed = message.PleaseTransform.ToString() };
+
+                //send reply
+                session.SendMessage(message.ReplyMessage);
+            }));
+
+            Assert.IsTrue(client.SendRequest(request, out TestReply reply), "Received reply");
+            Assert.AreEqual(request.Id, reply.Id, "Id persistence");
+            Assert.AreEqual(toTransform.ToString(), reply.Transformed, "server value transformation");
+
+            //remove callback from server
+            Assert.AreEqual(1, server.RemoveCallbacks<TestRequest>());
+            
+            Assert.IsFalse(client.SendRequest(request, out reply, 1000), "Received reply, but callback was removed");
+            
+            server.Stop();
+            client.DisconnectAsync();
         }
     }
 }

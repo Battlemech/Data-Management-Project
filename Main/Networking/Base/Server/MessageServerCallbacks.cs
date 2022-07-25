@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Main.Networking.Base.Messages;
 using Main.Utility;
 
 namespace Main.Networking.Base.Server
