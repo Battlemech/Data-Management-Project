@@ -71,8 +71,8 @@ namespace Tests
         [Test]
         public static void TestNetworkLoad()
         {
-            const int messagesToSend = 100000;
-            const int clientCount = 5;
+            const int messagesToSend = 10000;
+            const int clientCount = 10;
             
             int receivedMessages = 0;
             //start client and server
@@ -87,7 +87,7 @@ namespace Tests
             for (int i = 0; i < clientCount; i++)
             {
                 MessageClient messageClient = new MessageClient("127.0.0.1");
-                messageClient.Connect();
+                Assert.IsTrue(messageClient.ConnectAsync());
                 
                 messageClients.Add(messageClient);
             }
@@ -126,7 +126,7 @@ namespace Tests
             messageServer.Stop();
             foreach (var messageClient in messageClients)
             {
-                messageClient.Disconnect();
+                messageClient.DisconnectAsync();
             }
         }
     }
