@@ -40,7 +40,6 @@ namespace Tests
             receivedMessage.Reset();
             
             //wait for message to be received: Client
-            server.Broadcast(new TestMessage() { Content = messageContent });
             client.AddCallback<TestMessage>((value =>
             {
                 //make sure the received message is correct
@@ -48,7 +47,12 @@ namespace Tests
 
                 receivedMessage.Set();
             }));
+            server.Broadcast(new TestMessage() { Content = messageContent });
             Assert.IsTrue(receivedMessage.WaitOne(Options.DefaultTimeout), "Received message: Client");
+            
+            //remove callbacks
+            Assert.AreEqual(1, server.RemoveCallbacks<TestMessage>());
+            Assert.AreEqual(1, client.RemoveCallbacks<TestMessage>());
         }
         
         public class TestMessage : Message
