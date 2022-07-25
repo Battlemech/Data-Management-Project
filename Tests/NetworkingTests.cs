@@ -121,7 +121,7 @@ namespace Tests
             receiveMessages.Stop();
             
             Console.WriteLine($"Received {messagesToSend * clientCount} messages in {receiveMessages.ElapsedMilliseconds} ms." +
-                              $" {(float) receiveMessages.ElapsedMilliseconds / (messagesToSend * clientCount)} ms/message");
+                              $" { (float) receiveMessages.ElapsedMilliseconds / (messagesToSend * clientCount)} ms/message");
             
             messageServer.Stop();
             foreach (var messageClient in messageClients)
