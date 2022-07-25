@@ -5,28 +5,29 @@ namespace Main.Networking.SynchronisedDatabase
 {
     public class SynchronisedClient : MessageClient
     {
-        public SynchronisedClient(IPAddress address) : base(address)
+        public SynchronisedClient(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
+            Constructor();
         }
 
-        public SynchronisedClient(IPAddress address, int port) : base(address, port)
+        public SynchronisedClient(string address, int port = Options.DefaultPort) : base(address, port)
         {
-        }
-
-        public SynchronisedClient(string address) : base(address)
-        {
-        }
-
-        public SynchronisedClient(string address, int port) : base(address, port)
-        {
+            Constructor();
         }
 
         public SynchronisedClient(DnsEndPoint endpoint) : base(endpoint)
         {
+            Constructor();
         }
 
         public SynchronisedClient(IPEndPoint endpoint) : base(endpoint)
         {
+            Constructor();
+        }
+
+        private void Constructor()
+        {
+            
         }
     }
 }
