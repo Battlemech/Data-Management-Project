@@ -1,12 +1,9 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Main.Callbacks;
-using Main.Networking.Base.Client;
-using Main.Networking.Base.Messages;
+﻿using Main.Callbacks;
+using Main.Networking.Message.Messages;
 using Main.Submodules.NetCoreServer;
 using Main.Utility;
 
-namespace Main.Networking.Base.Server
+namespace Main.Networking.Message.Server
 {
     public partial class MessageSession : TcpSession
     {
@@ -19,7 +16,7 @@ namespace Main.Networking.Base.Server
             _server = server;
         }
 
-        public bool SendMessage<T>(T message) where T : Message
+        public bool SendMessage<T>(T message) where T : Messages.Message
         {
             return SendAsync(message.Serialize());
         }
@@ -28,11 +25,11 @@ namespace Main.Networking.Base.Server
         {
             foreach (byte[] bytes in _networkSerializer.Deserialize(buffer, offset, size))
             {
-                OnReceived(Serialization.Deserialize<Message>(bytes), bytes);    
+                OnReceived(Serialization.Deserialize<Messages.Message>(bytes), bytes);    
             }
         }
 
-        protected void OnReceived(Message message, byte[] serializedMessage)
+        protected void OnReceived(Messages.Message message, byte[] serializedMessage)
         {
             //invoke global callbacks
             _server.InvokeCallbacks(message.SerializedType, serializedMessage,this);
@@ -41,12 +38,12 @@ namespace Main.Networking.Base.Server
             _requestHandler.InvokeCallbacks(message.SerializedType, serializedMessage);
         }
         
-        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Message
+        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Messages.Message
         {
             _requestHandler.AddCallback(typeof(T).FullName, onValueChange, name);
         }
 
-        public int RemoveCallbacks<T>(string name = "") where T : Message
+        public int RemoveCallbacks<T>(string name = "") where T : Messages.Message
         {
             return _requestHandler.RemoveCallbacks(typeof(T).FullName, name);
         }

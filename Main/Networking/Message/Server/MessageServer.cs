@@ -1,8 +1,8 @@
 ﻿using System.Net;
-using Main.Networking.Base.Messages;
+using Main.Networking.Message.Messages;
 using Main.Submodules.NetCoreServer;
 
-namespace Main.Networking.Base.Server
+namespace Main.Networking.Message.Server
 {
     public partial class MessageServer : TcpServer
     {
@@ -22,7 +22,7 @@ namespace Main.Networking.Base.Server
         {
         }
 
-        public bool Broadcast<T>(T message) where T : Message
+        public bool Broadcast<T>(T message) where T : Messages.Message
         {
             return Multicast(message.Serialize());
         }

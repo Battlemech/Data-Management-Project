@@ -1,7 +1,7 @@
 ﻿using System.Net;
-using Main.Networking.Base.Client;
+using Main.Networking.Message.Client;
 
-namespace Main.Networking.SynchronisedDatabase
+namespace Main.Networking.Synchronisation
 {
     public class SynchronisedClient : MessageClient
     {

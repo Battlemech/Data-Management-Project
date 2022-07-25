@@ -1,6 +1,6 @@
 ﻿using Main.Utility;
 
-namespace Main.Networking.Base.Messages
+namespace Main.Networking.Message.Messages
 {
     public class Message
     {

@@ -1,12 +1,13 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Main.Networking.Base.Client;
-using Main.Networking.Base.Messages;
+using Main.Networking.Message.Messages;
 
-namespace Main.Networking.Base.Server
+namespace Main.Networking.Message.Client
 {
-    public partial class MessageSession
+    public partial class MessageClient
     {
+        public delegate void OnReply<T>(T reply) where T : ReplyMessage;
+
         public bool SendRequest<TRequest, TReply>(TRequest requestMessage, out TReply replyMessage,
             int timeout = Options.DefaultTimeout)
             where TReply : ReplyMessage
@@ -46,7 +47,7 @@ namespace Main.Networking.Base.Server
             return success;
         }
         
-        public bool SendRequest<TRequest, TReply>(TRequest requestMessage, MessageClient.OnReply<TReply> onReply, int timeout = Options.DefaultTimeout)
+        public bool SendRequest<TRequest, TReply>(TRequest requestMessage, OnReply<TReply> onReply, int timeout = Options.DefaultTimeout)
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>
         {

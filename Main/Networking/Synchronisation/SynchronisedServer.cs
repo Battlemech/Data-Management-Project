@@ -1,7 +1,7 @@
 ﻿using System.Net;
-using Main.Networking.Base.Server;
+using Main.Networking.Message.Server;
 
-namespace Main.Networking.SynchronisedDatabase
+namespace Main.Networking.Synchronisation
 {
     public class SynchronisedServer : MessageServer
     {

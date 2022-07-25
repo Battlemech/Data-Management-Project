@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Networking\SynchronisedDatabase\Messages" />
+      <Folder Include="Networking\Synchronisation\Messages" />
     </ItemGroup>
 
 </Project>

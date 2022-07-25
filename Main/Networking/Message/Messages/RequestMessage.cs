@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Main.Networking.Base.Messages
+namespace Main.Networking.Message.Messages
 {
     public abstract class RequestMessage : Message
     {

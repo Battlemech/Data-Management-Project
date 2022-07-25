@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Main.Utility;
 using Buffer = Main.Submodules.NetCoreServer.Buffer;
 
-namespace Main.Networking.Base
+namespace Main.Networking
 {
     public class NetworkSerializer
     {

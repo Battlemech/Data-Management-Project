@@ -1,7 +1,6 @@
 ﻿using Main.Callbacks;
-using Main.Networking.Base.Messages;
 
-namespace Main.Networking.Base.Client
+namespace Main.Networking.Message.Client
 {
     public partial class MessageClient
     {
@@ -10,12 +9,12 @@ namespace Main.Networking.Base.Client
         /// <summary>
         /// Add a function to be executed when a message of a certain type was received asynchronously
         /// </summary>
-        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Message
+        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Messages.Message
         {
             _callbackHandler.AddCallback(typeof(T).FullName, onValueChange, name);
         }
 
-        public int RemoveCallbacks<T>(string name = "") where T : Message
+        public int RemoveCallbacks<T>(string name = "") where T : Messages.Message
         {
             return _callbackHandler.RemoveCallbacks(typeof(T).FullName, name);
         }
