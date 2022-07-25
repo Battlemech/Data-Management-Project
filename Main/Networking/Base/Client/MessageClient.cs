@@ -8,19 +8,11 @@ namespace Main.Networking.Base.Client
     {
         private readonly NetworkSerializer _networkSerializer = new NetworkSerializer();
         
-        public MessageClient(IPAddress address) : base(address, Options.DefaultPort)
+        public MessageClient(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
         }
 
-        public MessageClient(IPAddress address, int port) : base(address, port)
-        {
-        }
-        
-        public MessageClient(string address) : base(address, Options.DefaultPort)
-        {
-        }
-
-        public MessageClient(string address, int port) : base(address, port)
+        public MessageClient(string address, int port = Options.DefaultPort) : base(address, port)
         {
         }
 

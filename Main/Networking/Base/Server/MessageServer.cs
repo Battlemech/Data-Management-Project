@@ -5,19 +5,11 @@ namespace Main.Networking.Base.Server
 {
     public partial class MessageServer : TcpServer
     {
-        public MessageServer(IPAddress address) : this(address, Options.DefaultPort)
+        public MessageServer(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
         }
         
-        public MessageServer(IPAddress address, int port) : base(address, port)
-        {
-        }
-        
-        public MessageServer(string address) : base(address, Options.DefaultPort)
-        {
-        }
-
-        public MessageServer(string address, int port) : base(address, port)
+        public MessageServer(string address, int port = Options.DefaultPort) : base(address, port)
         {
         }
 
