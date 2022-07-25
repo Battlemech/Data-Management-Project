@@ -14,7 +14,7 @@ namespace Main.Networking.Server
             new Dictionary<string, List<ServerCallback>>();
         
         /// <summary>
-        /// Add a function to be executed when a message of a certain type was received
+        /// Add a function to be executed when a message of a certain type was received asynchronously
         /// </summary>
         /// <remarks>The servers callbacks are not thread-save per default!</remarks>
         public void AddCallback<T>(OnMessageReceived<T> onValueChange, string name = "") where T : Message
