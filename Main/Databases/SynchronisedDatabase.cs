@@ -58,6 +58,11 @@ namespace Main.Databases
             //todo: request change from server. Change instantly if host
         }
         
+        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
+        {
+            
+        }
+        
         private void OnSetSynchronised(string id, byte[] value, uint modCount)
         {
             

@@ -5,22 +5,12 @@ namespace Main.Networking.Synchronisation
 {
     public class SynchronisedServer : MessageServer
     {
-        public SynchronisedServer(IPAddress address) : base(address)
+        public SynchronisedServer(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
             Constructor();
         }
 
-        public SynchronisedServer(IPAddress address, int port) : base(address, port)
-        {
-            Constructor();
-        }
-
-        public SynchronisedServer(string address) : base(address)
-        {
-            Constructor();
-        }
-
-        public SynchronisedServer(string address, int port) : base(address, port)
+        public SynchronisedServer(string address, int port = Options.DefaultPort) : base(address, port)
         {
             Constructor();
         }
