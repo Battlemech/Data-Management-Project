@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Messages;
+using Main.Utility;
 
 namespace Main.Databases
 {
@@ -27,17 +30,20 @@ namespace Main.Databases
         /// </summary>
         private void OnSetSynchronised(string id, byte[] value)
         {
+            uint modCount = IncrementModCount(id);
+            
             SetValueRequest request = new SetValueRequest()
             {
                 DatabaseId = Id,
                 ValueId = id,
-                ModCount = IncrementModCount(id),
+                ModCount = modCount,
                 Value = value
             };
 
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
-                if(reply.Success) return;
+                //if request was successful: return
+                if(reply.ExpectedModCount == modCount) return;
             });
         }
 
@@ -57,12 +63,37 @@ namespace Main.Databases
 
         private void OnSynchronisationEnabled()
         {
+            //if no client was set, use the default instance
+            if (Client == null)
+            {
+                if (SynchronisedClient.Instance == null) throw new Exception(
+                    $"No synchronised Client exists which could manage synchronised database {Id}");
+                
+                Client = SynchronisedClient.Instance;
+            }
+
             lock (_values)
             {
                 if(_values.Count == 0) return;
                 
                 //todo: synchronise
             }
+        }
+
+        protected internal void OnRemoveSet(string id, byte[] value, uint modCount)
+        {
+            lock (_values)
+            {
+                _values[id] = Serialization.Deserialize<object>(value);
+            }
+         
+            //invoke callbacks
+            _callbackHandler.InvokeCallbacks(id, value);
+            
+            //invoke persistent data saving if required
+            if(_isPersistent) OnSetPersistent(id, value);
+            
+            //todo: make use of mod count
         }
     }
 }

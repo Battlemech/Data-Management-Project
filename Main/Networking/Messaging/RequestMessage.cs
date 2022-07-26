@@ -20,7 +20,7 @@ namespace Main.Networking.Messaging
 
     public abstract class RequestMessage<T> : RequestMessage where T : ReplyMessage
     {
-        public T ReplyMessage = null;
+        
     }
 
     public abstract class ReplyMessage : Message

@@ -33,11 +33,14 @@ namespace Main.Networking.Synchronisation
                 return !success ? 0 : modCount;
             }
         }
-
-        private void IncrementModCount(string databaseId, string valueId)
+        
+        /// <summary>
+        /// Increase modification count by 1 after retrieving it
+        /// </summary>
+        private uint IncrementModCount(string databaseId, string valueId)
         {
             Dictionary<string, uint> modCounts;
-            
+
             //access global database reference
             lock (_modCount)
             {
@@ -59,6 +62,8 @@ namespace Main.Networking.Synchronisation
                 //increment mod count by 1
                 if (!success) modCounts[valueId] = 1;
                 else modCounts[valueId] = modCount + 1;
+
+                return modCount;
             }
         }
     }

@@ -163,10 +163,10 @@ namespace Tests
             server.AddCallback<TestRequest>(((message, session) =>
             {
                 //transform int
-                message.ReplyMessage = new TestReply(message) { Transformed = message.PleaseTransform.ToString() };
+                var testReply = new TestReply(message) { Transformed = message.PleaseTransform.ToString() };
 
                 //send reply
-                session.SendMessage(message.ReplyMessage);
+                session.SendMessage(testReply);
             }));
 
             Assert.IsTrue(client.SendRequest(request, out TestReply reply), "Received reply");

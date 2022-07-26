@@ -12,7 +12,7 @@ namespace Main.Networking.Synchronisation.Messages
     
     public class SetValueReply : ReplyMessage
     {
-        public bool Success;
+        public uint ExpectedModCount;
         
         public SetValueReply(SetValueRequest requestMessage) : base(requestMessage)
         {

@@ -1,12 +1,17 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
+using Main.Databases;
 using Main.Networking.Messaging.Client;
+using Main.Networking.Synchronisation.Messages;
 
 namespace Main.Networking.Synchronisation
 {
-    public class SynchronisedClient : MessageClient
+    public partial class SynchronisedClient : MessageClient
     {
         public static SynchronisedClient Instance { get; private set; }
-        
+
+        #region Constructors
+
         public SynchronisedClient(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
             Constructor();
@@ -27,10 +32,17 @@ namespace Main.Networking.Synchronisation
             Constructor();
         }
 
+        #endregion
+
         private void Constructor()
         {
             //initialize instance
             Instance ??= this;
+            
+            AddCallback<SetValueMessage>((message =>
+            {
+                Get(message.DatabaseId).OnRemoveSet(message.ValueId, message.Value, message.ModCount);
+            }));
         }
 
         ~SynchronisedClient()

@@ -32,12 +32,21 @@ namespace Main.Networking.Synchronisation
             {
                 string databaseId = request.DatabaseId;
                 string valueId = request.ValueId;
+                SetValueReply reply = new SetValueReply(request);
 
-                //successful modification request
-                if (request.ModCount == GetModCount(databaseId, valueId) + 1)
-                {
-                    
-                }
+                uint expected = IncrementModCount(databaseId, valueId);
+                bool success = request.ModCount == expected;
+
+                //notify client of result
+                reply.ExpectedModCount = expected;
+                session.SendMessage(reply);
+                
+                //send message to others if request was successful
+                if (!success) return;
+                
+                //forward message to others, informing them of changed value
+                BroadcastToOthers(new SetValueMessage(request), session);
+            
             }));
         }
     }
