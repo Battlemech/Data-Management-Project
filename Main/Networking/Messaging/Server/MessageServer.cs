@@ -1,8 +1,7 @@
 ﻿using System.Net;
-using Main.Networking.Message.Messages;
 using Main.Submodules.NetCoreServer;
 
-namespace Main.Networking.Message.Server
+namespace Main.Networking.Messaging.Server
 {
     public partial class MessageServer : TcpServer
     {
@@ -22,9 +21,25 @@ namespace Main.Networking.Message.Server
         {
         }
 
-        public bool Broadcast<T>(T message) where T : Messages.Message
+        public bool Broadcast<T>(T message) where T : Message
         {
             return Multicast(message.Serialize());
+        }
+
+        public bool BroadcastToOthers<T>(T message, TcpSession session) where T : Message
+        {
+            byte[] bytes = message.Serialize();
+            bool success = true;
+
+            //todo: what happens if a client disconnects during foreach loop?
+            foreach (var tcpSession in Sessions.Values)
+            {
+                if(tcpSession == session) continue;
+
+                success = success && session.SendAsync(bytes);
+            }
+
+            return success;
         }
         
         protected override TcpSession CreateSession()

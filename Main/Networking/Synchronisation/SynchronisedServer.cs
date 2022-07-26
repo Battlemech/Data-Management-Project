@@ -1,9 +1,10 @@
 ﻿using System.Net;
-using Main.Networking.Message.Server;
+using Main.Networking.Messaging.Server;
+using Main.Networking.Synchronisation.Messages;
 
 namespace Main.Networking.Synchronisation
 {
-    public class SynchronisedServer : MessageServer
+    public partial class SynchronisedServer : MessageServer
     {
         public SynchronisedServer(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
@@ -27,7 +28,17 @@ namespace Main.Networking.Synchronisation
 
         private void Constructor()
         {
-            
+            AddCallback<SetValueRequest>(((request, session) =>
+            {
+                string databaseId = request.DatabaseId;
+                string valueId = request.ValueId;
+
+                //successful modification request
+                if (request.ModCount == GetModCount(databaseId, valueId) + 1)
+                {
+                    
+                }
+            }));
         }
     }
 }

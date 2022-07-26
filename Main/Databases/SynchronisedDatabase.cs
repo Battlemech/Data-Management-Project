@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Main.Networking.Synchronisation.Messages;
 
 namespace Main.Databases
 {
@@ -21,32 +22,23 @@ namespace Main.Databases
 
         private bool _isSynchronised;
 
-        private readonly Dictionary<string, uint> _modificationCount = new Dictionary<string, uint>();
-
         /// <summary>
         /// Invoked when a value is set
         /// </summary>
         private void OnSetSynchronised(string id, byte[] value)
         {
-            //increase modification count by one
-            uint modCount;
-            lock (_modificationCount)
+            SetValueRequest request = new SetValueRequest()
             {
-                bool success = _modificationCount.TryGetValue(id, out modCount);
+                DatabaseId = Id,
+                ValueId = id,
+                ModCount = IncrementModCount(id),
+                Value = value
+            };
 
-                if (success)
-                {
-                    modCount += 1;
-                    _modificationCount[id] = modCount;
-                }
-                else
-                {
-                    modCount = 1;
-                    _modificationCount.Add(id, modCount);
-                }
-            }
-
-            OnSetSynchronised(id, value, modCount);
+            Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
+            {
+                if(reply.Success) return;
+            });
         }
 
         /// <summary>
@@ -59,11 +51,6 @@ namespace Main.Databases
         }
         
         private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
-        {
-            
-        }
-        
-        private void OnSetSynchronised(string id, byte[] value, uint modCount)
         {
             
         }

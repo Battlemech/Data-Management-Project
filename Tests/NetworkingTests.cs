@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Main;
-using Main.Networking.Message.Client;
-using Main.Networking.Message.Messages;
-using Main.Networking.Message.Server;
+using Main.Networking.Messaging;
+using Main.Networking.Messaging.Client;
+using Main.Networking.Messaging.Server;
 using NUnit.Framework;
 
 namespace Tests
@@ -180,6 +180,37 @@ namespace Tests
             
             server.Stop();
             client.DisconnectAsync();
+        }
+
+        [Test]
+        public static void TestBroadcastToOthers()
+        {
+            string localhost = "127.0.0.1";
+            MessageServer server = new MessageServer(localhost);
+            server.Start();
+
+            MessageClient client = new MessageClient(localhost);
+            client.ConnectAsync();
+
+            Assert.IsTrue(client.WaitForConnect());
+
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            
+            client.AddCallback<TestMessage>((value =>
+            {
+                resetEvent.Set();
+            }));
+            server.AddCallback<TestMessage>(((message, session) =>
+            {
+                Assert.IsTrue(server.BroadcastToOthers(message, session));
+                Console.WriteLine("Server broadcast message to others");
+            }));
+            
+            //send message from client
+            client.SendMessage(new TestMessage());
+            
+            //wait for reply, expecting none to come
+            Assert.IsFalse(resetEvent.WaitOne(1000));
         }
     }
 }

@@ -1,9 +1,8 @@
 ﻿using System.Net;
-using Main.Networking.Message.Messages;
 using Main.Submodules.NetCoreServer;
 using Main.Utility;
 
-namespace Main.Networking.Message.Client
+namespace Main.Networking.Messaging.Client
 {
     public partial class MessageClient : TcpClient
     {
@@ -25,7 +24,7 @@ namespace Main.Networking.Message.Client
         {
         }
 
-        public bool SendMessage<T>(T message) where T : Messages.Message
+        public bool SendMessage<T>(T message) where T : Message
         {
             return SendAsync(message.Serialize());
         }
@@ -34,11 +33,11 @@ namespace Main.Networking.Message.Client
         {
             foreach (byte[] bytes in _networkSerializer.Deserialize(buffer, offset, size))
             {
-                OnReceived(Serialization.Deserialize<Messages.Message>(bytes), bytes);    
+                OnReceived(Serialization.Deserialize<Message>(bytes), bytes);    
             }
         }
 
-        protected void OnReceived(Messages.Message message, byte[] serializedBytes)
+        protected void OnReceived(Message message, byte[] serializedBytes)
         {
             _callbackHandler.InvokeCallbacks(message.SerializedType, serializedBytes);
         }

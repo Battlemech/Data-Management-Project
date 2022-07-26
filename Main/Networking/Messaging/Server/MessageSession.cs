@@ -1,9 +1,8 @@
 ﻿using Main.Callbacks;
-using Main.Networking.Message.Messages;
 using Main.Submodules.NetCoreServer;
 using Main.Utility;
 
-namespace Main.Networking.Message.Server
+namespace Main.Networking.Messaging.Server
 {
     public partial class MessageSession : TcpSession
     {
@@ -16,7 +15,7 @@ namespace Main.Networking.Message.Server
             _server = server;
         }
 
-        public bool SendMessage<T>(T message) where T : Messages.Message
+        public bool SendMessage<T>(T message) where T : Message
         {
             return SendAsync(message.Serialize());
         }
@@ -25,11 +24,11 @@ namespace Main.Networking.Message.Server
         {
             foreach (byte[] bytes in _networkSerializer.Deserialize(buffer, offset, size))
             {
-                OnReceived(Serialization.Deserialize<Messages.Message>(bytes), bytes);    
+                OnReceived(Serialization.Deserialize<Message>(bytes), bytes);    
             }
         }
 
-        protected void OnReceived(Messages.Message message, byte[] serializedMessage)
+        protected void OnReceived(Message message, byte[] serializedMessage)
         {
             //invoke global callbacks
             _server.InvokeCallbacks(message.SerializedType, serializedMessage,this);
@@ -38,12 +37,12 @@ namespace Main.Networking.Message.Server
             _requestHandler.InvokeCallbacks(message.SerializedType, serializedMessage);
         }
         
-        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Messages.Message
+        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Message
         {
             _requestHandler.AddCallback(typeof(T).FullName, onValueChange, name);
         }
 
-        public int RemoveCallbacks<T>(string name = "") where T : Messages.Message
+        public int RemoveCallbacks<T>(string name = "") where T : Message
         {
             return _requestHandler.RemoveCallbacks(typeof(T).FullName, name);
         }

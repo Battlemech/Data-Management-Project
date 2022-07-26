@@ -1,10 +1,12 @@
 ﻿using System.Net;
-using Main.Networking.Message.Client;
+using Main.Networking.Messaging.Client;
 
 namespace Main.Networking.Synchronisation
 {
     public class SynchronisedClient : MessageClient
     {
+        public static SynchronisedClient Instance { get; private set; }
+        
         public SynchronisedClient(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
             Constructor();
@@ -27,7 +29,14 @@ namespace Main.Networking.Synchronisation
 
         private void Constructor()
         {
-            
+            //initialize instance
+            Instance ??= this;
+        }
+
+        ~SynchronisedClient()
+        {
+            //remove static reference if it was this client
+            if (Instance == this) Instance = null;
         }
     }
 }

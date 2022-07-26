@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace Main.Networking.Message.Client
+namespace Main.Networking.Messaging.Client
 {
     public partial class MessageClient
     {

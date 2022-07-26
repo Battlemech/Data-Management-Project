@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using Main.Utility;
 
-namespace Main.Networking.Message.Server
+namespace Main.Networking.Messaging.Server
 {
-    public delegate void OnMessageReceived<T>(T message, MessageSession session) where T : Messages.Message;
+    public delegate void OnMessageReceived<T>(T message, MessageSession session) where T : Message;
     
     public partial class MessageServer
     {
@@ -15,7 +15,7 @@ namespace Main.Networking.Message.Server
         /// Add a function to be executed when a message of a certain type was received asynchronously
         /// </summary>
         /// <remarks>The servers callbacks are not thread-save per default!</remarks>
-        public void AddCallback<T>(OnMessageReceived<T> onValueChange, string name = "") where T : Messages.Message
+        public void AddCallback<T>(OnMessageReceived<T> onValueChange, string name = "") where T : Message
         {
             ServerCallback<T> callback = new ServerCallback<T>(name, onValueChange);
             string id = typeof(T).FullName;
@@ -38,7 +38,7 @@ namespace Main.Networking.Message.Server
         /// Remove previously added callbacks
         /// </summary>
         /// <returns>The number of callbacks removed</returns>
-        public int RemoveCallbacks<T>(string name = "") where T : Messages.Message
+        public int RemoveCallbacks<T>(string name = "") where T : Message
         {
             int removedCallbacks = 0;
             string id = typeof(T).FullName;
@@ -111,7 +111,7 @@ namespace Main.Networking.Message.Server
             public abstract Type GetCallbackType();
         }
 
-        private class ServerCallback<T> : ServerCallback where T : Messages.Message
+        private class ServerCallback<T> : ServerCallback where T : Message
         {
             private readonly OnMessageReceived<T> _received;
             public ServerCallback(string name, OnMessageReceived<T> received) : base(name)
