@@ -72,8 +72,8 @@ namespace Tests
             Database1.Set(id, id);
             
             //wait for synchronisation in databases 2 and 3
-            TestUtility.AreEqual(id, (() => Database2.Get<string>(id)));
-            TestUtility.AreEqual(id, (() => Database3.Get<string>(id)));
+            TestUtility.AreEqual(id, (() => Database2.Get<string>(id)), "Test remote set after first get");
+            TestUtility.AreEqual(id, (() => Database3.Get<string>(id)), "Test remote set before first get");
         } 
     }
 }

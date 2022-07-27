@@ -44,7 +44,7 @@ namespace Main.Databases
                     if (_isSynchronised && _serializedData.TryGetValue(id, out byte[] serializedData))
                     {
                         object loadedObject = Serialization.Deserialize(serializedData, typeof(T));
-
+                        
                         if (loadedObject is T expectedObject) obj = expectedObject;
                         else throw new ArgumentException($"Loaded object {loadedObject.GetType()}, but expected {typeof(T)}");
                     }
