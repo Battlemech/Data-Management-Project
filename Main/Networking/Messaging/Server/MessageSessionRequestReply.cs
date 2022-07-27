@@ -67,6 +67,7 @@ namespace Main.Networking.Messaging.Server
                 onReply.Invoke(replyMessage);
             }), callbackId);
 
+            //make sure the message was received
             Task.Factory.StartNew((() =>
             {
                 Thread.Sleep(timeout);
