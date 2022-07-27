@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using Main;
 using Main.Utility;
 using NUnit.Framework;
 
@@ -10,8 +11,13 @@ namespace Tests
     public static class TestUtility
     {
         public delegate object GetValueDelegate();
-
+        
+        //time tracking
         private static readonly Stopwatch Stopwatch = new Stopwatch();
+        
+        //port tracking
+        private static readonly Dictionary<string, int> _ports = new Dictionary<string, int>();
+        private static int _currentPort = Options.DefaultPort;
         
         public static void AreEqual(object expected, GetValueDelegate getValueDelegate, string testName = "Test", int timeInMs = 3000, int waitTimeInMs = 1)
         {
@@ -47,6 +53,23 @@ namespace Tests
         public static void TestUtilityFunctions()
         {
             AreEqual(true, (() => true));
+        }
+
+        public static int GetPort(string className, string testName)
+        {
+            string id = className + testName;
+            
+            //try get port
+            if (_ports.TryGetValue(id, out int port)) return port;
+
+            //add new port
+            port = _currentPort;
+            _ports.Add(id, port);
+
+            //increase currently used port
+            _currentPort++;
+            
+            return port;
         }
     }
 }

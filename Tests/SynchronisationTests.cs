@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Main.Databases;
 using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
@@ -10,17 +11,29 @@ namespace Tests
     public static class SynchronisationTests
     {
         public const string Localhost = "127.0.0.1";
-        public static readonly SynchronisedServer Server = new SynchronisedServer(Localhost);
-        public static readonly SynchronisedClient Client1 = new SynchronisedClient(Localhost);
-        public static readonly SynchronisedClient Client2 = new SynchronisedClient(Localhost);
-        public static readonly SynchronisedClient Client3 = new SynchronisedClient(Localhost);
-        public static readonly Database Database1 = new Database(Localhost, false, false);
-        public static readonly Database Database2 = new Database(Localhost, false, false);
-        public static readonly Database Database3 = new Database(Localhost, false, false);
+        public static SynchronisedServer Server;
+        public static SynchronisedClient Client1;
+        public static SynchronisedClient Client2;
+        public static SynchronisedClient Client3;
+        public static Database Database1;
+        public static Database Database2;
+        public static Database Database3;
 
-        [OneTimeSetUp]
-        public static void OneTimeSetup()
+        public static void Setup(string testName)
         {
+            int port = TestUtility.GetPort(nameof(NetworkingTests), testName);
+            
+            //setup networking
+            Server = new SynchronisedServer(Localhost, port);
+            Client1 = new SynchronisedClient(Localhost, port);
+            Client2 = new SynchronisedClient(Localhost, port);
+            Client3 = new SynchronisedClient(Localhost, port);
+            
+            //setup databases
+            Database1 = new Database(Localhost, false, false);
+            Database2 = new Database(Localhost, false, false);
+            Database3 = new Database(Localhost, false, false);
+            
             //set clients and enable synchronisation for databases
             Database1.Client = Client1;
             Database1.IsSynchronised = true;
@@ -30,11 +43,7 @@ namespace Tests
             
             Database3.Client = Client3;
             Database3.IsSynchronised = true;
-        }
-        
-        [SetUp]
-        public static void Setup()
-        {
+            
             //start server and clients
             Assert.IsTrue(Server.Start());
             Assert.IsTrue(Client1.ConnectAsync());
@@ -55,17 +64,20 @@ namespace Tests
             Client1.DisconnectAsync();
             Client2.DisconnectAsync();
             Client3.DisconnectAsync();
+            
         }
 
         [Test]
         public static void TestSetup()
         {
-            
+            Setup(nameof(TestSetup));
         }
         
         [Test]
         public static void TestSimpleSet()
         { 
+            Setup(nameof(TestSimpleSet));
+            
             string id = nameof(TestSimpleSet);
             
             //set value in database 1

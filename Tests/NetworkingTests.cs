@@ -18,11 +18,12 @@ namespace Tests
         {
             string localhost = "127.0.0.1";
             string messageContent = "Yes this is very fun!";
+            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestSimpleSend));
             
-            MessageServer server = new MessageServer(localhost);
+            MessageServer server = new MessageServer(localhost, port);
             server.Start();
 
-            MessageClient client = new MessageClient(localhost);
+            MessageClient client = new MessageClient(localhost, port);
             client.ConnectAsync();
 
             Assert.IsTrue(client.WaitForConnect());
@@ -73,10 +74,11 @@ namespace Tests
         {
             const int messagesToSend = 10000;
             const int clientCount = 10;
+            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestNetworkLoad));
             
             int receivedMessages = 0;
             //start client and server
-            MessageServer messageServer = new MessageServer("127.0.0.1");
+            MessageServer messageServer = new MessageServer("127.0.0.1", port);
             messageServer.AddCallback<TestMessage>(((message, connection) =>
             {
                 Interlocked.Increment(ref receivedMessages);
@@ -86,7 +88,7 @@ namespace Tests
             List<MessageClient> messageClients = new List<MessageClient>(clientCount);
             for (int i = 0; i < clientCount; i++)
             {
-                MessageClient messageClient = new MessageClient("127.0.0.1");
+                MessageClient messageClient = new MessageClient("127.0.0.1", port);
                 Assert.IsTrue(messageClient.ConnectAsync());
                 
                 messageClients.Add(messageClient);
@@ -148,11 +150,12 @@ namespace Tests
         {
             string localhost = "127.0.0.1";
             int toTransform = 100;
+            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestRequestReply));
 
-            MessageServer server = new MessageServer(localhost);
+            MessageServer server = new MessageServer(localhost, port);
             server.Start();
 
-            MessageClient client = new MessageClient(localhost);
+            MessageClient client = new MessageClient(localhost, port);
             client.ConnectAsync();
 
             Assert.IsTrue(client.WaitForConnect());
@@ -186,16 +189,18 @@ namespace Tests
         public static void TestBroadcastToOthers()
         {
             string localhost = "127.0.0.1";
-            MessageServer server = new MessageServer(localhost);
+            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestBroadcastToOthers));
+            
+            MessageServer server = new MessageServer(localhost, port);
             server.Start();
 
-            MessageClient originClient = new MessageClient(localhost);
+            MessageClient originClient = new MessageClient(localhost, port);
             originClient.ConnectAsync();
 
-            MessageClient peerClient1 = new MessageClient(localhost);
+            MessageClient peerClient1 = new MessageClient(localhost, port);
             peerClient1.ConnectAsync();
             
-            MessageClient peerClient2 = new MessageClient(localhost);
+            MessageClient peerClient2 = new MessageClient(localhost, port);
             peerClient2.ConnectAsync();
             
             Assert.IsTrue(originClient.WaitForConnect());
