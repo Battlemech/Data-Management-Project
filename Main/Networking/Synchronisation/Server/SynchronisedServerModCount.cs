@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using Main.Networking.Synchronisation.Messages;
 
-namespace Main.Networking.Synchronisation
+namespace Main.Networking.Synchronisation.Server
 {
     public partial class SynchronisedServer
     {

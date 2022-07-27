@@ -1,6 +1,8 @@
 ﻿using System;
 using Main.Databases;
 using Main.Networking.Synchronisation;
+using Main.Networking.Synchronisation.Client;
+using Main.Networking.Synchronisation.Server;
 using NUnit.Framework;
 
 namespace Tests
@@ -37,12 +39,12 @@ namespace Tests
             Assert.IsTrue(Server.Start());
             Assert.IsTrue(Client1.ConnectAsync());
             Assert.IsTrue(Client2.ConnectAsync());
-            Assert.IsTrue(Client3.ConnectAsync());
+            //Assert.IsTrue(Client3.ConnectAsync());
             
             //wait until connection is established
             Assert.IsTrue(Client1.WaitForConnect());
             Assert.IsTrue(Client2.WaitForConnect());
-            Assert.IsTrue(Client3.WaitForConnect());
+            //Assert.IsTrue(Client3.WaitForConnect());
         }
 
         [TearDown]

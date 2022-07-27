@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Net;
-using Main.Databases;
+﻿using System.Net;
 using Main.Networking.Messaging.Client;
 using Main.Networking.Synchronisation.Messages;
 
-namespace Main.Networking.Synchronisation
+namespace Main.Networking.Synchronisation.Client
 {
     public partial class SynchronisedClient : MessageClient
     {
@@ -41,7 +39,7 @@ namespace Main.Networking.Synchronisation
             
             AddCallback<SetValueMessage>((message =>
             {
-                Get(message.DatabaseId).OnRemoveSet(message.ValueId, message.Value, message.ModCount);
+                Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, message.ModCount);
             }));
         }
 

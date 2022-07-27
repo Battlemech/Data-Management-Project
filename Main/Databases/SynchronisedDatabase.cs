@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Main.Networking.Synchronisation;
+using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Utility;
 
@@ -84,7 +85,7 @@ namespace Main.Databases
             }
         }
 
-        protected internal void OnRemoveSet(string id, byte[] value, uint modCount)
+        protected internal void OnRemoteSet(string id, byte[] value, uint modCount)
         {
             bool success;
             lock (_values)
@@ -98,15 +99,16 @@ namespace Main.Databases
                 
                 if (success)
                 {
-                    _values[id] = Serialization.Deserialize(value, type);
-                    Console.WriteLine($"Retrieved type {type}. New Value: {_values[id]}");
+                    object result = Serialization.Deserialize(value, type);
+                    _values[id] = result;
+                    Console.WriteLine($"Retrieved type {type}. New Value: {result}");
                 }
             }
             
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);
 
-            //no callback or value wit hid exists
+            //no callback or value with id exists
             if (!success)
             {
                 //save data to be deserialized

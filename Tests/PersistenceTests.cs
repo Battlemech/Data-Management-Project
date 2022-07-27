@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Main.Databases;
 using Main.Networking.Synchronisation;
+using Main.Networking.Synchronisation.Client;
 using Main.Persistence;
 using NUnit.Framework;
 

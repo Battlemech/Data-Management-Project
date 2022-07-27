@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Main.Networking.Synchronisation;
+using Main.Networking.Synchronisation.Client;
 
 namespace Main.Databases
 {

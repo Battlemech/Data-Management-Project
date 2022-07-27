@@ -36,6 +36,8 @@ namespace Main.Databases
                 //try retrieving the value
                 bool success = _values.TryGetValue(id, out object value);
 
+                Console.WriteLine($"Success: {success}. Retrieved: {value}");
+                
                 //if it wasn't found: Add default value
                 if (!success)
                 {

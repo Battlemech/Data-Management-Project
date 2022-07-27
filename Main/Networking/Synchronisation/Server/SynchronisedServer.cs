@@ -3,7 +3,7 @@ using System.Net;
 using Main.Networking.Messaging.Server;
 using Main.Networking.Synchronisation.Messages;
 
-namespace Main.Networking.Synchronisation
+namespace Main.Networking.Synchronisation.Server
 {
     public partial class SynchronisedServer : MessageServer
     {

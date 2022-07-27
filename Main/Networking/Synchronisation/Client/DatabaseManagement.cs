@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using Main.Databases;
 using Main.Persistence;
-using Main.Utility;
 
-namespace Main.Networking.Synchronisation
+namespace Main.Networking.Synchronisation.Client
 {
     public partial class SynchronisedClient
     {
@@ -15,7 +14,8 @@ namespace Main.Networking.Synchronisation
             lock (_databases)
             {
                 bool success = _databases.TryGetValue(databaseId, out Database database);
-
+                Console.WriteLine($"Client knows database? {success}");
+                
                 //create database if no reference of it existed
                 if (!success)
                 {
