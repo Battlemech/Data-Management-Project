@@ -46,6 +46,8 @@ namespace Main.Databases
                 Value = value
             };
 
+            Console.WriteLine($"{this} set value");
+            
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 bool success = reply.ExpectedModCount == modCount;
@@ -87,13 +89,15 @@ namespace Main.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount)
         {
+            Console.WriteLine($"{this} received remote set for {id}");
+            
             bool success;
             lock (_values)
             {
                 Type type;
                 
                 //try retrieving type
-                success = _values.TryGetValue(id, out object current);
+                success = _values.TryGetValue(id, out object current) && current != null;
                 if (success) type = current.GetType();
                 else success = _callbackHandler.TryGetType(id, out type);
                 
@@ -101,7 +105,7 @@ namespace Main.Databases
                 {
                     object result = Serialization.Deserialize(value, type);
                     _values[id] = result;
-                    Console.WriteLine($"Retrieved type {type}. New Value: {result}");
+                    Console.WriteLine($"{this} Retrieved type {type}. Old value: {current}. New Value: {Get<string>(id)}");
                 }
             }
             

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using Main.Networking.Messaging.Client;
 using Main.Networking.Synchronisation.Messages;
 
@@ -39,6 +40,7 @@ namespace Main.Networking.Synchronisation.Client
             
             AddCallback<SetValueMessage>((message =>
             {
+                Console.WriteLine($"Client {Id} received SetValueMessage");
                 Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, message.ModCount);
             }));
         }

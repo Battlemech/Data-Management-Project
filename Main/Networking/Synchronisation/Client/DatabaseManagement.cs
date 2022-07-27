@@ -14,8 +14,7 @@ namespace Main.Networking.Synchronisation.Client
             lock (_databases)
             {
                 bool success = _databases.TryGetValue(databaseId, out Database database);
-                Console.WriteLine($"Client knows database? {success}");
-                
+
                 //create database if no reference of it existed
                 if (!success)
                 {

@@ -46,6 +46,10 @@ namespace Main.Databases
 
             return modCount;
         }
-        
+
+        public override string ToString()
+        {
+            return _isSynchronised ? $"DB({Client.Id})-{Id}" : $"DB-{Id}";
+        }
     }
 }

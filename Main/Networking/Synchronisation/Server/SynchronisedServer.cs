@@ -44,11 +44,10 @@ namespace Main.Networking.Synchronisation.Server
                 
                 //send message to others if request was successful
                 if (!success) return;
-                
+
                 //forward message to others, informing them of changed value
                 BroadcastToOthers(new SetValueMessage(request), session);
-            
-                Console.WriteLine("Server: Broadcast Value Change to other clients");
+                //Broadcast(new SetValueMessage(request));
             }));
         }
     }

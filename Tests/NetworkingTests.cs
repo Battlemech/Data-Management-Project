@@ -189,28 +189,53 @@ namespace Tests
             MessageServer server = new MessageServer(localhost);
             server.Start();
 
-            MessageClient client = new MessageClient(localhost);
-            client.ConnectAsync();
+            MessageClient originClient = new MessageClient(localhost);
+            originClient.ConnectAsync();
 
-            Assert.IsTrue(client.WaitForConnect());
-
-            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            MessageClient peerClient1 = new MessageClient(localhost);
+            peerClient1.ConnectAsync();
             
-            client.AddCallback<TestMessage>((value =>
+            MessageClient peerClient2 = new MessageClient(localhost);
+            peerClient2.ConnectAsync();
+            
+            Assert.IsTrue(originClient.WaitForConnect());
+            Assert.IsTrue(peerClient1.WaitForConnect());
+            Assert.IsTrue(peerClient2.WaitForConnect());
+
+            ManualResetEvent originReceived = new ManualResetEvent(false);
+            ManualResetEvent peer1Received = new ManualResetEvent(false);
+            ManualResetEvent peer2Received = new ManualResetEvent(false);
+            
+            originClient.AddCallback<TestMessage>((value =>
             {
-                resetEvent.Set();
+                Console.WriteLine("Origin received message");
+                originReceived.Set();
+            }));
+            peerClient1.AddCallback<TestMessage>((value =>
+            {
+                Console.WriteLine("Peer 1 received message");
+                peer1Received.Set();
+            }));
+            peerClient2.AddCallback<TestMessage>((value =>
+            {
+                Console.WriteLine("Peer 2 received message");
+                peer2Received.Set();
             }));
             server.AddCallback<TestMessage>(((message, session) =>
             {
+                Console.WriteLine("Server is broadcasting message to others");
                 Assert.IsTrue(server.BroadcastToOthers(message, session));
-                Console.WriteLine("Server broadcast message to others");
             }));
             
             //send message from client
-            client.SendMessage(new TestMessage());
+            originClient.SendMessage(new TestMessage());
+            
+            //wait for reply
+            Assert.IsTrue(peer1Received.WaitOne(1000));
+            Assert.IsTrue(peer2Received.WaitOne(1000));
             
             //wait for reply, expecting none to come
-            Assert.IsFalse(resetEvent.WaitOne(1000));
+            Assert.IsFalse(originReceived.WaitOne(1000));
         }
     }
 }

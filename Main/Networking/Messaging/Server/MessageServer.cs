@@ -1,5 +1,8 @@
-﻿using System.Net;
+﻿using System;
+using System.Linq;
+using System.Net;
 using Main.Submodules.NetCoreServer;
+using Main.Utility;
 
 namespace Main.Networking.Messaging.Server
 {
@@ -34,9 +37,8 @@ namespace Main.Networking.Messaging.Server
             //todo: what happens if a client disconnects during foreach loop?
             foreach (var tcpSession in Sessions.Values)
             {
-                if(tcpSession == session) continue;
-
-                success = success && session.SendAsync(bytes);
+                if (tcpSession == session) continue;
+                success = success && tcpSession.SendAsync(bytes);
             }
 
             return success;
