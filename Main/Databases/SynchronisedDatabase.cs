@@ -13,6 +13,9 @@ namespace Main.Databases
         /// Saves all data which could not be deserialized on a remote set
         /// </summary>
         private readonly Dictionary<string, byte[]> _serializedData = new Dictionary<string, byte[]>();
+        
+        //keeps track of all get attempts which failed to return an object
+        private readonly Dictionary<string, Type> _failedGets = new Dictionary<string, Type>();
 
         public bool IsSynchronised
         {
@@ -94,18 +97,14 @@ namespace Main.Databases
             bool success;
             lock (_values)
             {
-                Type type;
-                
-                //try retrieving type
-                success = _values.TryGetValue(id, out object current) && current != null;
-                if (success) type = current.GetType();
-                else success = _callbackHandler.TryGetType(id, out type);
+                //retrieve type from object
+                success = TryGetType(id, out Type type);
                 
                 if (success)
                 {
                     object result = Serialization.Deserialize(value, type);
                     _values[id] = result;
-                    Console.WriteLine($"{this} Retrieved type {type}. Old value: {current}. New Value: {Get<string>(id)}");
+                    Console.WriteLine($"{this} Retrieved type {type}. New Value: {Get<string>(id)}");
                 }
             }
             
@@ -115,6 +114,8 @@ namespace Main.Databases
             //no callback or value with id exists
             if (!success)
             {
+                Console.WriteLine($"{this} saved {id} to be deserialized later");
+                
                 //save data to be deserialized
                 _serializedData[id] = value;
                 return;
@@ -124,6 +125,22 @@ namespace Main.Databases
             _callbackHandler.InvokeCallbacks(id, value);
                
             //todo: make use of mod count
+        }
+
+        private bool TryGetType(string id, out Type type)
+        {
+            //try retrieving type from currently saved objects
+            if (_values.TryGetValue(id, out object current) && current != null)
+            {
+                type = current.GetType();
+                return true;
+            }
+            
+            //try retrieving type from failed get requests
+            if (_failedGets.TryGetValue(id, out type)) return true;
+
+            //try retrieving type from callbacks
+            return _callbackHandler.TryGetType(id, out type);
         }
     }
 }

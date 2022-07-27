@@ -40,7 +40,7 @@ namespace Main.Networking.Synchronisation.Client
             
             AddCallback<SetValueMessage>((message =>
             {
-                Console.WriteLine($"Client {Id} received SetValueMessage");
+                //forward set value message to database
                 Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, message.ModCount);
             }));
         }
