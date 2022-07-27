@@ -84,6 +84,23 @@ namespace Main.Callbacks
                 callback.InvokeCallback(data);
             }
         }
+
+        public bool TryGetType(TKey key, out Type type)
+        {
+            lock (_callbacks)
+            {
+                bool success = _callbacks.TryGetValue(key, out var callbacks);
+
+                if (!success || callbacks.Count == 0)
+                {
+                    type = null;
+                    return false;
+                }
+
+                type = callbacks[0].GetCallbackType();
+                return true;
+            }
+        }
     }
     
     public abstract class Callback

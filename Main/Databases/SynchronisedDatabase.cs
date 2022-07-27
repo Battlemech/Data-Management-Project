@@ -8,6 +8,11 @@ namespace Main.Databases
 {
     public partial class Database
     {
+        /// <summary>
+        /// Saves all data which could not be deserialized on a remote set
+        /// </summary>
+        private readonly Dictionary<string, byte[]> _serializedData = new Dictionary<string, byte[]>();
+
         public bool IsSynchronised
         {
             get => _isSynchronised;
@@ -42,8 +47,7 @@ namespace Main.Databases
 
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
-                //if request was successful: return
-                if(reply.ExpectedModCount == modCount) return;
+                bool success = reply.ExpectedModCount == modCount;
             });
         }
 
@@ -82,17 +86,37 @@ namespace Main.Databases
 
         protected internal void OnRemoveSet(string id, byte[] value, uint modCount)
         {
+            bool success;
             lock (_values)
             {
-                _values[id] = Serialization.Deserialize<object>(value);
+                Type type;
+                
+                //try retrieving type
+                success = _values.TryGetValue(id, out object current);
+                if (success) type = current.GetType();
+                else success = _callbackHandler.TryGetType(id, out type);
+                
+                if (success)
+                {
+                    _values[id] = Serialization.Deserialize(value, type);
+                    Console.WriteLine($"Retrieved type {type}. New Value: {_values[id]}");
+                }
             }
-         
+            
+            //save data persistently if necessary
+            if(_isPersistent) OnSetPersistent(id, value);
+
+            //no callback or value wit hid exists
+            if (!success)
+            {
+                //save data to be deserialized
+                _serializedData[id] = value;
+                return;
+            }
+
             //invoke callbacks
             _callbackHandler.InvokeCallbacks(id, value);
-            
-            //invoke persistent data saving if required
-            if(_isPersistent) OnSetPersistent(id, value);
-            
+               
             //todo: make use of mod count
         }
     }

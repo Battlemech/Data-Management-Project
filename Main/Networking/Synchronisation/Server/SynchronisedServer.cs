@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using Main.Networking.Messaging.Server;
 using Main.Networking.Synchronisation.Messages;
 
@@ -47,6 +48,7 @@ namespace Main.Networking.Synchronisation
                 //forward message to others, informing them of changed value
                 BroadcastToOthers(new SetValueMessage(request), session);
             
+                Console.WriteLine("Server: Broadcast Value Change to other clients");
             }));
         }
     }

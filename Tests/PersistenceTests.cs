@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Main.Databases;
+using Main.Networking.Synchronisation;
 using Main.Persistence;
 using NUnit.Framework;
 
@@ -17,7 +19,7 @@ namespace Tests
 
             for (int i = 0; i < 10; i++)
             {
-                Database database = new Database(id, true, true);
+                Database database = new Database(id, true);
                 
                 //load expected old value
                 Assert.AreEqual(i, database.Get<int>(id));
@@ -36,22 +38,36 @@ namespace Tests
         public static void TestSyncRequired()
         {
             string id = nameof(TestSyncRequired);
+            PersistentData.DeleteDatabase(id);
 
+            //create client which allows synchronised database to send data
+            SynchronisedClient client = new SynchronisedClient("127.0.0.1");
+            
             //create persistent and synchronised database
             Database database = new Database(id, true, true);
             database.Set(id, false);
             
             //database was synchronised. Sync not required
-            TestUtility.AreEqual(false, () => PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects) &&
-                                              tsoObjects.Count == 1 && tsoObjects[0].SyncRequired);
+            TestUtility.AreEqual(true, (() => PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects)));
+            TestUtility.AreEqual(1, (() =>
+            {
+                PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects);
+                return tsoObjects.Count;
+            }), waitTimeInMs: 100);
+            TestUtility.AreEqual(false, (() =>
+            {
+                PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects);
+                return tsoObjects[0].SyncRequired;
+            }));
 
             //disable synchronisation
             database.IsSynchronised = false;
-            database.Set(id, false);
+            database.Set(id, true);
             
             //database wasn't synchronised. Sync required
-            TestUtility.AreEqual(true, () => PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects) &&
-                                              tsoObjects.Count == 1 && tsoObjects[0].SyncRequired);
+            TestUtility.AreEqual(true, () =>
+                PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects) &&
+                                             tsoObjects.Count == 1 && tsoObjects[0].SyncRequired);
 
         }
     }

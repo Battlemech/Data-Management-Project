@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SQLite;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Main.Utility;
@@ -171,8 +172,11 @@ namespace Main.Persistence
                 SavingData = true;
             }
 
-            //start processing data in new task
-            Task.Factory.StartNew((() =>
+            /*
+             * start processing data in new thread. Don't use Task.Factory.StartNew() because the thread pool
+             * it uses can be occupied by network synchronisation tasks
+             */
+            Thread thread = new Thread((() =>
             {
                 try
                 {
@@ -182,7 +186,13 @@ namespace Main.Persistence
                 {
                     LogWriter.LogException(e);
                 }
-            }));
+            }))
+            {
+                //set thread priority to low
+                Priority = ThreadPriority.BelowNormal
+            };
+
+            thread.Start();
         }
 
         private static void SaveQueuedData()

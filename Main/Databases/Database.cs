@@ -39,14 +39,28 @@ namespace Main.Databases
                 //if it wasn't found: Add default value
                 if (!success)
                 {
-                    T defaultObject = default;
-                    _values.Add(id, defaultObject);
-                    return defaultObject;
+                    T obj;
+                    //try loading the object from not-deserialized data (occurs if type is missing)
+                    if (_isSynchronised && _serializedData.TryGetValue(id, out byte[] serializedData))
+                    {
+                        object loadedObject = Serialization.Deserialize(serializedData, typeof(T));
+
+                        if (loadedObject is T expectedObject) obj = expectedObject;
+                        else throw new ArgumentException($"Loaded object {loadedObject.GetType()}, but expected {typeof(T)}");
+                    }
+                    else
+                    {
+                        obj = default;
+                    }
+
+                    _values.Add(id, obj);
+                    return obj;
                 }
 
                 return value switch
                 {
                     T result => result,
+                    null => default,
                     _ => throw new ArgumentException($"Saved value has type {value.GetType()}, not {typeof(T)}")
                 };
             }
@@ -71,7 +85,7 @@ namespace Main.Databases
                 _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
                 if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
-                if(_isPersistent) OnSetPersistent(id, serializedBytes);
+                if(_isPersistent) {OnSetPersistent(id, serializedBytes);}
             }));
             internalTask.Start(Scheduler);
         }
