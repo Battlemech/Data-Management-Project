@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
@@ -28,7 +29,24 @@ namespace Main.Databases
                 _isSynchronised = value;
                 
                 //enable synchronisation if necessary
-                if(value) OnSynchronisationEnabled();
+                if(!value) return;
+                
+                //if no client was set, use the default instance
+                if (Client == null)
+                {
+                    if (SynchronisedClient.Instance == null) throw new Exception(
+                        $"No synchronised Client exists which could manage synchronised database {Id}");
+                
+                    Client = SynchronisedClient.Instance;
+                }
+                
+                //synchronise values
+                lock (_values)
+                {
+                    if(_values.Count == 0) return;
+                
+                    //todo: synchronise
+                }
             }
         }
 
@@ -52,9 +70,22 @@ namespace Main.Databases
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 bool success = reply.ExpectedModCount == modCount;
+                
+                if(success) return;
+
+                //update queue with expected modification count
+                request.ModCount = reply.ExpectedModCount;
+
+                //enqueue the request: It will be processed later
+                EnqueueFailedRequest(request);
             });
         }
 
+        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
+        {
+            
+        }
+        
         /// <summary>
         /// Invoked when a value is loaded by the persistence module.
         /// The value was modified while no connection was established.
@@ -62,30 +93,6 @@ namespace Main.Databases
         private void OnOfflineModification(string id, byte[] value)
         {
             //todo: request change from server. Change instantly if host
-        }
-        
-        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
-        {
-            
-        }
-
-        private void OnSynchronisationEnabled()
-        {
-            //if no client was set, use the default instance
-            if (Client == null)
-            {
-                if (SynchronisedClient.Instance == null) throw new Exception(
-                    $"No synchronised Client exists which could manage synchronised database {Id}");
-                
-                Client = SynchronisedClient.Instance;
-            }
-
-            lock (_values)
-            {
-                if(_values.Count == 0) return;
-                
-                //todo: synchronise
-            }
         }
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount)
@@ -103,6 +110,9 @@ namespace Main.Databases
                 }
             }
             
+            //increase modification count after updating local value
+            IncrementModCount(id);
+            
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);
 
@@ -111,29 +121,28 @@ namespace Main.Databases
             {
                 //save data to be deserialized
                 _serializedData[id] = value;
-                return;
             }
-
-            //invoke callbacks
-            _callbackHandler.InvokeCallbacks(id, value);
-               
-            //todo: make use of mod count
-        }
-
-        private bool TryGetType(string id, out Type type)
-        {
-            //try retrieving type from currently saved objects
-            if (_values.TryGetValue(id, out object current) && current != null)
+            else
             {
-                type = current.GetType();
-                return true;
+                //invoke callbacks
+                //invocation not necessary if no type could be found (success is false): There are no callbacks
+                _callbackHandler.InvokeCallbacks(id, value);   
             }
-            
-            //try retrieving type from failed get requests
-            if (_failedGets.TryGetValue(id, out type)) return true;
 
-            //try retrieving type from callbacks
-            return _callbackHandler.TryGetType(id, out type);
+            /*
+             * try processing a local delayed modification request.
+             * The request saved the modification count it requires.
+             * If the current mod count is 4 and the modification request has mod count 5,
+             * the network expects it to be executed next
+             */
+            
+            if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
+
+            //send previously delayed request to server
+            Client.SendMessage(new SetValueMessage(request));
+            
+            //execute delayed set locally
+            OnRemoteSet(id, request.Value, modCount + 1);
         }
     }
 }

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using Main.Databases;
 using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
@@ -77,7 +80,6 @@ namespace Tests
         public static void TestSimpleSet()
         { 
             Setup(nameof(TestSimpleSet));
-            
             string id = nameof(TestSimpleSet);
             
             //set value in database 1
@@ -86,6 +88,92 @@ namespace Tests
             //wait for synchronisation in databases 2 and 3
             TestUtility.AreEqual(id, (() => Database2.Get<string>(id)), "Test remote set after first get");
             TestUtility.AreEqual(id, (() => Database3.Get<string>(id)), "Test remote set before first get");
-        } 
+        }
+
+        [Test]
+        public static void TestConcurrentSets()
+        {
+            Setup(nameof(TestConcurrentSets));
+            string id = nameof(TestConcurrentSets);
+            
+            int setCount = 20;
+
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            Task[] tasks = new[]
+            {
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 1");
+                    
+                    for (int i = 0; i < setCount; i++)
+                    {
+                        Database1.Set(id, i);
+                    }
+                })),
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 2");
+                    
+                    for (int i = 0; i < setCount; i++)
+                    {
+                        Database2.Set(id, -i);
+                    }
+                })),
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 3");
+                    
+                    for (int i = 0; i < setCount; i++)
+                    {
+                        Database3.Set(id, i * setCount);
+                    }
+                }))
+            };
+
+            //start setting value
+            foreach (var task in tasks)
+            {
+                task.Start();
+            }
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            
+            //start set process
+            resetEvent.Set();
+            
+            //make sure all task terminated
+            Assert.IsTrue(Task.WaitAll(tasks, 10000));
+            
+            Console.WriteLine($"All sets completed after {stopwatch.ElapsedMilliseconds} ms");
+            
+            //check all values
+            TestUtility.AreEqual(true, (() =>
+            {
+                int a = Database1.Get<int>(id);
+                int b = Database2.Get<int>(id);
+                int c = Database3.Get<int>(id);
+                return a == b && b == c;
+            }), "values are equal", 10000 );
+            
+            //make sure all requests were processed
+            TestUtility.AreEqual(0, (() => Database1.GetOngoingSets(id)));
+            TestUtility.AreEqual(0, (() => Database2.GetOngoingSets(id)));
+            TestUtility.AreEqual(0, (() => Database3.GetOngoingSets(id)));
+            
+            //check all values
+            TestUtility.AreEqual(true, (() =>
+            {
+                int a = Database1.Get<int>(id);
+                int b = Database2.Get<int>(id);
+                int c = Database3.Get<int>(id);
+                return a == b && b == c;
+            }), "values are equal", 10000 );
+
+            stopwatch.Stop();
+            Console.WriteLine($"Synchronisation completed after {stopwatch.ElapsedMilliseconds} ms");
+        }
     }
 }
