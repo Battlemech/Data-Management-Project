@@ -15,6 +15,8 @@ namespace Main.Databases
         private readonly Dictionary<string, Queue<SetValueRequest>> _failedRequests =
             new Dictionary<string, Queue<SetValueRequest>>();
         
+        //keeps track of all get attempts which failed to return an object
+        private readonly Dictionary<string, Type> _failedGets = new Dictionary<string, Type>();
 
         public SynchronisedClient Client
         {

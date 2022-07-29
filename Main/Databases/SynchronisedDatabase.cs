@@ -15,9 +15,6 @@ namespace Main.Databases
         /// Saves all data which could not be deserialized on a remote set
         /// </summary>
         private readonly Dictionary<string, byte[]> _serializedData = new Dictionary<string, byte[]>();
-        
-        //keeps track of all get attempts which failed to return an object
-        private readonly Dictionary<string, Type> _failedGets = new Dictionary<string, Type>();
 
         public bool IsSynchronised
         {
