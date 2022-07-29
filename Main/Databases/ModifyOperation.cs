@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Main.Networking.Synchronisation.Messages;
 using Main.Utility;
 
 namespace Main.Databases
@@ -36,6 +37,32 @@ namespace Main.Databases
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             internalTask.Start(Scheduler);
+        }
+        
+        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
+        {
+            uint modCount = IncrementModCount(id);
+            
+            SetValueRequest request = new SetValueRequest()
+            {
+                DatabaseId = Id,
+                ValueId = id,
+                ModCount = modCount,
+                Value = value
+            };
+
+            Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
+            {
+                bool success = reply.ExpectedModCount == modCount;
+                
+                if(success) return;
+
+                //update queue with expected modification count
+                request.ModCount = reply.ExpectedModCount;
+
+                //enqueue the request: It will be processed later
+                EnqueueFailedRequest(new FailedModifyRequest<T>(request, modify));
+            });
         }
     }
 }

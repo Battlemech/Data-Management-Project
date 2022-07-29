@@ -4,9 +4,11 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Main.Databases;
+using Main.Databases.Utility;
 using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Server;
+using Main.Utility;
 using NUnit.Framework;
 
 namespace Tests
@@ -96,7 +98,7 @@ namespace Tests
             Setup(nameof(TestConcurrentSets));
             string id = nameof(TestConcurrentSets);
             
-            int setCount = 20;
+            const int setCount = 20;
 
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Task[] tasks = new[]
@@ -174,6 +176,89 @@ namespace Tests
 
             stopwatch.Stop();
             Console.WriteLine($"Synchronisation completed after {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        [Test]
+        public static void TestConcurrentAdd()
+        {
+            Setup(nameof(TestConcurrentAdd));
+            string id = nameof(TestConcurrentAdd);
+            
+            const int addCount = 100;
+
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            Task[] tasks = new[]
+            {
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 1");
+                    
+                    for (int i = 0; i < addCount; i++)
+                    {
+                        Database1.Add<List<int>, int>(id, i);
+                    }
+                })),
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 2");
+                    
+                    for (int i = 0; i < addCount; i++)
+                    {
+                        Database1.Add<List<int>, int>(id, i + addCount);
+                    }
+                })),
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 3");
+                    
+                    for (int i = 0; i < addCount; i++)
+                    {
+                        Database1.Add<List<int>, int>(id, i + (addCount * 2));
+                    }
+                }))
+            };
+
+            //start setting value
+            foreach (var task in tasks)
+            {
+                task.Start();
+            }
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            
+            //start set process
+            resetEvent.Set();
+            
+            //make sure all task terminated
+            Assert.IsTrue(Task.WaitAll(tasks, 10000));
+            
+            Console.WriteLine($"All adds completed after {stopwatch.ElapsedMilliseconds} ms");
+
+            foreach (var database in new Database[]{Database1, Database2, Database3})
+            {
+                TestUtility.AreEqual(addCount * 3, () => database.Get<List<int>>(id)?.Count);
+                TestUtility.AreEqual(true, (() =>
+                {
+                    List<int> list = database.Get<List<int>>(id);
+                    for (int i = 0; i < addCount * 3; i++)
+                    {
+                        if(list.Contains(i)) continue;
+                    
+                        Console.WriteLine($"List doesn't contain {i}");
+                        return false;
+                    }
+                    return true;
+                }));
+            }
+            
+            stopwatch.Stop();
+            Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
+            
+            Console.WriteLine(LogWriter.StringifyCollection(Database1.Get<List<int>>(id)));
+            
         }
     }
 }

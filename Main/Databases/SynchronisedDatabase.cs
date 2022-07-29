@@ -81,11 +81,6 @@ namespace Main.Databases
             });
         }
 
-        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
-        {
-            
-        }
-        
         /// <summary>
         /// Invoked when a value is loaded by the persistence module.
         /// The value was modified while no connection was established.
@@ -137,6 +132,16 @@ namespace Main.Databases
              */
             
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
+            
+            //if the request is a failed modify request:
+            if (request is FailedModifyRequest modifyRequest)
+            {
+                lock (_values)
+                {
+                    //repeat the operation with the same value
+                    request.Value = Serialization.Serialize(modifyRequest.RepeatModification(GetInternal(id)));
+                }
+            }
 
             //send previously delayed request to server
             Client.SendMessage(new SetValueMessage(request));
