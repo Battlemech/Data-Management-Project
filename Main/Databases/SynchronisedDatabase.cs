@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
@@ -40,13 +41,26 @@ namespace Main.Databases
                     Client = SynchronisedClient.Instance;
                 }
                 
-                //synchronise values
+                //return if there are no values to synchronise
                 lock (_values)
                 {
                     if(_values.Count == 0) return;
-                
-                    //todo: synchronise
                 }
+                
+                //delegate value synchronisation to new task
+                Task synchronisationTask = new Task((() =>
+                {
+                    lock (_values)
+                    {
+                        if(_values.Count == 0) return;
+                        
+                        foreach (var kv in _values)
+                        {
+                            OnOfflineModification(kv.Key, Serialization.Serialize(kv.Value));
+                        }   
+                    }
+                }));
+                synchronisationTask.Start(Scheduler);
             }
         }
 
@@ -82,12 +96,13 @@ namespace Main.Databases
         }
 
         /// <summary>
-        /// Invoked when a value is loaded by the persistence module.
-        /// The value was modified while no connection was established.
+        /// Invoked when a value was modified while no connection was established.
         /// </summary>
         private void OnOfflineModification(string id, byte[] value)
         {
             //todo: request change from server. Change instantly if host
+            
+            //todo: update syncRequired to false
         }
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount)
