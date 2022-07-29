@@ -71,5 +71,15 @@ namespace Tests
                                              tsoObjects.Count == 1 && tsoObjects[0].SyncRequired);
 
         }
+
+        [Test]
+        public static void LoadGuid()
+        {
+            Guid guid = LocalDatabase.LoadGuid();
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.AreEqual(guid, LocalDatabase.LoadGuid());
+            }
+        }
     }
 }

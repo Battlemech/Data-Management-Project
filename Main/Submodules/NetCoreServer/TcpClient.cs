@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Main.Persistence;
 
 namespace Main.Submodules.NetCoreServer
 {
@@ -42,7 +43,7 @@ namespace Main.Submodules.NetCoreServer
         /// <param name="port">Server port</param>
         private TcpClient(EndPoint endpoint, string address, int port)
         {
-            Id = Guid.NewGuid();
+            Id = LocalDatabase.LoadGuid();
             Address = address;
             Port = port;
             Endpoint = endpoint;
