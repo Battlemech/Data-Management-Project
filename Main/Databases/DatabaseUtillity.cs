@@ -33,6 +33,20 @@ namespace Main.Databases
         }
         private SynchronisedClient _client;
 
+        public Guid HostId => Get<Guid>("SYSTEM/INTERNAL/HostId");
+        public bool IsHost => HostId == Client.Id;
+        
+        /// <summary>
+        /// Returns the number of value synchronisation tasks which are still ongoing 
+        /// </summary>
+        public int GetOngoingSets(string id)
+        {
+            lock (_failedRequests)
+            {
+                return !_failedRequests.TryGetValue(id, out var requests) ? 0 : requests.Count;
+            }
+        }
+
         /// <summary>
         /// Increase modification count by 1 after retrieving it
         /// </summary>
@@ -109,17 +123,6 @@ namespace Main.Databases
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Returns the number of value synchronisation tasks which are still ongoing 
-        /// </summary>
-        public int GetOngoingSets(string id)
-        {
-            lock (_failedRequests)
-            {
-                return !_failedRequests.TryGetValue(id, out var requests) ? 0 : requests.Count;
-            }
         }
 
         public override string ToString()
