@@ -154,7 +154,7 @@ namespace Main.Databases
             //if the request is a failed modify request:
             if (request is FailedModifyRequest modifyRequest)
             {
-                //repeat the operation with the same value
+                //repeat the operation with the up to date value
                 request.Value = Serialization.Serialize(modifyRequest.RepeatModification(result));
             }
 
