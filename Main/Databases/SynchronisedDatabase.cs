@@ -107,6 +107,9 @@ namespace Main.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount)
         {
+            //save result in case its going to be required later for failed modification requests
+            object result = default;
+            
             bool success;
             lock (_values)
             {
@@ -115,7 +118,7 @@ namespace Main.Databases
                 
                 if (success)
                 {
-                    object result = Serialization.Deserialize(value, type);
+                    result = Serialization.Deserialize(value, type);
                     _values[id] = result;
                 }
             }
@@ -151,11 +154,8 @@ namespace Main.Databases
             //if the request is a failed modify request:
             if (request is FailedModifyRequest modifyRequest)
             {
-                lock (_values)
-                {
-                    //repeat the operation with the same value
-                    request.Value = Serialization.Serialize(modifyRequest.RepeatModification(GetInternal(id)));
-                }
+                //repeat the operation with the same value
+                request.Value = Serialization.Serialize(modifyRequest.RepeatModification(result));
             }
 
             //send previously delayed request to server
