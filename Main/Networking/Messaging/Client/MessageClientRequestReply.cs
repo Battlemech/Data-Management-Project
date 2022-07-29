@@ -51,7 +51,7 @@ namespace Main.Networking.Messaging.Client
             where TRequest : RequestMessage<TReply>
         {
             string callbackId = $"NETWORKING-{requestMessage.Id}";
-            bool receivedMessage = false;
+            ManualResetEvent receivedMessage = new ManualResetEvent(false);
             
             AddCallback<TReply>((replyMessage =>
             {
@@ -59,7 +59,7 @@ namespace Main.Networking.Messaging.Client
                 if(replyMessage.Id != requestMessage.Id) return;
 
                 //stop waiting task from invoking the callback
-                receivedMessage = true;
+                receivedMessage.Set();
                 
                 //remove callback
                 RemoveCallbacks<TReply>(callbackId);
@@ -70,9 +70,7 @@ namespace Main.Networking.Messaging.Client
 
             Task.Factory.StartNew((() =>
             {
-                Thread.Sleep(timeout);
-                
-                if(receivedMessage) return;
+                if(receivedMessage.WaitOne(timeout)) return;
                 
                 //remove the callback
                 RemoveCallbacks<TReply>(callbackId);
