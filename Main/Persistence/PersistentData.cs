@@ -153,6 +153,14 @@ namespace Main.Persistence
             return true;
         }
 
+        public static bool SyncRequired(string databaseId, string valueId)
+        {
+            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+            
+            //load data
+            return connection.QueryFirst<bool>($"select syncRequired from '{databaseId}' where id='{valueId}'");
+        }
+        
         #endregion
 
         #region Save Data
@@ -171,28 +179,8 @@ namespace Main.Persistence
                 if (SavingData) return;
                 SavingData = true;
             }
-
-            /*
-             * start processing data in new thread. Don't use Task.Factory.StartNew() because the thread pool
-             * it uses can be occupied by network synchronisation tasks
-             */
-            Thread thread = new Thread((() =>
-            {
-                try
-                {
-                    SaveQueuedData();
-                }
-                catch (Exception e)
-                {
-                    LogWriter.LogException(e);
-                }
-            }))
-            {
-                //set thread priority to low
-                Priority = ThreadPriority.BelowNormal
-            };
-
-            thread.Start();
+            
+            Task.Run(SaveQueuedData);
         }
 
         private static void SaveQueuedData()
@@ -207,14 +195,23 @@ namespace Main.Persistence
             //execute all queued changes
             while (DataToSaveQueue.TryDequeue(out SerializedObject obj))
             {
-                //set new value
-                string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes, syncRequired) values ('{obj.ValueStorageId}', @Buffer, '{obj.SyncRequired}')";
-                connection.Execute(command, obj);
+                try
+                {
+                    //set new value
+                    string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes, syncRequired) values ('{obj.ValueStorageId}', @Buffer, '{obj.SyncRequired}')";
+                    connection.Execute(command, obj);
+                }
+                catch (Exception e)
+                {
+                    LogWriter.LogError($"Failed setting {obj.DataBaseId}-{obj.ValueStorageId}");
+                    LogWriter.LogException(e);
+                    throw;
+                }
             }
 
             //commit the queued changes
             transaction.Commit();
-
+            
             //stop executing commands if none are left to execute
             lock (DataToSaveQueue)
             {
@@ -230,7 +227,7 @@ namespace Main.Persistence
         }
         
         #endregion
-        
+
         private static void ExecuteCommand(string command)
         {
             using SQLiteConnection connection = new SQLiteConnection(ConnectionString);

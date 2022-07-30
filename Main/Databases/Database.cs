@@ -103,7 +103,7 @@ namespace Main.Databases
                 _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
                 if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
-                if(_isPersistent) {OnSetPersistent(id, serializedBytes);}
+                if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             internalTask.Start(Scheduler);
         }

@@ -234,12 +234,19 @@ namespace Tests
             
             //make sure all task terminated
             Assert.IsTrue(Task.WaitAll(tasks, 10000));
-            
             Console.WriteLine($"All adds completed after {stopwatch.ElapsedMilliseconds} ms");
 
+            //wait for internal tasks to complete
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
-                TestUtility.AreEqual(addCount * 3, () => database.Get<List<int>>(id)?.Count);
+                TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), "Internal tasks", 5000);
+            }
+            Console.WriteLine($"All adds completed internally after {stopwatch.ElapsedMilliseconds} ms");
+
+            //make sure data was synchronised in all databases
+            foreach (var database in new Database[]{Database1, Database2, Database3})
+            {
+                TestUtility.AreEqual(addCount * 3, () => database.Get<List<int>>(id)?.Count, "ElementCount");
                 TestUtility.AreEqual(true, (() =>
                 {
                     List<int> list = database.Get<List<int>>(id);

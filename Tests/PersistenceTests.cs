@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Main.Databases;
 using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
@@ -47,29 +48,26 @@ namespace Tests
             //create persistent and synchronised database
             Database database = new Database(id, true, true);
             database.Set(id, false);
-            
+
             //database was synchronised. Sync not required
-            TestUtility.AreEqual(true, (() => PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects)));
-            TestUtility.AreEqual(1, (() =>
-            {
-                PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects);
-                return tsoObjects.Count;
-            }), waitTimeInMs: 100);
-            TestUtility.AreEqual(false, (() =>
-            {
-                PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects);
-                return tsoObjects[0].SyncRequired;
-            }));
+            TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), 
+                "Internal database tasks", 15000);
+            TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
+                "Persistent data write", 15000);
+            TestUtility.AreEqual(false, () => PersistentData.SyncRequired(id, id),
+                "sync required", 15000);
 
             //disable synchronisation
             database.IsSynchronised = false;
             database.Set(id, true);
             
             //database wasn't synchronised. Sync required
-            TestUtility.AreEqual(true, () =>
-                PersistentData.TryLoadDatabase(id, out List<TrackedSavedObject> tsoObjects) &&
-                                             tsoObjects.Count == 1 && tsoObjects[0].SyncRequired);
-
+            TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount),
+                "Internal database tasks", 15000);
+            TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
+                "Persistent data write", 15000);
+            TestUtility.AreEqual(true, () => PersistentData.SyncRequired(id, id),
+                "sync required", 15000);
         }
 
         [Test]
