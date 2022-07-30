@@ -50,7 +50,7 @@ namespace Tests
             database.Set(id, false);
 
             //database was synchronised. Sync not required
-            TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), 
+            TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), //todo: why does this take so long?
                 "Internal database tasks", 15000);
             TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
                 "Persistent data write", 15000);
@@ -62,7 +62,7 @@ namespace Tests
             database.Set(id, true);
             
             //database wasn't synchronised. Sync required
-            TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount),
+            TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount),  //todo: why does this take so long?
                 "Internal database tasks", 15000);
             TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
                 "Persistent data write", 15000);
