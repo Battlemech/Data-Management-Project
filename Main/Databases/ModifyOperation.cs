@@ -12,8 +12,14 @@ namespace Main.Databases
         /// <summary>
         /// The modify operation considered previous values during modification of current value.
         /// Necessary for synchronised collections: If multiple adds will be executed at the same time,
-        /// the Set() function will overwrite the other values. The Modify() function will keep them during set
+        /// the Set() function will overwrite the other values. The Modify() function will keep them during set.
         /// </summary>
+        /// <remarks>
+        /// This function creates inconsistent values during execution if multiple clients
+        /// start modifying the same value at the same time: Each client assumes they may modify the value and
+        /// add it locally. After a few ms, the values will be synchronised and in the same order globally.
+        /// If you need to avoid inconsistent states, use SafeModify() instead!
+        /// </remarks>
         public void Modify<T>(string id, ModifyValueDelegate<T> modify)
         {
             byte[] serializedBytes;
