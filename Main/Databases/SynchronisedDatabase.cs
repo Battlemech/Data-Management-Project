@@ -35,10 +35,7 @@ namespace Main.Databases
                 
                     Client = SynchronisedClient.Instance;
                 }
-                
-                //set this as host if no host exists //todo: enable
-                //Modify<Guid>("SYSTEM/INTERNAL/HostId", currentValue => currentValue == default ? Client.Id : currentValue);
-                
+
                 //return if there are no values to synchronise
                 lock (_values)
                 {

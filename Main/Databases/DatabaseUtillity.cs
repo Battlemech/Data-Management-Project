@@ -33,9 +33,6 @@ namespace Main.Databases
         }
         private SynchronisedClient _client;
 
-        public Guid HostId => Get<Guid>("SYSTEM/INTERNAL/HostId");
-        public bool IsHost => HostId == Client.Id;
-        
         /// <summary>
         /// Returns the number of value synchronisation tasks which are still ongoing 
         /// </summary>

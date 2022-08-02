@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Main.Databases;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Server;
@@ -57,6 +58,7 @@ namespace Tests
                 "Internal database tasks", 15000);
             TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
                 "Persistent data write", 15000);
+            Thread.Sleep(100); //wait for transaction to complete
             TestUtility.AreEqual(false, () => PersistentData.SyncRequired(id, id),
                 "sync required", 15000);
 
@@ -69,6 +71,7 @@ namespace Tests
                 "Internal database tasks", 15000);
             TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
                 "Persistent data write", 15000);
+            Thread.Sleep(100); //wait for transaction to complete
             TestUtility.AreEqual(true, () => PersistentData.SyncRequired(id, id),
                 "sync required", 15000);
         }
