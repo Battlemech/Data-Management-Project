@@ -4,6 +4,7 @@ using System.Threading;
 using Main.Databases;
 using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
+using Main.Networking.Synchronisation.Server;
 using Main.Persistence;
 using NUnit.Framework;
 
@@ -39,11 +40,16 @@ namespace Tests
         [Test]
         public static void TestSyncRequired()
         {
+            int port = TestUtility.GetPort(nameof(PersistenceTests), nameof(TestSyncRequired));
             string id = nameof(TestSyncRequired);
             PersistentData.DeleteDatabase(id);
 
             //create client which allows synchronised database to send data
-            SynchronisedClient client = new SynchronisedClient("127.0.0.1");
+            SynchronisedServer server = new SynchronisedServer("127.0.0.1", port);
+            server.Start();
+            SynchronisedClient client = new SynchronisedClient("127.0.0.1", port);
+            client.ConnectAsync();
+            Assert.IsTrue(client.WaitForConnect());
             
             //create persistent and synchronised database
             Database database = new Database(id, true, true);
