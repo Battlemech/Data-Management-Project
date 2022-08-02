@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using Main.Networking.Messaging.Client;
 using Main.Networking.Synchronisation.Messages;
 

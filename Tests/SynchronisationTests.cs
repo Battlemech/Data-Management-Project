@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Main.Databases;
 using Main.Databases.Utility;
-using Main.Networking.Synchronisation;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Server;
 using Main.Utility;
