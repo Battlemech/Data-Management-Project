@@ -50,7 +50,7 @@ namespace Main.Networking.Synchronisation.Server
                 if (!success)
                 {
                     request.ModCount = expected;
-                    OnFailedSetRequest(request, session);
+                    EnqueueDelayedSetRequest(request, session);
                 }
                 else
                 {
@@ -71,6 +71,18 @@ namespace Main.Networking.Synchronisation.Server
                 }
 
                 BroadcastToOthers(message, session);
+            }));
+            
+            AddCallback<LockValueRequest>(((request, session) =>
+            {
+                string databaseId = request.DatabaseId;
+                string valueId = request.ValueId;
+                uint expected = IncrementModCount(databaseId, valueId);
+                
+                //a set request will be received later. Make sure server expects it
+                EnqueueDelayedSetRequest(databaseId, valueId, expected, session);
+
+                session.SendMessage(new LockValueReply(request) { ExpectedModCount = expected });
             }));
         }
     }

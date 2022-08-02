@@ -38,8 +38,8 @@ namespace Main.Databases
                     Client = SynchronisedClient.Instance;
                 }
                 
-                //set this as host if no host exists
-                Modify<Guid>("SYSTEM/INTERNAL/HostId", currentValue => currentValue == default ? Client.Id : currentValue);
+                //set this as host if no host exists //todo: enable
+                //Modify<Guid>("SYSTEM/INTERNAL/HostId", currentValue => currentValue == default ? Client.Id : currentValue);
                 
                 //return if there are no values to synchronise
                 lock (_values)
@@ -83,8 +83,8 @@ namespace Main.Databases
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 bool success = reply.ExpectedModCount == modCount;
-                
-                if(success) return;
+
+                if (success) return;
 
                 //update queue with expected modification count
                 request.ModCount = reply.ExpectedModCount;
@@ -107,7 +107,7 @@ namespace Main.Databases
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount)
         {
             //save result in case its going to be required later for failed modification requests
-            object result = default;
+            object result = null;
             
             bool success;
             lock (_values)
@@ -133,13 +133,12 @@ namespace Main.Databases
             {
                 //save data to be deserialized
                 _serializedData[id] = value;
+                return;
             }
-            else
-            {
-                //invoke callbacks
-                //invocation not necessary if no type could be found (success is false): There are no callbacks
-                _callbackHandler.InvokeCallbacks(id, value);   
-            }
+            
+            //invoke callbacks
+            //invocation not necessary if no type could be found (success is false): There are no callbacks
+            _callbackHandler.InvokeCallbacks(id, value);
 
             /*
              * try processing a local delayed modification request.
@@ -154,7 +153,7 @@ namespace Main.Databases
             if (request is FailedModifyRequest modifyRequest)
             {
                 //repeat the operation with the up to date value
-                request.Value = Serialization.Serialize(modifyRequest.RepeatModification(result));
+                request.Value = Serialization.Serialize(modifyRequest.GetDelegateType(),modifyRequest.RepeatModification(result));
             }
 
             //send previously delayed request to server

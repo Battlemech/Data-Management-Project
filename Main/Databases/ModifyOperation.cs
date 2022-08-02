@@ -60,8 +60,8 @@ namespace Main.Databases
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 bool success = reply.ExpectedModCount == modCount;
-                
-                if(success) return;
+
+                if (success) return;
 
                 //update queue with expected modification count
                 request.ModCount = reply.ExpectedModCount;

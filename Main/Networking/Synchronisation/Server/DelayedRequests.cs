@@ -9,9 +9,11 @@ namespace Main.Networking.Synchronisation.Server
         private readonly Dictionary<string, Dictionary<string, Dictionary<uint, TcpSession>>> _delayedRequests =
             new Dictionary<string, Dictionary<string, Dictionary<uint, TcpSession>>>();
 
-        private void OnFailedSetRequest(SetValueRequest request, TcpSession session)
+        private void EnqueueDelayedSetRequest(SetValueRequest request, TcpSession session)
+            => EnqueueDelayedSetRequest(request.DatabaseId, request.ValueId, request.ModCount, session);
+        
+        private void EnqueueDelayedSetRequest(string databaseId, string valueId, uint modCount, TcpSession session)
         {
-            string databaseId = request.DatabaseId;
             Dictionary<string, Dictionary<uint, TcpSession>> trackedValues;
             
             //start tracking database if necessary
@@ -26,7 +28,6 @@ namespace Main.Networking.Synchronisation.Server
             
             //dictionary containing the failed modification requests for the expected modification count
             Dictionary<uint, TcpSession> failedRequests;
-            string valueId = request.ValueId;
             
             lock (trackedValues)
             {
@@ -39,7 +40,7 @@ namespace Main.Networking.Synchronisation.Server
 
             lock (failedRequests)
             {
-                failedRequests.Add(request.ModCount, session);
+                failedRequests.Add(modCount, session);
             }
         }
 

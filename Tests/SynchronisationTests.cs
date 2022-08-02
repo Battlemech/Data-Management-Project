@@ -93,6 +93,20 @@ namespace Tests
         }
 
         [Test]
+        public static void TestListSet()
+        {
+            Setup(nameof(TestListSet));
+            string id = nameof(TestListSet);
+            
+            //set value in database 1
+            Database1.Add<List<int>, int>(id, 25);
+            
+            //wait for synchronisation in databases 2 and 3
+            TestUtility.AreEqual(new List<int>(){25}, (() => Database2.Get<List<int>>(id)), "Test remote set after first get");
+            TestUtility.AreEqual(new List<int>(){25}, (() => Database3.Get<List<int>>(id)), "Test remote set before first get");
+        }
+
+        [Test]
         public static void TestConcurrentSets()
         {
             Setup(nameof(TestConcurrentSets));
@@ -185,6 +199,12 @@ namespace Tests
             string id = nameof(TestConcurrentAdd);
             
             const int addCount = 100;
+            
+            //throw exception if value is overwritten during execution
+            Database1.AddCallback<List<int>>(id, value =>
+            {
+                if (value == null || value.Count == 0) throw new Exception("Add was null or empty!");
+            });
 
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Task[] tasks = new[]
@@ -206,7 +226,7 @@ namespace Tests
                     
                     for (int i = 0; i < addCount; i++)
                     {
-                        Database1.Add<List<int>, int>(id, i + addCount);
+                        Database2.Add<List<int>, int>(id, i + addCount);
                     }
                 })),
                 new Task((() =>
@@ -216,7 +236,7 @@ namespace Tests
                     
                     for (int i = 0; i < addCount; i++)
                     {
-                        Database1.Add<List<int>, int>(id, i + (addCount * 2));
+                        Database3.Add<List<int>, int>(id, i + (addCount * 2));
                     }
                 }))
             };
@@ -265,7 +285,111 @@ namespace Tests
             Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
             
             Console.WriteLine(LogWriter.StringifyCollection(Database1.Get<List<int>>(id)));
+        }
+
+        [Test]
+        public static void TestSafeModify()
+        {
+            Setup(nameof(TestSafeModify));
+            string id = nameof(TestSafeModify);
             
+            //test options
+            const int addCount = 100;
+
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            Task[] tasks = new[]
+            {
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 1");
+                    
+                    for (int i = 0; i < addCount; i++)
+                    {
+                        Database1.SafeModify<List<int>>(id, (value) =>
+                        {
+                            value ??= new List<int>(); 
+                            value.Add(value.Count);
+                            return value;
+                        });
+                    }
+                })),
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 2");
+                    
+                    for (int i = 0; i < addCount; i++)
+                    {
+                        Database2.SafeModify<List<int>>(id, (value) =>
+                        {
+                            value ??= new List<int>(); 
+                            value.Add(value.Count);
+                            return value;
+                        });
+                    }
+                })),
+                new Task((() =>
+                {
+                    resetEvent.WaitOne();
+                    Console.WriteLine("Started task 3");
+                    
+                    for (int i = 0; i < addCount; i++)
+                    {
+                        Database3.SafeModify<List<int>>(id, (value) =>
+                        {
+                            value ??= new List<int>(); 
+                            value.Add(value.Count);
+                            return value;
+                        });
+                    }
+                }))
+            };
+            
+            //start setting value
+            foreach (var task in tasks)
+            {
+                task.Start();
+            }
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            
+            //start set process
+            resetEvent.Set();
+            
+            //make sure all task terminated
+            Assert.IsTrue(Task.WaitAll(tasks, 10000));
+            Console.WriteLine($"All adds completed after {stopwatch.ElapsedMilliseconds} ms");
+
+            //wait for internal tasks to complete
+            foreach (var database in new Database[]{Database1, Database2, Database3})
+            {
+                TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), "Internal tasks", 5000);
+            }
+            Console.WriteLine($"All adds completed internally after {stopwatch.ElapsedMilliseconds} ms");
+            
+            //make sure data was synchronised in all databases
+            foreach (var database in new Database[]{Database1, Database2, Database3})
+            {
+                TestUtility.AreEqual(addCount * 3, () => database.Get<List<int>>(id)?.Count, "ElementCount");
+                TestUtility.AreEqual(true, (() =>
+                {
+                    List<int> list = database.Get<List<int>>(id);
+                    for (int i = 0; i < addCount * 3; i++)
+                    {
+                        if(list[i] == i) continue;
+                    
+                        Console.WriteLine($"List doesn't contain {i} at right index");
+                        return false;
+                    }
+                    return true;
+                }));
+            }
+            
+            stopwatch.Stop();
+            Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
+            
+            Console.WriteLine(LogWriter.StringifyCollection(Database1.Get<List<int>>(id)));
         }
     }
 }

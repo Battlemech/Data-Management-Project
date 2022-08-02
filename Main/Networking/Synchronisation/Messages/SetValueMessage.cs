@@ -16,5 +16,13 @@ namespace Main.Networking.Synchronisation.Messages
             ModCount = request.ModCount;
             Value = request.Value;
         }
+
+        public SetValueMessage(string databaseId, string valueId, uint modCount, byte[] value)
+        {
+            DatabaseId = databaseId;
+            ValueId = valueId;
+            ModCount = modCount;
+            Value = value;
+        }
     }
 }
