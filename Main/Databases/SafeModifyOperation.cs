@@ -7,16 +7,21 @@ using Main.Utility;
 
 namespace Main.Databases
 {
+    public delegate void OnSafeModification<T>(T value);
+    
     public partial class Database
     {
         /// <summary>
         /// Waits until the server grants access to the value until the operation is executed.
-        /// This ensures that the "modify" delegate is executed exactly once
+        /// This ensures that the "modify" delegate is executed exactly once.
+        /// Slower than Modify() because current modCount is requested from server. Use Modify() if possible
         /// </summary>
         /// <remarks>
-        /// Synchronous operation, slower than Modify(). Use Modify() if possible
+        /// The value might not be set locally after this operation was executed. If you want to make sure that
+        /// the logic you execute happens after the value was set include it in the "modify" delegate or use
+        /// SafeModifySync()
         /// </remarks>
-        public void SafeModify<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
+        public void SafeModify<T>(string id, ModifyValueDelegate<T> modify)
         {
             //if client isn't connected: No need to request access
             if (!_isSynchronised)
@@ -24,7 +29,10 @@ namespace Main.Databases
                 SetValueLocally(id, modify);
                 return;
             }
-            
+
+            //serialize bytes to save current value (safe from modification)
+            byte[] bytes = Serialization.Serialize(Get<T>(id));
+
             //wait for access from server
             uint modCount = IncrementModCount(id);
             LockValueRequest request = new LockValueRequest
@@ -34,37 +42,46 @@ namespace Main.Databases
                 ModCount = modCount
             };
 
-            if (!Client.SendRequest(request, out LockValueReply reply))
-                throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
-
-            bool success = modCount == reply.ExpectedModCount;
-
-            //request was successful. Start modification process
-            if (success)
+            Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
-                SetValueLocally(id, modify, modCount);
-                return;
-            }
+                if(lockReply == null) throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
+                
+                bool success = modCount == lockReply.ExpectedModCount;
 
-            //update failed get to allow deserialization of later remote set messages
-            if(!TryGetType(id, out Type type)) _failedGets[id] = typeof(T);
+                //request was successful. Start modification process
+                if (success)
+                {
+                    SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, modCount);
+                    return;
+                }
 
-            //Allows waiting for value modification
-            ManualResetEvent executedModification = new ManualResetEvent(false);
+                //update failed get to allow deserialization of later remote set messages
+                if(!TryGetType(id)) _failedGets[id] = typeof(T);
+
+                //enqueue failed request
+                EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify));
+            });
+        }
+
+        public T SafeModifySync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
+        {
+            ManualResetEvent modificationExecuted = new ManualResetEvent(false);
+            T current = default;
             
-            //enqueue failed request
-            EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, reply.ExpectedModCount, (value =>
+            SafeModify<T>(id, (value =>
             {
-                //signal that modify operation is currently being executed. Waiting thread may continue
-                executedModification.Set();
+                //invoke modification operation
+                current = modify.Invoke(value);
+                
+                //signal waiting thread that modification commenced
+                modificationExecuted.Set();
 
-                return modify.Invoke(value);
-            })));
-
-            //request was successful
-            if(executedModification.WaitOne(timeout)) return;
+                return current;
+            }));
             
-            throw new Exception($"SafeModify Operation wasn't executed within {timeout} ms!");
+            if(modificationExecuted.WaitOne(timeout)) return current;
+
+            throw new Exception($"Failed to execute modify operation within {timeout} ms!");
         }
 
         private void SetValueLocally<T>(string id, ModifyValueDelegate<T> modify)
@@ -89,14 +106,14 @@ namespace Main.Databases
             internalTask.Start(Scheduler);
         }
 
-        private void SetValueLocally<T>(string id, ModifyValueDelegate<T> modify, uint modCount)
+        private void SetValueLocally<T>(string id, T current, ModifyValueDelegate<T> modify, uint modCount)
         {
             byte[] serializedBytes;
 
             //set value in dictionary
             lock (_values)
             {
-                T value = modify.Invoke(Get<T>(id));
+                T value = modify.Invoke(current);
                 _values[id] = value;
                 serializedBytes = Serialization.Serialize(value);
             }

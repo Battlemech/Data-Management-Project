@@ -306,7 +306,7 @@ namespace Tests
             string id = nameof(TestSafeModify);
             
             //test options
-            const int addCount = 10;
+            const int addCount = 100;
             
             //track added values
             List<int> addedValues = new List<int>(addCount * 3);
@@ -411,6 +411,32 @@ namespace Tests
             Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
             
             Console.WriteLine(LogWriter.StringifyCollection(Database1.Get<List<int>>(id)));
+        }
+
+        [Test]
+        public static void TestSafeModifySync()
+        {
+            string id = nameof(TestSafeModifySync);
+            Setup(id);
+
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value => new List<int>() { 1 })));
+                Assert.AreEqual(new List<int>(){1,2}, Database2.SafeModifySync<List<int>>(id, (value =>
+                {
+                    value.Add(2);
+                    return value;
+                })));
+                Assert.AreEqual(new List<int>(){1,2,3}, Database3.SafeModifySync<List<int>>(id, (value =>
+                {
+                    value.Add(3);
+                    return value;
+                })));   
+                
+                Console.WriteLine($"Completed iteration {i}");
+            }
+            
+
         }
     }
 }

@@ -92,6 +92,11 @@ namespace Main.Databases
             return _callbackHandler.TryGetType(id, out type);
         }
 
+        private bool TryGetType(string id)
+        {
+            return TryGetType(id, out _);
+        }
+
         private void EnqueueFailedRequest(SetValueRequest request)
         {
             string id = request.ValueId;
