@@ -287,13 +287,29 @@ namespace Tests
         }
 
         [Test]
+        public static void TestSafeModifySimple()
+        {
+            Setup(nameof(TestSafeModifySimple));
+            string id = nameof(TestSafeModifySimple);
+            
+            Database1.SafeModify<int>(id, (value) => 100);
+            
+            TestUtility.AreEqual(100, () => Database1.Get<int>(id));
+            TestUtility.AreEqual(100, () => Database2.Get<int>(id));
+            TestUtility.AreEqual(100, () => Database3.Get<int>(id));
+        }
+        
+        [Test]
         public static void TestSafeModify()
         {
             Setup(nameof(TestSafeModify));
             string id = nameof(TestSafeModify);
             
             //test options
-            const int addCount = 100;
+            const int addCount = 10;
+            
+            //track added values
+            List<int> addedValues = new List<int>(addCount * 3);
 
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Task[] tasks = new[]
@@ -301,14 +317,16 @@ namespace Tests
                 new Task((() =>
                 {
                     resetEvent.WaitOne();
-                    Console.WriteLine("Started task 1");
-                    
                     for (int i = 0; i < addCount; i++)
                     {
                         Database1.SafeModify<List<int>>(id, (value) =>
                         {
                             value ??= new List<int>(); 
                             value.Add(value.Count);
+                            
+                            Assert.IsFalse(addedValues.Contains(value.Count));
+                            addedValues.Add(value.Count);
+                            
                             return value;
                         });
                     }
@@ -316,14 +334,16 @@ namespace Tests
                 new Task((() =>
                 {
                     resetEvent.WaitOne();
-                    Console.WriteLine("Started task 2");
-                    
                     for (int i = 0; i < addCount; i++)
                     {
                         Database2.SafeModify<List<int>>(id, (value) =>
                         {
                             value ??= new List<int>(); 
                             value.Add(value.Count);
+                            
+                            Assert.IsFalse(addedValues.Contains(value.Count));
+                            addedValues.Add(value.Count);
+                            
                             return value;
                         });
                     }
@@ -331,14 +351,16 @@ namespace Tests
                 new Task((() =>
                 {
                     resetEvent.WaitOne();
-                    Console.WriteLine("Started task 3");
-                    
                     for (int i = 0; i < addCount; i++)
                     {
                         Database3.SafeModify<List<int>>(id, (value) =>
                         {
                             value ??= new List<int>(); 
                             value.Add(value.Count);
+                            
+                            Assert.IsFalse(addedValues.Contains(value.Count));
+                            addedValues.Add(value.Count);
+                            
                             return value;
                         });
                     }
@@ -357,7 +379,7 @@ namespace Tests
             resetEvent.Set();
             
             //make sure all task terminated
-            Assert.IsTrue(Task.WaitAll(tasks, 10000));
+            Assert.IsTrue(Task.WaitAll(tasks, 3000));
             Console.WriteLine($"All adds completed after {stopwatch.ElapsedMilliseconds} ms");
 
             //wait for internal tasks to complete

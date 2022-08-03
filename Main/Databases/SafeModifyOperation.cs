@@ -13,6 +13,9 @@ namespace Main.Databases
         /// Waits until the server grants access to the value until the operation is executed.
         /// This ensures that the "modify" delegate is executed exactly once
         /// </summary>
+        /// <remarks>
+        /// Synchronous operation, slower than Modify(). Use Modify() if possible
+        /// </remarks>
         public void SafeModify<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
         {
             //if client isn't connected: No need to request access
@@ -42,10 +45,14 @@ namespace Main.Databases
                 SetValueLocally(id, modify, modCount);
                 return;
             }
-                
-            //request failed. Wait for it to be invoked
+
+            //update failed get to allow deserialization of later remote set messages
+            if(!TryGetType(id, out Type type)) _failedGets[id] = typeof(T);
+
+            //Allows waiting for value modification
             ManualResetEvent executedModification = new ManualResetEvent(false);
             
+            //enqueue failed request
             EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, reply.ExpectedModCount, (value =>
             {
                 //signal that modify operation is currently being executed. Waiting thread may continue
@@ -56,7 +63,7 @@ namespace Main.Databases
 
             //request was successful
             if(executedModification.WaitOne(timeout)) return;
-
+            
             throw new Exception($"SafeModify Operation wasn't executed within {timeout} ms!");
         }
 
@@ -85,6 +92,7 @@ namespace Main.Databases
         private void SetValueLocally<T>(string id, ModifyValueDelegate<T> modify, uint modCount)
         {
             byte[] serializedBytes;
+
             //set value in dictionary
             lock (_values)
             {
@@ -102,6 +110,7 @@ namespace Main.Databases
                 
                 //notify peers of new value
                 Client.SendMessage(new SetValueMessage(Id, id, modCount, serializedBytes));
+
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             internalTask.Start(Scheduler);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
@@ -99,7 +100,7 @@ namespace Main.Databases
             //todo: update syncRequired to false
         }
 
-        protected internal void OnRemoteSet(string id, byte[] value, uint modCount)
+        protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
         {
             //save result in case its going to be required later for failed modification requests
             object result = null;
@@ -118,7 +119,7 @@ namespace Main.Databases
             }
             
             //increase modification count after updating local value
-            IncrementModCount(id);
+            if (incrementModCount) IncrementModCount(id);
             
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);
@@ -143,7 +144,7 @@ namespace Main.Databases
              */
             
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
-            
+
             //if the request is a failed modify request:
             if (request is FailedModifyRequest modifyRequest)
             {
@@ -153,9 +154,9 @@ namespace Main.Databases
 
             //send previously delayed request to server
             Client.SendMessage(new SetValueMessage(request));
-            
+
             //execute delayed set locally
-            OnRemoteSet(id, request.Value, modCount + 1);
+            OnRemoteSet(id, request.Value, modCount + 1, false);
         }
     }
 }

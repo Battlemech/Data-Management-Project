@@ -7,7 +7,7 @@ namespace Main.Databases
 {
     public partial class Database
     {
-        private readonly Dictionary<string, uint> _modificationCount = new Dictionary<string, uint>();
+        private readonly Dictionary<string, uint> _localModificationCount = new Dictionary<string, uint>();
 
         /// <summary>
         /// Contains a list of failed set requests, containing the expected modification count
@@ -51,21 +51,29 @@ namespace Main.Databases
         {
             //increase modification count by one
             uint modCount;
-            lock (_modificationCount)
+            lock (_localModificationCount)
             {
-                bool success = _modificationCount.TryGetValue(id, out modCount);
+                bool success = _localModificationCount.TryGetValue(id, out modCount);
 
                 if (success)
                 {
-                    _modificationCount[id] = modCount + 1;
+                    _localModificationCount[id] = modCount + 1;
                 }
                 else
                 {
-                    _modificationCount.Add(id, 1);
+                    _localModificationCount.Add(id, 1);
                 }
             }
 
             return modCount;
+        }
+
+        private uint GetModCount(string id)
+        {
+            lock (_localModificationCount)
+            {
+                return _localModificationCount.TryGetValue(id, out uint modCount) ? modCount : 0;
+            }
         }
         
         private bool TryGetType(string id, out Type type)
