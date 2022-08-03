@@ -419,7 +419,7 @@ namespace Tests
             string id = nameof(TestSafeModifySync);
             Setup(id);
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 10; i++)
             {
                 Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value => new List<int>() { 1 })));
                 Assert.AreEqual(new List<int>(){1,2}, Database2.SafeModifySync<List<int>>(id, (value =>
