@@ -42,6 +42,8 @@ namespace Main.Databases
                 ModCount = modCount
             };
 
+            //todo: prevent processes like modify from being executed after, thinking they have the correct value
+            
             Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
                 if(lockReply == null) throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
