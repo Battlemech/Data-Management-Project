@@ -156,7 +156,7 @@ namespace Main.Databases
             Client.SendMessage(new SetValueMessage(request));
 
             //execute delayed set locally
-            OnRemoteSet(id, request.Value, modCount + 1, false);
+            OnRemoteSet(id, request.Value, request.ModCount, false);
         }
     }
 }

@@ -58,6 +58,9 @@ namespace Main.Databases
                 //update failed get to allow deserialization of later remote set messages
                 if(!TryGetType(id)) _failedGets[id] = typeof(T);
 
+                //todo: what if remote set is received while client waits for request?
+                //can't use local mod count because it tracks locally expected, not remotely confirmed mod count
+                
                 //enqueue failed request
                 EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify));
             });
