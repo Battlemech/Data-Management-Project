@@ -437,14 +437,20 @@ namespace Tests
 
             for (int i = 1; i <= 10; i++)
             {
-                Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value => new List<int>() { 1 })), "SafeModify");
+                Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value =>
+                {
+                    Console.WriteLine("Executing SafeModify1");
+                    return new List<int>() { 1 };
+                })), "SafeModify");
                 Assert.AreEqual(new List<int>(){1,2}, Database2.SafeModifySync<List<int>>(id, (value =>
                 {
+                    Console.WriteLine("Executing SafeModify2");
                     value.Add(2);
                     return value;
                 })), "SafeModify");
                 Assert.AreEqual(new List<int>(){1,2,3}, Database3.SafeModifySync<List<int>>(id, (value =>
                 {
+                    Console.WriteLine("Executing SafeModify3");
                     value.Add(3);
                     return value;
                 })),"SafeModify");
