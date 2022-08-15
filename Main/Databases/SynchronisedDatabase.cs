@@ -142,9 +142,11 @@ namespace Main.Databases
              * If the current mod count is 4 and the modification request has mod count 5,
              * the network expects it to be executed next
              */
-            
+
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
 
+            Console.WriteLine("Found delayed request!");
+            
             bool incrementNext = false;
             
             //if the request is a failed modify request:

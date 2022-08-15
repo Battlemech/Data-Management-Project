@@ -51,6 +51,7 @@ namespace Main.Databases
                 //request was successful. Start modification process
                 if (success)
                 {
+                    Console.WriteLine("Executing now!");
                     SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, modCount);
                     
                     //increment mod count after modify operation is complete
@@ -61,6 +62,8 @@ namespace Main.Databases
                 //update failed get to allow deserialization of later remote set messages
                 if(!TryGetType(id)) _failedGets[id] = typeof(T);
 
+                Console.WriteLine("Delaying execution!");
+                
                 //enqueue failed request
                 EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify, true));
             });
