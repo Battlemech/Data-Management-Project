@@ -419,6 +419,14 @@ namespace Tests
             Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
             
             Console.WriteLine(LogWriter.StringifyCollection(Database1.Get<List<int>>(id)));
+            
+            Assert.AreEqual(addCount * 3, Database1.GetModCount(id));
+            Assert.AreEqual(addCount * 3, Database2.GetModCount(id));
+            Assert.AreEqual(addCount * 3, Database3.GetModCount(id));
+            
+            Assert.AreEqual(0, Database1.GetOngoingSets(id));
+            Assert.AreEqual(0, Database2.GetOngoingSets(id));
+            Assert.AreEqual(0, Database3.GetOngoingSets(id));
         }
 
         [Test]
