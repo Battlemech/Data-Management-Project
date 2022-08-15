@@ -437,7 +437,6 @@ namespace Tests
 
             for (int i = 1; i <= 10; i++)
             {
-                //todo: result of tests (pass) not shown
                 Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value => new List<int>() { 1 })), "SafeModify");
                 Assert.AreEqual(new List<int>(){1,2}, Database2.SafeModifySync<List<int>>(id, (value =>
                 {
@@ -449,6 +448,7 @@ namespace Tests
                     value.Add(3);
                     return value;
                 })),"SafeModify");
+                Console.WriteLine("SafeSets succeeded");
                 
                 //todo: result of tests (pass) not shown
                 TestUtility.AreEqual(i * 3, () => Database1.GetModCount(id), "ModCount");
