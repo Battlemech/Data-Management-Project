@@ -297,6 +297,14 @@ namespace Tests
             TestUtility.AreEqual(100, () => Database1.Get<int>(id));
             TestUtility.AreEqual(100, () => Database2.Get<int>(id));
             TestUtility.AreEqual(100, () => Database3.Get<int>(id));
+            
+            Assert.AreEqual(1, Database1.GetModCount(id));
+            Assert.AreEqual(1, Database2.GetModCount(id));
+            Assert.AreEqual(1, Database3.GetModCount(id));
+            
+            Assert.AreEqual(0, Database1.GetOngoingSets(id));
+            Assert.AreEqual(0, Database2.GetOngoingSets(id));
+            Assert.AreEqual(0, Database3.GetOngoingSets(id));
         }
         
         [Test]
@@ -435,8 +443,6 @@ namespace Tests
                 
                 Console.WriteLine($"Completed iteration {i}");
             }
-            
-
         }
     }
 }

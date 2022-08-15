@@ -6,6 +6,8 @@ namespace Main.Networking.Synchronisation.Client
 {
     public abstract class FailedModifyRequest : SetValueRequest
     {
+        public bool IncrementModCount { get; protected set; }
+        
         public abstract object RepeatModification(object current);
 
         public abstract Type GetDelegateType();
@@ -15,12 +17,13 @@ namespace Main.Networking.Synchronisation.Client
     {
         public readonly ModifyValueDelegate<T> Modify;
 
-        public FailedModifyRequest(string databaseId, string valueId, uint modCount, ModifyValueDelegate<T> modify)
+        public FailedModifyRequest(string databaseId, string valueId, uint modCount, ModifyValueDelegate<T> modify, bool incrementModCount = false)
         {
             DatabaseId = databaseId;
             ValueId = valueId;
             ModCount = modCount;
             Modify = modify;
+            IncrementModCount = incrementModCount;
         }
         
         public FailedModifyRequest(SetValueRequest request, ModifyValueDelegate<T> modify)

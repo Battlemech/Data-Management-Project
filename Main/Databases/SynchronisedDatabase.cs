@@ -145,18 +145,23 @@ namespace Main.Databases
             
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
 
+            bool incrementNext = false;
+            
             //if the request is a failed modify request:
             if (request is FailedModifyRequest modifyRequest)
             {
                 //repeat the operation with the up to date value
                 request.Value = Serialization.Serialize(modifyRequest.GetDelegateType(),modifyRequest.RepeatModification(result));
+
+                //check if modCount needs to be increased with delayed request
+                incrementNext = modifyRequest.IncrementModCount;
             }
 
             //send previously delayed request to server
             Client.SendMessage(new SetValueMessage(request));
 
             //execute delayed set locally
-            OnRemoteSet(id, request.Value, request.ModCount, false);
+            OnRemoteSet(id, request.Value, request.ModCount, incrementNext);
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Main.Databases
             byte[] bytes = Serialization.Serialize(Get<T>(id));
 
             //wait for access from server
-            uint modCount = IncrementModCount(id);
+            uint modCount = GetModCount(id);
             LockValueRequest request = new LockValueRequest
             {
                 DatabaseId = Id,
@@ -42,8 +42,6 @@ namespace Main.Databases
                 ModCount = modCount
             };
 
-            //todo: prevent processes like modify from being executed after, thinking they have the correct value
-            
             Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
                 if(lockReply == null) throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
@@ -54,17 +52,16 @@ namespace Main.Databases
                 if (success)
                 {
                     SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, modCount);
+                    //increment mod count after modify operation is complete
+                    IncrementModCount(id);
                     return;
                 }
 
                 //update failed get to allow deserialization of later remote set messages
                 if(!TryGetType(id)) _failedGets[id] = typeof(T);
 
-                //todo: what if remote set is received while client waits for request?
-                //can't use local mod count because it tracks locally expected, not remotely confirmed mod count
-                
                 //enqueue failed request
-                EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify));
+                EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify, true));
             });
         }
 

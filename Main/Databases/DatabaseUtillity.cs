@@ -68,7 +68,7 @@ namespace Main.Databases
             return modCount;
         }
 
-        private uint GetModCount(string id)
+        public uint GetModCount(string id)
         {
             lock (_modificationCount)
             {
