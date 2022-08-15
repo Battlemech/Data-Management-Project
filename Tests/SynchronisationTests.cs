@@ -450,12 +450,10 @@ namespace Tests
                 })),"SafeModify");
                 Console.WriteLine("SafeSets succeeded");
                 
-                //todo: result of tests (pass) not shown
-                TestUtility.AreEqual(i * 3, () => Database1.GetModCount(id), "ModCount");
-                TestUtility.AreEqual(i * 3, () => Database2.GetModCount(id), "ModCount");
-                TestUtility.AreEqual(i * 3, () => Database3.GetModCount(id), "ModCount");
-            
-                //todo: result of just this test shown
+                TestUtility.AreEqual((uint) i * 3, () => Database1.GetModCount(id), "ModCount");
+                TestUtility.AreEqual((uint) i * 3, () => Database2.GetModCount(id), "ModCount");
+                TestUtility.AreEqual((uint) i * 3, () => Database3.GetModCount(id), "ModCount");
+                
                 TestUtility.AreEqual(0, () => Database1.GetOngoingSets(id), "OngoingSets");
                 TestUtility.AreEqual(0, () => Database2.GetOngoingSets(id), "OngoingSets");
                 TestUtility.AreEqual(0, () => Database3.GetOngoingSets(id), "OngoingSets");

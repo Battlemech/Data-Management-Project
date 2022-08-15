@@ -9,7 +9,7 @@ namespace Main.Networking.Messaging.Client
     /// </summary>
     /// <remarks>
     /// The receiving thread is used to invoke message callbacks. This means that only one client callback
-    /// may be executed at the same time
+    /// will be executed at the same time
     /// </remarks>
     public partial class MessageClient : TcpClient
     {
