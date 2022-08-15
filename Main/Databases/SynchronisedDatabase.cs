@@ -143,6 +143,8 @@ namespace Main.Databases
              * the network expects it to be executed next
              */
 
+            Console.WriteLine($"Checking for delayed requests up to: {modCount + 1}");
+            
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
 
             Console.WriteLine("Found delayed request!");

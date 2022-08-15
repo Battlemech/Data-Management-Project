@@ -62,7 +62,7 @@ namespace Main.Databases
                 //update failed get to allow deserialization of later remote set messages
                 if(!TryGetType(id)) _failedGets[id] = typeof(T);
 
-                Console.WriteLine("Delaying execution!");
+                Console.WriteLine($"Delaying execution: {modCount}=>{lockReply.ExpectedModCount} !");
                 
                 //enqueue failed request
                 EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify, true));
