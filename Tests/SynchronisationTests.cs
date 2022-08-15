@@ -448,7 +448,6 @@ namespace Tests
                     value.Add(3);
                     return value;
                 })),"SafeModify");
-                Console.WriteLine("SafeSets succeeded");
                 
                 TestUtility.AreEqual((uint) i * 3, () => Database1.GetModCount(id), "ModCount");
                 TestUtility.AreEqual((uint) i * 3, () => Database2.GetModCount(id), "ModCount");
