@@ -52,6 +52,7 @@ namespace Main.Databases
                 if (success)
                 {
                     SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, modCount);
+                    
                     //increment mod count after modify operation is complete
                     IncrementModCount(id);
                     return;

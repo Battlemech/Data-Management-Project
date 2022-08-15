@@ -435,19 +435,30 @@ namespace Tests
             string id = nameof(TestSafeModifySync);
             Setup(id);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 1; i <= 10; i++)
             {
-                Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value => new List<int>() { 1 })));
+                //todo: result of tests (pass) not shown
+                Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value => new List<int>() { 1 })), "SafeModify");
                 Assert.AreEqual(new List<int>(){1,2}, Database2.SafeModifySync<List<int>>(id, (value =>
                 {
                     value.Add(2);
                     return value;
-                })));
+                })), "SafeModify");
                 Assert.AreEqual(new List<int>(){1,2,3}, Database3.SafeModifySync<List<int>>(id, (value =>
                 {
                     value.Add(3);
                     return value;
-                })));   
+                })),"SafeModify");
+                
+                //todo: result of tests (pass) not shown
+                TestUtility.AreEqual(i * 3, () => Database1.GetModCount(id), "ModCount");
+                TestUtility.AreEqual(i * 3, () => Database2.GetModCount(id), "ModCount");
+                TestUtility.AreEqual(i * 3, () => Database3.GetModCount(id), "ModCount");
+            
+                //todo: result of just this test shown
+                TestUtility.AreEqual(0, () => Database1.GetOngoingSets(id), "OngoingSets");
+                TestUtility.AreEqual(0, () => Database2.GetOngoingSets(id), "OngoingSets");
+                TestUtility.AreEqual(0, () => Database3.GetOngoingSets(id), "OngoingSets");
                 
                 Console.WriteLine($"Completed iteration {i}");
             }
