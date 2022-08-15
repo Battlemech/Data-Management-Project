@@ -4,6 +4,13 @@ using Main.Utility;
 
 namespace Main.Networking.Messaging.Client
 {
+    /// <summary>
+    /// Client capable of sending and receiving messages
+    /// </summary>
+    /// <remarks>
+    /// The receiving thread is used to invoke message callbacks. This means that only one client callback
+    /// may be executed at the same time
+    /// </remarks>
     public partial class MessageClient : TcpClient
     {
         private readonly NetworkSerializer _networkSerializer = new NetworkSerializer();
@@ -33,6 +40,7 @@ namespace Main.Networking.Messaging.Client
         {
             foreach (byte[] bytes in _networkSerializer.Deserialize(buffer, offset, size))
             {
+                //todo: use deserialized message as only parameter-> Avoid deserializing multiple times?
                 OnReceived(Serialization.Deserialize<Message>(bytes), bytes);    
             }
         }
