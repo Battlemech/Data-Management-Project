@@ -102,6 +102,8 @@ namespace Main.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
         {
+            Console.WriteLine($"{this} is processing modCount={modCount}");
+            
             //save result in case its going to be required later for failed modification requests
             object result = null;
             
@@ -121,6 +123,9 @@ namespace Main.Databases
             //increase modification count after updating local value
             if (incrementModCount) IncrementModCount(id);
             
+            //track remotely confirmed mod count
+            lock (_confirmedModCount) _confirmedModCount[id] = modCount;
+
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);
 
@@ -143,11 +148,9 @@ namespace Main.Databases
              * the network expects it to be executed next
              */
 
-            Console.WriteLine($"Checking for delayed requests up to: {modCount + 1}");
-            
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
 
-            Console.WriteLine("Found delayed request!");
+            Console.WriteLine(this + $" Found delayed request: modCount={request.ModCount}");
             
             bool incrementNext = false;
             

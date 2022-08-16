@@ -7,7 +7,15 @@ namespace Main.Databases
 {
     public partial class Database
     {
+        /// <summary>
+        /// Tracks the locally expected mod count
+        /// </summary>
         private readonly Dictionary<string, uint> _modificationCount = new Dictionary<string, uint>();
+        
+        /// <summary>
+        /// Tracks which modification count was confirmed by the server
+        /// </summary>
+        private readonly Dictionary<string, uint> _confirmedModCount = new Dictionary<string, uint>();
 
         /// <summary>
         /// Contains a list of failed set requests, containing the expected modification count
@@ -75,6 +83,11 @@ namespace Main.Databases
                 return _modificationCount.TryGetValue(id, out uint modCount) ? modCount : 0;
             }
         }
+
+        private bool TryGetConfirmedModCount(string id, out uint modCount)
+        {
+            lock (_confirmedModCount) return _confirmedModCount.TryGetValue(id, out modCount);
+        }
         
         private bool TryGetType(string id, out Type type)
         {
@@ -137,7 +150,8 @@ namespace Main.Databases
 
         public override string ToString()
         {
-            return _isSynchronised ? $"DB({Client.Id})-{Id}" : $"DB-{Id}";
+            //todo: replace with: return _isSynchronised ? $"DB({Client})-{Id}" : $"DB-{Id}";
+            return _isSynchronised ? $"{Client}" : $"DB-{Id}";
         }
     }
 }

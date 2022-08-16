@@ -63,10 +63,13 @@ namespace Main.Networking.Synchronisation.Server
 
                 if (!success)
                 {
-                    LogWriter.LogError($"{session} tried to set data globally in wrong execution order!");
+                    LogWriter.LogError($"{session} tried to set data globally in wrong execution order!" +
+                                       $" Can't execute modCount={message.ModCount}");
                     return;
                 }
 
+                Console.WriteLine($"---Server: Processing modCount={message.ModCount}");
+                
                 BroadcastToOthers(message, session);
             }));
             

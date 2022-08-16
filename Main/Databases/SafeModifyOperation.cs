@@ -45,25 +45,36 @@ namespace Main.Databases
             Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
                 if(lockReply == null) throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
-                
-                bool success = modCount == lockReply.ExpectedModCount;
 
-                //request was successful. Start modification process
-                if (success)
+                uint expectedModCount = lockReply.ExpectedModCount;
+                
+                //modCount was like client expected
+                if (modCount == expectedModCount)
                 {
-                    Console.WriteLine("Executing now!");
-                    SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, modCount);
+                    Console.WriteLine(this + $" Executing modCount={expectedModCount}!");
+                    SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, expectedModCount);
+                    
+                    //increment mod count after modify operation is complete
+                    IncrementModCount(id);
+                    return;
+                }
+                
+                //modCount wasn't like client expected, but client updated modCount while waiting for a reply
+                if (TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+                {
+                    //todo: instead of getting the current value, function requires last value which was confirmed from server
+                    SetValueLocally(id, Get<T>(id), modify, expectedModCount);
                     
                     //increment mod count after modify operation is complete
                     IncrementModCount(id);
                     return;
                 }
 
+                Console.WriteLine(this + $" Delaying execution: {modCount}=>{expectedModCount}!");
+                
                 //update failed get to allow deserialization of later remote set messages
                 if(!TryGetType(id)) _failedGets[id] = typeof(T);
 
-                Console.WriteLine($"Delaying execution: {modCount}=>{lockReply.ExpectedModCount} !");
-                
                 //enqueue failed request
                 EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify, true));
             });
