@@ -102,7 +102,6 @@ namespace Main.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
         {
-            Console.WriteLine($"{this} is processing modCount={modCount}");
             //save result in case its going to be required later for failed modification requests
             object result = null;
             
@@ -157,8 +156,6 @@ namespace Main.Databases
 
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
 
-            Console.WriteLine(this + $" Found delayed request: modCount={request.ModCount}");
-            
             bool incrementNext = false;
             
             //if the request is a failed modify request:

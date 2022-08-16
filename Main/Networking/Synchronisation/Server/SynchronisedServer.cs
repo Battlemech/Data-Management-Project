@@ -68,8 +68,6 @@ namespace Main.Networking.Synchronisation.Server
                     return;
                 }
 
-                Console.WriteLine($"---Server: Processing modCount={message.ModCount}");
-                
                 BroadcastToOthers(message, session);
             }));
             

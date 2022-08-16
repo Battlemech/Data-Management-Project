@@ -111,7 +111,7 @@ namespace Tests
             Setup(nameof(TestConcurrentSets));
             string id = nameof(TestConcurrentSets);
             
-            const int setCount = 20;
+            const int setCount = 200;
 
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Task[] tasks = new[]
@@ -412,7 +412,7 @@ namespace Tests
                         return false;
                     }
                     return true;
-                }));
+                }), "Value Order");
             }
             
             stopwatch.Stop();

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Utility;
@@ -44,7 +45,7 @@ namespace Main.Databases
             }));
             internalTask.Start(Scheduler);
         }
-        
+
         private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
         {
             uint modCount = IncrementModCount(id);
@@ -58,20 +59,42 @@ namespace Main.Databases
             };
 
             //start saving bytes which arrive from network in case they are required later
-            //IncrementPendingCount(id); //todo
+            IncrementPendingCount(id);
             
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
-                bool success = reply.ExpectedModCount == modCount;
+                uint expectedModCount = reply.ExpectedModCount;
+                
+                //modCount was like client expected
+                bool success = expectedModCount == modCount;
 
-                if (success) return;
+                //modCount wasn't like client expected, but client updated modCount while waiting for a reply
+                if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+                {
+                    //repeat operation with last confirmed value
+                    RepeatModification(id, Serialization.Deserialize<T>(GetConfirmedValue(id)), modify);
 
+                    success = true;
+                    
+                    //todo: this corner-case is difficult to reproduce and almost never appears. Design test?
+                }
+                
+                //bytes no longer need to be saved for this request
+                DecrementPendingCount(id);
+                
+                if(success) return;
+                
                 //update queue with expected modification count
                 request.ModCount = reply.ExpectedModCount;
 
                 //enqueue the request: It will be processed later
                 EnqueueFailedRequest(new FailedModifyRequest<T>(request, modify));
             });
+        }
+
+        private void RepeatModification<T>(string id, T current, ModifyValueDelegate<T> modify)
+        {
+            
         }
     }
 }
