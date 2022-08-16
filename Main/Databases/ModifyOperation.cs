@@ -71,12 +71,11 @@ namespace Main.Databases
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
                 if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
-                    //repeat operation with last confirmed value
-                    RepeatModification(id, Serialization.Deserialize<T>(GetConfirmedValue(id)), modify);
-
-                    success = true;
+                    //todo: failed to reproduce this corner case randomly. Design test?
                     
-                    //todo: this corner-case is difficult to reproduce and almost never appears. Design test?
+                    //repeat operation with last confirmed value
+                    ExecuteSynchronisedModification(id, Serialization.Deserialize<T>(GetConfirmedValue(id)), modify, expectedModCount);
+                    success = true;
                 }
                 
                 //bytes no longer need to be saved for this request
@@ -90,11 +89,6 @@ namespace Main.Databases
                 //enqueue the request: It will be processed later
                 EnqueueFailedRequest(new FailedModifyRequest<T>(request, modify));
             });
-        }
-
-        private void RepeatModification<T>(string id, T current, ModifyValueDelegate<T> modify)
-        {
-            
         }
     }
 }

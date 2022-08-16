@@ -197,7 +197,7 @@ namespace Tests
             Setup(nameof(TestConcurrentAdd));
             string id = nameof(TestConcurrentAdd);
             
-            const int addCount = 100;
+            const int addCount = 1000;
             
             //throw exception if value is overwritten during execution
             Database1.AddCallback<List<int>>(id, value =>

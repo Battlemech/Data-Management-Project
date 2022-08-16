@@ -28,7 +28,7 @@ namespace Main.Databases
             //if client isn't connected: No need to request access
             if (!_isSynchronised)
             {
-                SetValueLocally(id, modify);
+                ExecuteModification(id, modify);
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace Main.Databases
                 //if request was successful: execute modify now
                 if (success)
                 {
-                    SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, expectedModCount);
+                    ExecuteSynchronisedModification(id, Serialization.Deserialize<T>(bytes), modify, expectedModCount);
                     return;
                 }
                     
@@ -103,7 +103,7 @@ namespace Main.Databases
             throw new Exception($"Failed to execute modify operation within {timeout} ms!");
         }
 
-        private void SetValueLocally<T>(string id, ModifyValueDelegate<T> modify)
+        private void ExecuteModification<T>(string id, ModifyValueDelegate<T> modify)
         {
             byte[] serializedBytes;
             //set value in dictionary
@@ -125,7 +125,7 @@ namespace Main.Databases
             internalTask.Start(Scheduler);
         }
 
-        private void SetValueLocally<T>(string id, T current, ModifyValueDelegate<T> modify, uint modCount)
+        private void ExecuteSynchronisedModification<T>(string id, T current, ModifyValueDelegate<T> modify, uint modCount)
         {
             byte[] serializedBytes;
 

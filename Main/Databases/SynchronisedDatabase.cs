@@ -75,11 +75,30 @@ namespace Main.Databases
                 ModCount = modCount,
                 Value = value
             };
+            
+            //start saving bytes which arrive from network in case they are required later
+            IncrementPendingCount(id);
 
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
-                bool success = reply.ExpectedModCount == modCount;
+                uint expectedModCount = reply.ExpectedModCount;
+                
+                //modCount was like client expected
+                bool success = expectedModCount == modCount;
 
+                //modCount wasn't like client expected, but client updated modCount while waiting for a reply
+                if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+                {
+                    //repeat operation with last confirmed value
+                    
+                    success = true;
+                    
+                    //todo: this corner-case is difficult to reproduce and almost never appears. Design test?
+                }
+                
+                //bytes no longer need to be saved for this request
+                DecrementPendingCount(id);
+                
                 if (success) return;
 
                 //update queue with expected modification count
