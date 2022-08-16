@@ -70,6 +70,8 @@ namespace Main.Databases
                      * Although saving current confirmed value will increase complexity significantly. Feature not recommended.
                      */
                     
+                    //todo: also try to execute other failed requests instantly when reply is received?
+                    
                     SetValueLocally(id, Get<T>(id), modify, expectedModCount);
                     
                     //increment mod count after modify operation is complete
