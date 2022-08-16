@@ -103,13 +103,6 @@ namespace Main.Databases
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
         {
             Console.WriteLine($"{this} is processing modCount={modCount}");
-            
-            //save old current value in case it is required for a pending modification
-            if (RepliesPending(id))
-            {
-                
-            }
-            
             //save result in case its going to be required later for failed modification requests
             object result = null;
             
@@ -130,7 +123,13 @@ namespace Main.Databases
             //increase modification count after updating local value
             if (incrementModCount) IncrementModCount(id);
             
-            //track remotely confirmed mod count
+            //save current value in case it is required for a pending modification
+            if (RepliesPending(id))
+            {
+                _confirmedValues[id] = value;
+            }
+            
+            //track remotely confirmed mod count. Increment after byte value was saved
             lock (_confirmedModCount) _confirmedModCount[id] = modCount;
 
             //save data persistently if necessary
@@ -141,12 +140,13 @@ namespace Main.Databases
             {
                 //save data to be deserialized
                 _serializedData[id] = value;
-                return;
             }
-            
-            //invoke callbacks
-            //invocation not necessary if no type could be found (success is false): There are no callbacks
-            _callbackHandler.InvokeCallbacks(id, value);
+            else
+            {
+                //invoke callbacks
+                //invocation not necessary if no type could be found (success is false): There are no callbacks
+                _callbackHandler.InvokeCallbacks(id, value);  //todo: call earlier to increase performance? 
+            }
 
             /*
              * try processing a local delayed modification request.

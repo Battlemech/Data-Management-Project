@@ -29,7 +29,7 @@ namespace Main.Databases
             {
                 if (!_pendingReplies.TryGetValue(id, out int pendingCount) || pendingCount == 0)
                 {
-                    throw new Exception($"Tried to decrement the pending reply count of {id} to below 0!");
+                    throw new Exception($"Tried to decrement the pending reply count of {id} below 0!");
                 }
 
                 //decrement pending replies
@@ -54,7 +54,7 @@ namespace Main.Databases
         {
             lock (_pendingReplies)
             {
-                return _pendingReplies.TryGetValue(id, out int pendingCount);
+                return _pendingReplies.ContainsKey(id);
             }
         }
     }

@@ -44,54 +44,36 @@ namespace Main.Databases
                 ModCount = modCount
             };
 
+            //start saving bytes which arrive from network in case they are required later
             IncrementPendingCount(id);
             
             Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
-                //todo: call later, use persistently saved data in line 70
-                DecrementPendingCount(id);
-                
                 if(lockReply == null) throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
 
                 uint expectedModCount = lockReply.ExpectedModCount;
-                
+                    
                 //modCount was like client expected
-                if (modCount == expectedModCount)
-                {
-                    Console.WriteLine(this + $" Executing modCount={expectedModCount}!");
-                    SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, expectedModCount);
+                bool success = modCount == expectedModCount;
                     
-                    //increment mod count after modify operation is complete
-                    IncrementModCount(id);
-                    return;
-                }
-                
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
-                if (TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+                if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
-                    /*
-                     * instead of getting the current value, function requires last value which was confirmed from server
-                     * to avoid inconsistencies noted in remark of function
-                     * Although saving current confirmed value will increase complexity significantly. Feature not recommended.
-                     */
+                    success = true;
+                    bytes = GetConfirmedValue(id);
+                }
                     
-                    /*
-                     * todo: also try to execute other failed requests instantly when reply is received?
-                     * -> BeforeSet: Save current byte value if not confirmed?
-                     *
-                     * ->> todo: values may not be modified while we wait for a reply??? -> While queued requests exist?
-                     * ->> Alternative: Save
-                     */
+                //bytes no longer need to be saved for this request
+                DecrementPendingCount(id);
                     
-                    SetValueLocally(id, Get<T>(id), modify, expectedModCount);
-                    
-                    //increment mod count after modify operation is complete
-                    IncrementModCount(id);
+                //if request was successful: execute modify now
+                if (success)
+                {
+                    SetValueLocally(id, Serialization.Deserialize<T>(bytes), modify, expectedModCount);
                     return;
                 }
-
-                Console.WriteLine(this + $" Delaying execution: {modCount}=>{expectedModCount}!");
-                
+                    
+                //request failed. Execute modify later
                 //update failed get to allow deserialization of later remote set messages
                 if(!TryGetType(id)) _failedGets[id] = typeof(T);
 
@@ -155,19 +137,17 @@ namespace Main.Databases
                 serializedBytes = Serialization.Serialize(value);
             }
             
-            //process the set if database is synchronised or persistent
-            Task internalTask = new Task((() =>
-            {
-                //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-                //allowing the delegation of callbacks to a task
-                _callbackHandler.InvokeCallbacks(id, serializedBytes);
+            //increment mod count after local value was updated
+            IncrementModCount(id);
+            
+            //invoke local callbacks with new value
+            _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
-                //notify peers of new value
-                Client.SendMessage(new SetValueMessage(Id, id, modCount, serializedBytes));
-
-                if(_isPersistent) OnSetPersistent(id, serializedBytes);
-            }));
-            internalTask.Start(Scheduler);
+            //notify peers of new value
+            Client.SendMessage(new SetValueMessage(Id, id, modCount, serializedBytes));
+            
+            //save data persistently if required
+            if(_isPersistent) OnSetPersistent(id, serializedBytes);
         }
     }
 }

@@ -107,6 +107,16 @@ namespace Main.Databases
             return true;
         }
 
+        private byte[] GetConfirmedValue(string id)
+        {
+            lock (_confirmedValues)
+            {
+                if (_confirmedValues.TryGetValue(id, out byte[] value)) return value;
+            }
+
+            throw new Exception($"No value saved with id {id}");
+        }
+
         public override string ToString()
         {
             //todo: replace with: return _isSynchronised ? $"DB({Client})-{Id}" : $"DB-{Id}";
