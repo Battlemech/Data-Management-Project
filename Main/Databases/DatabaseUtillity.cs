@@ -16,12 +16,6 @@ namespace Main.Databases
         //keeps track of all get attempts which failed to return an object
         private readonly Dictionary<string, Type> _failedGets = new Dictionary<string, Type>();
 
-        /// <summary>
-        /// Serialized confirmed bytes by remote.
-        /// Only saved while replies are pending
-        /// </summary>
-        private readonly Dictionary<string, byte[]> _confirmedValues = new Dictionary<string, byte[]>();
-
         public SynchronisedClient Client
         {
             get => _client;
@@ -105,16 +99,6 @@ namespace Main.Databases
             }
 
             return true;
-        }
-
-        private byte[] GetConfirmedValue(string id)
-        {
-            lock (_confirmedValues)
-            {
-                if (_confirmedValues.TryGetValue(id, out byte[] value)) return value;
-            }
-
-            throw new Exception($"No value saved with id {id}");
         }
 
         public override string ToString()

@@ -57,6 +57,9 @@ namespace Main.Databases
                 Value = value
             };
 
+            //start saving bytes which arrive from network in case they are required later
+            //IncrementPendingCount(id); //todo
+            
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 bool success = reply.ExpectedModCount == modCount;
