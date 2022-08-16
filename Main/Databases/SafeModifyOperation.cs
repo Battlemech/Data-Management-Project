@@ -15,11 +15,13 @@ namespace Main.Databases
         /// Waits until the server grants access to the value until the operation is executed.
         /// This ensures that the "modify" delegate is executed exactly once.
         /// Slower than Modify() because current modCount is requested from server. Use Modify() if possible
-        /// </summary>
+        /// <list type="bullet"> <item>
+        /// Warning: Operation can produce inconsistent values if any operation except SafeModify() is used
+        /// for the same id while the modification process is ongoing</item> </list> </summary>
         /// <remarks>
-        /// The value might not be set locally after this operation was executed. If you want to make sure that
-        /// the logic you execute happens after the value was set include it in the "modify" delegate or use
-        /// SafeModifySync()
+        /// The value will not be set locally after this function was called, only once the server allowed the operation.
+        /// If you want to make sure that the logic you execute happens after the value was set
+        /// include it in the "modify" delegate or use SafeModifySync().
         /// </remarks>
         public void SafeModify<T>(string id, ModifyValueDelegate<T> modify)
         {
@@ -62,7 +64,12 @@ namespace Main.Databases
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
                 if (TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
-                    //todo: instead of getting the current value, function requires last value which was confirmed from server
+                    /*
+                     * instead of getting the current value, function requires last value which was confirmed from server
+                     * to avoid inconsistencies noted in remark of function
+                     * Although saving current confirmed value will increase complexity significantly. Feature not recommended.
+                     */
+                    
                     SetValueLocally(id, Get<T>(id), modify, expectedModCount);
                     
                     //increment mod count after modify operation is complete
