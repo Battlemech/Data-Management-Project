@@ -59,8 +59,8 @@ namespace Main.Databases
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
                 if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
-                    success = true;
                     bytes = GetConfirmedValue(id);
+                    success = true;
                 }
                     
                 //bytes no longer need to be saved for this request
@@ -69,7 +69,8 @@ namespace Main.Databases
                 //if request was successful: execute modify now
                 if (success)
                 {
-                    ExecuteSynchronisedModification(id, Serialization.Deserialize<T>(bytes), modify, expectedModCount);
+                    T newValue = modify.Invoke(Serialization.Deserialize<T>(bytes));
+                    ExecuteDelayedSet(id, Serialization.Serialize(newValue), expectedModCount, true);
                     return;
                 }
                     
@@ -123,31 +124,6 @@ namespace Main.Databases
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             internalTask.Start(Scheduler);
-        }
-
-        private void ExecuteSynchronisedModification<T>(string id, T current, ModifyValueDelegate<T> modify, uint modCount)
-        {
-            byte[] serializedBytes;
-
-            //set value in dictionary
-            lock (_values)
-            {
-                T value = modify.Invoke(current);
-                _values[id] = value;
-                serializedBytes = Serialization.Serialize(value);
-            }
-            
-            //increment mod count after local value was updated
-            IncrementModCount(id);
-            
-            //invoke local callbacks with new value
-            _callbackHandler.InvokeCallbacks(id, serializedBytes);
-                
-            //notify peers of new value
-            Client.SendMessage(new SetValueMessage(Id, id, modCount, serializedBytes));
-            
-            //save data persistently if required
-            if(_isPersistent) OnSetPersistent(id, serializedBytes);
         }
     }
 }

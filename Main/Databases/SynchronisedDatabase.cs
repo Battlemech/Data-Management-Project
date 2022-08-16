@@ -76,30 +76,23 @@ namespace Main.Databases
                 Value = value
             };
             
-            //start saving bytes which arrive from network in case they are required later
-            IncrementPendingCount(id);
+            //no need to increment pending request count: previous data is simply overwritten by operation
 
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 uint expectedModCount = reply.ExpectedModCount;
                 
                 //modCount was like client expected
-                bool success = expectedModCount == modCount;
+                if(expectedModCount == modCount) return;
 
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
-                if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+                if (TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
-                    //repeat operation with last confirmed value
-                    
-                    success = true;
-                    
                     //todo: this corner-case is difficult to reproduce and almost never appears. Design test?
+                    //repeat operation with last confirmed value
+                    ExecuteDelayedSet(id, value, expectedModCount, false);
+                    return;
                 }
-                
-                //bytes no longer need to be saved for this request
-                DecrementPendingCount(id);
-                
-                if (success) return;
 
                 //update queue with expected modification count
                 request.ModCount = reply.ExpectedModCount;

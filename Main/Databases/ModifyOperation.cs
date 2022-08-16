@@ -71,10 +71,9 @@ namespace Main.Databases
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
                 if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
-                    //todo: failed to reproduce this corner case randomly. Design test?
-                    
-                    //repeat operation with last confirmed value
-                    ExecuteSynchronisedModification(id, Serialization.Deserialize<T>(GetConfirmedValue(id)), modify, expectedModCount);
+                    //repeat operation //todo: failed to reproduce this corner case randomly. Design test?
+                    T newValue = modify.Invoke(Serialization.Deserialize<T>(GetConfirmedValue(id)));
+                    ExecuteDelayedSet(id, Serialization.Serialize(newValue), expectedModCount, false);
                     success = true;
                 }
                 
@@ -89,6 +88,15 @@ namespace Main.Databases
                 //enqueue the request: It will be processed later
                 EnqueueFailedRequest(new FailedModifyRequest<T>(request, modify));
             });
+        }
+
+        private void ExecuteDelayedSet(string id, byte[] serializedBytes, uint modCount, bool incrementModCount)
+        {
+            //notify peers of new value
+            Client.SendMessage(new SetValueMessage(Id, id, modCount, serializedBytes));
+                    
+            //update values locally
+            OnRemoteSet(id, serializedBytes, modCount, incrementModCount);
         }
     }
 }
