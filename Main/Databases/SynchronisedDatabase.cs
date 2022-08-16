@@ -104,9 +104,16 @@ namespace Main.Databases
         {
             Console.WriteLine($"{this} is processing modCount={modCount}");
             
+            //save old current value in case it is required for a pending modification
+            if (RepliesPending(id))
+            {
+                
+            }
+            
             //save result in case its going to be required later for failed modification requests
             object result = null;
             
+            //update local value
             bool success;
             lock (_values)
             {

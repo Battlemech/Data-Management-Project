@@ -8,16 +8,6 @@ namespace Main.Databases
     public partial class Database
     {
         /// <summary>
-        /// Tracks the locally expected mod count
-        /// </summary>
-        private readonly Dictionary<string, uint> _modificationCount = new Dictionary<string, uint>();
-        
-        /// <summary>
-        /// Tracks which modification count was confirmed by the server
-        /// </summary>
-        private readonly Dictionary<string, uint> _confirmedModCount = new Dictionary<string, uint>();
-
-        /// <summary>
         /// Contains a list of failed set requests, containing the expected modification count
         /// </summary>
         private readonly Dictionary<string, Queue<SetValueRequest>> _failedRequests =
@@ -25,6 +15,12 @@ namespace Main.Databases
         
         //keeps track of all get attempts which failed to return an object
         private readonly Dictionary<string, Type> _failedGets = new Dictionary<string, Type>();
+
+        /// <summary>
+        /// Serialized confirmed bytes by remote.
+        /// Only saved while replies are pending
+        /// </summary>
+        private readonly Dictionary<string, byte[]> _confirmedValues = new Dictionary<string, byte[]>();
 
         public SynchronisedClient Client
         {
@@ -52,43 +48,6 @@ namespace Main.Databases
             }
         }
 
-        /// <summary>
-        /// Increase modification count by 1 after retrieving it
-        /// </summary>
-        private uint IncrementModCount(string id)
-        {
-            //increase modification count by one
-            uint modCount;
-            lock (_modificationCount)
-            {
-                bool success = _modificationCount.TryGetValue(id, out modCount);
-
-                if (success)
-                {
-                    _modificationCount[id] = modCount + 1;
-                }
-                else
-                {
-                    _modificationCount.Add(id, 1);
-                }
-            }
-
-            return modCount;
-        }
-
-        public uint GetModCount(string id)
-        {
-            lock (_modificationCount)
-            {
-                return _modificationCount.TryGetValue(id, out uint modCount) ? modCount : 0;
-            }
-        }
-
-        private bool TryGetConfirmedModCount(string id, out uint modCount)
-        {
-            lock (_confirmedModCount) return _confirmedModCount.TryGetValue(id, out modCount);
-        }
-        
         private bool TryGetType(string id, out Type type)
         {
             //try retrieving type from currently saved objects

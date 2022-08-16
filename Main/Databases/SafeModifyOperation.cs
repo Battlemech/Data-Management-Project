@@ -44,8 +44,13 @@ namespace Main.Databases
                 ModCount = modCount
             };
 
+            IncrementPendingCount(id);
+            
             Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
+                //todo: call later, use persistently saved data in line 70
+                DecrementPendingCount(id);
+                
                 if(lockReply == null) throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
 
                 uint expectedModCount = lockReply.ExpectedModCount;
@@ -70,7 +75,13 @@ namespace Main.Databases
                      * Although saving current confirmed value will increase complexity significantly. Feature not recommended.
                      */
                     
-                    //todo: also try to execute other failed requests instantly when reply is received?
+                    /*
+                     * todo: also try to execute other failed requests instantly when reply is received?
+                     * -> BeforeSet: Save current byte value if not confirmed?
+                     *
+                     * ->> todo: values may not be modified while we wait for a reply??? -> While queued requests exist?
+                     * ->> Alternative: Save
+                     */
                     
                     SetValueLocally(id, Get<T>(id), modify, expectedModCount);
                     
