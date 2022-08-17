@@ -197,7 +197,7 @@ namespace Tests
             Setup(nameof(TestConcurrentAdd));
             string id = nameof(TestConcurrentAdd);
             
-            const int addCount = 5000;
+            const int addCount = 2000;
             
             //throw exception if value is overwritten during execution
             Database1.AddCallback<List<int>>(id, value =>
@@ -259,7 +259,6 @@ namespace Tests
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
                 TestUtility.IsChanging(0, () => database.Scheduler.QueuedTasksCount, "Internal tasks");
-                //TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), "Internal tasks", 10000);
             }
             Console.WriteLine($"All adds completed internally after {stopwatch.ElapsedMilliseconds} ms");
 
@@ -280,6 +279,8 @@ namespace Tests
                     }
                     return true;
                 }));
+                
+                Assert.AreEqual(addCount * 3, database.Get<List<int>>(id).Count, "ElementCount - Late check");
             }
             
             stopwatch.Stop();

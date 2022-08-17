@@ -43,7 +43,7 @@ namespace Tests
         }
 
         public static void IsChanging(int expected, GetValueDelegate<int> valueDelegate, string testName = "Test",
-            int waitTime = 1000, int maxFailCount = 10)
+            int maxFailCount = 50, int maxWaitTime = 1000)
         {
             int tryCount = 0;
             int failCount = 0;
@@ -58,8 +58,12 @@ namespace Tests
             Stopwatch stopwatch = Stopwatch.StartNew();
             while (current != expected)
             {
+                //calculate wait time of this iteration
+                int t = 24 + (int) Math.Pow(1.5, failCount);
+                if (t < 0 || t > maxWaitTime) t = maxWaitTime;
+
                 //wait for value to change
-                Thread.Sleep(waitTime + tryCount);
+                Thread.Sleep(t);
                 
                 //invoke test again
                 int newValue = valueDelegate.Invoke();
@@ -68,6 +72,7 @@ namespace Tests
                 if (newValue == current)
                 {
                     failCount++;
+                    
                     if (failCount >= maxFailCount)
                     {
                         //try assertion one last time
@@ -75,6 +80,11 @@ namespace Tests
                             testName + " failed after " + GetElapsedTime(tryCount, stopwatch) + 
                             ". Average change per try: " + averageChange.Average());
                     }
+                }
+                else
+                {
+                    //reset fail count
+                    failCount = 0;
                 }
                 
                 averageChange.Add(newValue - current);

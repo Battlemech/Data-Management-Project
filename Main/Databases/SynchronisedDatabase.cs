@@ -114,9 +114,6 @@ namespace Main.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
         {
-            //save result in case its going to be required later for failed modification requests
-            object result = null;
-            
             //update local value
             bool success;
             lock (_values)
@@ -124,11 +121,8 @@ namespace Main.Databases
                 //retrieve type from object
                 success = TryGetType(id, out Type type);
                 
-                if (success)
-                {
-                    result = Serialization.Deserialize(value, type);
-                    _values[id] = result;
-                }
+                //save value locally
+                if (success) _values[id] = Serialization.Deserialize(value, type);
             }
             
             //increase modification count after updating local value
@@ -174,8 +168,11 @@ namespace Main.Databases
             if (request is FailedModifyRequest modifyRequest)
             {
                 //repeat the operation with the up to date value
-                request.Value = Serialization.Serialize(modifyRequest.GetDelegateType(),modifyRequest.RepeatModification(result));
-
+                Type type = modifyRequest.GetDelegateType();
+                
+                //deserialize value again because the locally saved remote value might have been modified in the meantime
+                request.Value = Serialization.Serialize(type,modifyRequest.RepeatModification(Serialization.Deserialize(value, type)));
+                
                 //check if modCount needs to be increased with delayed request
                 incrementNext = modifyRequest.IncrementModCount;
             }
