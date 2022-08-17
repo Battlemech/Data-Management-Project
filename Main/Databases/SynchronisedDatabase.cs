@@ -75,12 +75,24 @@ namespace Main.Databases
                 ModCount = modCount,
                 Value = value
             };
+            
+            //no need to increment pending request count: previous data is simply overwritten by operation
 
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
-                bool success = reply.ExpectedModCount == modCount;
+                uint expectedModCount = reply.ExpectedModCount;
+                
+                //modCount was like client expected
+                if(expectedModCount == modCount) return;
 
-                if (success) return;
+                //modCount wasn't like client expected, but client updated modCount while waiting for a reply
+                if (TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+                {
+                    //todo: this corner-case is difficult to reproduce and almost never appears. Design test?
+                    //repeat operation with last confirmed value
+                    ExecuteDelayedSet(id, value, expectedModCount, false);
+                    return;
+                }
 
                 //update queue with expected modification count
                 request.ModCount = reply.ExpectedModCount;
@@ -105,6 +117,7 @@ namespace Main.Databases
             //save result in case its going to be required later for failed modification requests
             object result = null;
             
+            //update local value
             bool success;
             lock (_values)
             {
@@ -121,6 +134,15 @@ namespace Main.Databases
             //increase modification count after updating local value
             if (incrementModCount) IncrementModCount(id);
             
+            //save current value in case it is required for a pending modification
+            if (RepliesPending(id))
+            {
+                _confirmedValues[id] = value;
+            }
+            
+            //track remotely confirmed mod count. Increment after byte value was saved
+            lock (_confirmedModCount) _confirmedModCount[id] = modCount;
+
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);
 
@@ -129,12 +151,13 @@ namespace Main.Databases
             {
                 //save data to be deserialized
                 _serializedData[id] = value;
-                return;
             }
-            
-            //invoke callbacks
-            //invocation not necessary if no type could be found (success is false): There are no callbacks
-            _callbackHandler.InvokeCallbacks(id, value);
+            else
+            {
+                //invoke callbacks
+                //invocation not necessary if no type could be found (success is false): There are no callbacks
+                _callbackHandler.InvokeCallbacks(id, value);  //todo: call earlier to increase performance? 
+            }
 
             /*
              * try processing a local delayed modification request.
@@ -143,12 +166,8 @@ namespace Main.Databases
              * the network expects it to be executed next
              */
 
-            Console.WriteLine($"Checking for delayed requests up to: {modCount + 1}");
-            
             if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
 
-            Console.WriteLine("Found delayed request!");
-            
             bool incrementNext = false;
             
             //if the request is a failed modify request:

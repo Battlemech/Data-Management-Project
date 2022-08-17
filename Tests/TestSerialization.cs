@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
 using Main.Utility;
@@ -149,6 +152,34 @@ namespace Tests
             TestClass derivedCopy = Serialization.Deserialize<TestClass>(localBytes);
             Assert.AreEqual(testClass2.Count, derivedCopy.Count);
             Assert.AreEqual(testClass2.Message, derivedCopy.Message);
+        }
+
+        [Test]
+        public static void TestThreadedPerformance()
+        {
+            int threadCount = 100;
+            int listCount = 10000;
+            
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            Task[] tasks = new Task[threadCount];
+
+            for (int i = 0; i < threadCount; i++)
+            {
+                tasks[i] = Task.Run((() =>
+                {
+                    Assert.IsTrue(resetEvent.WaitOne(3000));
+                    
+                    List<int> list = new List<int>();
+                    for (int j = 0; j < listCount; j++)
+                    {
+                        list.Add(j);
+                        Assert.AreEqual(j + 1, Serialization.Deserialize<List<int>>(Serialization.Serialize(list)).Count);
+                    }
+                }));
+            }
+
+            resetEvent.Set();
+            Task.WaitAll(tasks, 10000);
         }
     }
 }

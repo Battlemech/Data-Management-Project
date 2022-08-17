@@ -7,8 +7,6 @@ namespace Main.Databases
 {
     public partial class Database
     {
-        private readonly Dictionary<string, uint> _modificationCount = new Dictionary<string, uint>();
-
         /// <summary>
         /// Contains a list of failed set requests, containing the expected modification count
         /// </summary>
@@ -44,38 +42,6 @@ namespace Main.Databases
             }
         }
 
-        /// <summary>
-        /// Increase modification count by 1 after retrieving it
-        /// </summary>
-        private uint IncrementModCount(string id)
-        {
-            //increase modification count by one
-            uint modCount;
-            lock (_modificationCount)
-            {
-                bool success = _modificationCount.TryGetValue(id, out modCount);
-
-                if (success)
-                {
-                    _modificationCount[id] = modCount + 1;
-                }
-                else
-                {
-                    _modificationCount.Add(id, 1);
-                }
-            }
-
-            return modCount;
-        }
-
-        public uint GetModCount(string id)
-        {
-            lock (_modificationCount)
-            {
-                return _modificationCount.TryGetValue(id, out uint modCount) ? modCount : 0;
-            }
-        }
-        
         private bool TryGetType(string id, out Type type)
         {
             //try retrieving type from currently saved objects
@@ -137,7 +103,8 @@ namespace Main.Databases
 
         public override string ToString()
         {
-            return _isSynchronised ? $"DB({Client.Id})-{Id}" : $"DB-{Id}";
+            //todo: replace with: return _isSynchronised ? $"DB({Client})-{Id}" : $"DB-{Id}";
+            return _isSynchronised ? $"{Client}" : $"DB-{Id}";
         }
     }
 }

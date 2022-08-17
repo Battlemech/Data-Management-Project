@@ -127,7 +127,7 @@ namespace Main.Callbacks
         public override void InvokeCallback(object o)
         {
             //check type
-            if (o is not T data) throw new ArgumentException($"Expected {typeof(T)}, but got {o.GetType()}");
+            if (o is not T data) throw new ArgumentException($"Expected {typeof(T)}, but got {o?.GetType()}");
             
             //invoke callback
             _callback.Invoke(data);

@@ -29,9 +29,9 @@ namespace Tests
             
             //setup networking
             Server = new SynchronisedServer(Localhost, port);
-            Client1 = new SynchronisedClient(Localhost, port);
-            Client2 = new SynchronisedClient(Localhost, port);
-            Client3 = new SynchronisedClient(Localhost, port);
+            Client1 = new TestClient(Localhost, port);
+            Client2 = new TestClient(Localhost, port);
+            Client3 = new TestClient(Localhost, port);
             
             //setup databases
             Database1 = new Database(Localhost, false, false);
@@ -111,7 +111,7 @@ namespace Tests
             Setup(nameof(TestConcurrentSets));
             string id = nameof(TestConcurrentSets);
             
-            const int setCount = 20;
+            const int setCount = 200;
 
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Task[] tasks = new[]
@@ -197,7 +197,8 @@ namespace Tests
             Setup(nameof(TestConcurrentAdd));
             string id = nameof(TestConcurrentAdd);
             
-            const int addCount = 100;
+            //todo: increase addCount to 10000 -> Exception. Fix!
+            const int addCount = 1000;
             
             //throw exception if value is overwritten during execution
             Database1.AddCallback<List<int>>(id, value =>
@@ -412,7 +413,7 @@ namespace Tests
                         return false;
                     }
                     return true;
-                }));
+                }), "Value Order");
             }
             
             stopwatch.Stop();
@@ -439,18 +440,18 @@ namespace Tests
             {
                 Assert.AreEqual(new List<int>(){1}, Database1.SafeModifySync<List<int>>(id, (value =>
                 {
-                    Console.WriteLine("Executing SafeModify1");
+                    Console.WriteLine($"Executing SafeModify1. CurrentValue: {LogWriter.StringifyCollection(value)}");
                     return new List<int>() { 1 };
                 })), "SafeModify");
                 Assert.AreEqual(new List<int>(){1,2}, Database2.SafeModifySync<List<int>>(id, (value =>
                 {
-                    Console.WriteLine("Executing SafeModify2");
+                    Console.WriteLine($"Executing SafeModify2. CurrentValue: {LogWriter.StringifyCollection(value)}");
                     value.Add(2);
                     return value;
                 })), "SafeModify");
                 Assert.AreEqual(new List<int>(){1,2,3}, Database3.SafeModifySync<List<int>>(id, (value =>
                 {
-                    Console.WriteLine("Executing SafeModify3");
+                    Console.WriteLine($"Executing SafeModify3. CurrentValue: {LogWriter.StringifyCollection(value)}");
                     value.Add(3);
                     return value;
                 })),"SafeModify");
