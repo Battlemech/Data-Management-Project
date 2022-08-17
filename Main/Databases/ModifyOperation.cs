@@ -71,9 +71,18 @@ namespace Main.Databases
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
                 if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
-                    //repeat operation //todo: failed to reproduce this corner case randomly. Design test?
-                    T newValue = modify.Invoke(Serialization.Deserialize<T>(GetConfirmedValue(id)));
-                    ExecuteDelayedSet(id, Serialization.Serialize(newValue), expectedModCount, false);
+                    //todo: failed to reproduce this corner case randomly. Design test?
+                    
+                    //repeat operation
+                    byte[] serializedBytes;
+                    //make sure the value isn't changed while modifying it
+                    lock (_values)
+                    {
+                        T newValue = modify.Invoke(Serialization.Deserialize<T>(GetConfirmedValue(id)));
+                        serializedBytes = Serialization.Serialize(newValue);
+                    }
+                    
+                    ExecuteDelayedSet(id, serializedBytes, expectedModCount, false);
                     success = true;
                 }
                 
