@@ -197,6 +197,7 @@ namespace Tests
             Setup(nameof(TestConcurrentAdd));
             string id = nameof(TestConcurrentAdd);
             
+            //todo: increase addCount to 10000 -> Exception. Fix!
             const int addCount = 1000;
             
             //throw exception if value is overwritten during execution
