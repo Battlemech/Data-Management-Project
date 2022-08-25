@@ -74,6 +74,7 @@ namespace Main.Networking.Messaging.Server
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>
         {
+            //todo: invoke logic even if no other session is connected
             bool success = true;
             List<MessageSession> sessions = new List<MessageSession>(Sessions.Values.Cast<MessageSession>());
             List<TReply> replies = new List<TReply>(sessions.Count);

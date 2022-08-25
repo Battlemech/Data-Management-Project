@@ -35,6 +35,8 @@ namespace Main.Threading
             task.Start(GetScheduler(id));
         }
 
+        public void QueueTask(string id, Action action) => QueueTask(id, new Task(action));
+
         private void DelegateToRandomScheduler(Task task)
         {
             int schedulerCount = _queuedSchedulers.Count;

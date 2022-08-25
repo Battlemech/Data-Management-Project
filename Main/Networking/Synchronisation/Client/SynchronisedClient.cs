@@ -42,6 +42,16 @@ namespace Main.Networking.Synchronisation.Client
                 //forward set value message to database
                 Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, message.ModCount, true);
             }));
+            
+            AddCallback<GetValueRequest>((message) =>
+            {
+                //get local values
+                Get(message.DatabaseId).OnRemoteGet(message.ModificationCount, messages =>
+                {
+                    //once setValueMessages were created, inform server of their current values
+                    SendMessage(new GetValueReply(message) { SetValueMessages = messages });
+                });
+            });
         }
 
         ~SynchronisedClient()
