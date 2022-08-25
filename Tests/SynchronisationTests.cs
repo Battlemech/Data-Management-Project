@@ -492,6 +492,10 @@ namespace Tests
             
             //wait for value to be synchronised on previously disconnected client
             TestUtility.AreEqual(id, () => Database1.Get<string>(id), "Synchronisation of value set before client connected");
+            TestUtility.AreEqual((uint) 1, (() => Database1.GetModCount(id)));
+            
+            //todo: update modCount locally on SetValueMessage if client just connected (local:1, received: 4565)
+            //todo: ignore duplicate SetValueMessages with modCount=ConfirmedModCount
         }
     }
 }
