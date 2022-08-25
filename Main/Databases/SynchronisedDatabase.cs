@@ -114,9 +114,6 @@ namespace Main.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
         {
-            //ignore setValueMessages which are duplicate or delayed (may occur during connecting)
-            //if(TryGetConfirmedModCount(id, out uint confirmedModCount) && modCount <= confirmedModCount) return;
-            
             //update local value
             bool success;
             lock (_values)
@@ -185,30 +182,6 @@ namespace Main.Databases
 
             //execute delayed set locally
             OnRemoteSet(id, request.Value, request.ModCount, incrementNext);
-        }
-
-        protected internal GetValueReply OnRemoteGet(GetValueRequest request)
-        {
-            List<SetValueMessage> messages = new List<SetValueMessage>();
-            
-            //make sure values and confirmedModCount are not modified
-            lock (_values)
-            {
-                lock (_confirmedModCount)
-                {
-                    //iterate trough each value
-                    foreach (var kv in _values)
-                    {
-                        string valueId = kv.Key;
-                        if (!TryGetConfirmedModCount(valueId, out uint modCount)) modCount = 0;
-                        
-                        //save current value and confirmed modification count in messages
-                        messages.Add(new SetValueMessage(Id, valueId, modCount, Serialization.Serialize(kv.Value)));
-                    }
-                }
-            }
-
-            return new GetValueReply(request) {Messages = messages};
         }
     }
 }

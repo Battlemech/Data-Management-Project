@@ -24,10 +24,5 @@ namespace Main.Networking.Synchronisation.Messages
             ModCount = modCount;
             Value = value;
         }
-
-        public override string ToString()
-        {
-            return $"DatabaseId={DatabaseId}, ValueId={ValueId}, ModCount={ModCount}";
-        }
     }
 }
