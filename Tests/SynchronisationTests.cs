@@ -469,5 +469,32 @@ namespace Tests
                 Console.WriteLine($"Completed iteration {i}");
             }
         }
+
+        [Test]
+        public static void TestSimpleConnect()
+        {
+            Setup(nameof(TestSimpleConnect));
+            
+            //disconnect client 1, synchronising it later
+            Assert.IsTrue(Client1.DisconnectAsync());
+            
+            Database2.Set("1", "1");
+            Database3.Modify<string>("1", value => value+"2");
+            Database3.Modify<string>("1", value => value+"3");
+            
+            //make sure no value is set on client 1
+            Assert.AreEqual(null, Database1.Get<string>("1"));
+            
+            //reconnect client 1
+            Assert.IsTrue(Client1.ConnectAsync());
+            Assert.IsTrue(Client1.WaitForConnect());
+            
+            TestUtility.AreEqual("123", () => Database1.Get<string>("1"));
+
+            foreach (var database in new List<Database>(){Database1, Database2, Database3})
+            {
+                Console.WriteLine(database.GetModCount("1"));
+            }
+        }
     }
 }

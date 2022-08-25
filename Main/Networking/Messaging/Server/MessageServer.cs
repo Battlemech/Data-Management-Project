@@ -70,6 +70,32 @@ namespace Main.Networking.Messaging.Server
             return success;
         }
 
+        public bool SendRequestsToOthers<TRequest, TReply>(TRequest request, TcpSession excluded, OnReply<TReply> onReply)
+            where TReply : ReplyMessage
+            where TRequest : RequestMessage<TReply>
+        {
+            bool success = true;
+            List<MessageSession> sessions = new List<MessageSession>(Sessions.Values.Cast<MessageSession>());
+            List<TReply> replies = new List<TReply>(sessions.Count);
+
+            foreach (var session in sessions)
+            {
+                if(session == excluded) continue;
+                
+                success = success && session.SendRequest<TRequest, TReply>(request, (reply) =>
+                {
+                    replies.Add(reply);
+                    
+                    //wait for all replies to arrive
+                    if(replies.Count != sessions.Count - 1) return;
+                    
+                    onReply.Invoke(replies);
+                });
+            }
+
+            return success;
+        }
+        
         protected override void OnConnected(TcpSession session)
         {
             if (session is not MessageSession messageSession)

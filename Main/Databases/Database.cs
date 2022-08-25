@@ -73,17 +73,6 @@ namespace Main.Databases
             }
         }
 
-        private object GetInternal(string id)
-        {
-            lock (_values)
-            {
-                //try retrieving the value
-                bool success = _values.TryGetValue(id, out object value);
-                
-                return !success ? default : value;
-            }
-        }
-
         public void Set<T>(string id, T value)
         {
             byte[] serializedBytes;
@@ -95,7 +84,7 @@ namespace Main.Databases
                 serializedBytes = Serialization.Serialize(value);
             }
             
-            //process the set if database is synchronised or persistent
+            //delegate internal logic to thread
             Task internalTask = new Task((() =>
             {
                 //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
