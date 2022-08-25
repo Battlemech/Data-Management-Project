@@ -123,7 +123,7 @@ namespace Main.Databases
                 _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
-            internalTask.Start(Scheduler);
+            Scheduler.QueueTask(id, internalTask);
         }
     }
 }

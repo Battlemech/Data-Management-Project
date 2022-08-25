@@ -56,7 +56,7 @@ namespace Main.Databases
                         }   
                     }
                 }));
-                synchronisationTask.Start(Scheduler);
+                Scheduler.QueueTask(synchronisationTask);
             }
         }
         private bool _isSynchronised;

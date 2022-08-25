@@ -8,10 +8,10 @@ namespace Main.Threading
     public class QueuedScheduler : Scheduler
     {
         public int QueuedTasksCount => _queuedTasks.Count;
+        public bool ExecutingTasks { get; private set; }
         
         private readonly ConcurrentQueue<Task> _queuedTasks = new ConcurrentQueue<Task>();
-        private bool _executingTasks = false;
-        
+
         protected override IEnumerable<Task> GetScheduledTasks()
         {
             return _queuedTasks;
@@ -24,8 +24,8 @@ namespace Main.Threading
             //start executing tasks if no thread is doing that already
             lock (_queuedTasks)
             {
-                if(_executingTasks) return;
-                _executingTasks = true;
+                if(ExecutingTasks) return;
+                ExecutingTasks = true;
             }
             
             DelegateTasksToThreadPool();
@@ -56,7 +56,7 @@ namespace Main.Threading
                 //if no tasks are queued: stop executing
                 if (_queuedTasks.IsEmpty)
                 {
-                    _executingTasks = false;
+                    ExecutingTasks = false;
                     return;
                 }
             }

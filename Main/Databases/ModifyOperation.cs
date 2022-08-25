@@ -43,7 +43,7 @@ namespace Main.Databases
                 if(_isSynchronised) OnModifyValueSynchronised(id, serializedBytes, modify);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
-            internalTask.Start(Scheduler);
+            Scheduler.QueueTask(id, internalTask);
         }
 
         private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)

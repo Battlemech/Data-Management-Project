@@ -9,7 +9,7 @@ namespace Main.Databases
     public partial class Database
     {
         public readonly string Id;
-        public readonly QueuedScheduler Scheduler = new QueuedScheduler();
+        public readonly IdLockedScheduler Scheduler = new IdLockedScheduler();
 
         private readonly Dictionary<string, object> _values = new Dictionary<string, object>();
 
@@ -105,7 +105,7 @@ namespace Main.Databases
                 if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
-            internalTask.Start(Scheduler);
+            Scheduler.QueueTask(id, internalTask);
         }
     }
 }
