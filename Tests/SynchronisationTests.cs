@@ -480,7 +480,7 @@ namespace Tests
             
             Database2.Set("1", "1");
             Database3.Modify<string>("1", value => value+"2");
-            Database2.Modify<string>("1", value => value+"3");
+            Database3.Modify<string>("1", value => value+"3");
             
             //make sure no value is set on client 1
             Assert.AreEqual(null, Database1.Get<string>("1"));
