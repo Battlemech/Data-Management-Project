@@ -72,17 +72,7 @@ namespace Main.Databases
                 };
             }
         }
-
-        private object GetInternal(string id)
-        {
-            lock (_values)
-            {
-                //try retrieving the value
-                bool success = _values.TryGetValue(id, out object value);
-                
-                return !success ? default : value;
-            }
-        }
+        
 
         public void Set<T>(string id, T value)
         {
