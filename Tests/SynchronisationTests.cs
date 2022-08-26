@@ -482,17 +482,26 @@ namespace Tests
             //set value
             Database2.Set(id, id);
             
-            //wait for value to be synchronised in network
+            //wait for modification
             TestUtility.AreEqual(id, () => Database3.Get<string>(id));
-            TestUtility.AreEqual((uint) 1, () => Server.GetModCount(Database1.Id, id));
+            Database3.Modify<string>(id, (value) =>
+            {
+                Console.WriteLine($"Database3: Modifying: {value}. Adding:4");
+                return value + "4";
+            });
+            
+            //wait for value to be synchronised in network
+            TestUtility.AreEqual(id+"4", () => Database3.Get<string>(id), "Synchronisation before test");
+            TestUtility.AreEqual(id+"4", () => Database2.Get<string>(id), "Synchronisation before test");
+            TestUtility.AreEqual((uint) 2, () => Server.GetModCount(Database1.Id, id));
             
             //reconnect client 1
             Assert.IsTrue(Client1.ConnectAsync());
             Assert.IsTrue(Client1.WaitForConnect());
             
             //wait for value to be synchronised on previously disconnected client
-            TestUtility.AreEqual(id, () => Database1.Get<string>(id), "Synchronisation of value set before client connected");
-            TestUtility.AreEqual((uint) 1, (() => Database1.GetModCount(id)));
+            TestUtility.AreEqual(id+"4", () => Database1.Get<string>(id), "Synchronisation of value set before client connected");
+            TestUtility.AreEqual((uint) 2, (() => Database1.GetModCount(id)));
             
             //todo: update modCount locally on SetValueMessage if client just connected (local:1, received: 4565)
             //todo: ignore duplicate SetValueMessages with modCount=ConfirmedModCount

@@ -49,7 +49,7 @@ namespace Main.Databases
         private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
         {
             uint modCount = IncrementModCount(id);
-            
+
             SetValueRequest request = new SetValueRequest()
             {
                 DatabaseId = Id,
@@ -86,6 +86,7 @@ namespace Main.Databases
                     success = true;
                 }
                 
+                
                 //bytes no longer need to be saved for this request
                 DecrementPendingCount(id);
                 
@@ -103,7 +104,7 @@ namespace Main.Databases
         {
             //notify peers of new value
             Client.SendMessage(new SetValueMessage(Id, id, modCount, serializedBytes));
-                    
+
             //update values locally
             OnRemoteSet(id, serializedBytes, modCount, incrementModCount);
         }

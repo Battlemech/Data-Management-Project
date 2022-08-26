@@ -8,6 +8,11 @@ namespace Main.Networking.Synchronisation.Messages
         public string ValueId;
         public uint ModCount;
         public byte[] Value;
+
+        public override string ToString()
+        {
+            return $"SetValueRequest(modCount={ModCount})";
+        }
     }
     
     public class SetValueReply : ReplyMessage
@@ -16,6 +21,11 @@ namespace Main.Networking.Synchronisation.Messages
         
         public SetValueReply(SetValueRequest requestMessage) : base(requestMessage)
         {
+        }
+
+        public override string ToString()
+        {
+            return $"SetValueReply(modCount={ExpectedModCount})";
         }
     }
     

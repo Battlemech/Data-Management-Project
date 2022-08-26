@@ -38,6 +38,25 @@ namespace Main.Databases
             return modCount;
         }
 
+        private void UpdateModCount(string id, uint remoteModCount)
+        {
+            lock (_modificationCount)
+            {
+                //if no mod count was found: init with value 0
+                if (!_modificationCount.TryGetValue(id, out uint modCount)) modCount = 0;
+                
+                //locally saved modCount is bigger or equal to then remote modCount
+                if (modCount >= remoteModCount)
+                {
+                    _modificationCount[id] = modCount + 1;
+                    return;
+                }
+                
+                //remote mod count is bigger then locally saved one
+                _modificationCount[id] = remoteModCount;
+            }
+        }
+
         public uint GetModCount(string id)
         {
             lock (_modificationCount)

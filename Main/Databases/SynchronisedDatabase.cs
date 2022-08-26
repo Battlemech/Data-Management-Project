@@ -114,6 +114,11 @@ namespace Main.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
         {
+            //during synchronisation, multiple setValueMessages will be broadcast. This will filter duplicates
+            if(TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount > modCount) return;
+            
+            Console.WriteLine($"{this} received: modCount={modCount}, value={Serialization.Deserialize<string>(value)}");
+            
             //update local value
             bool success;
             lock (_values)
@@ -126,7 +131,7 @@ namespace Main.Databases
             }
             
             //increase modification count after updating local value
-            if (incrementModCount) IncrementModCount(id);
+            if (incrementModCount) UpdateModCount(id, modCount);
             
             //save current value in case it is required for a pending modification
             if (RepliesPending(id))
@@ -136,9 +141,6 @@ namespace Main.Databases
             
             //track remotely confirmed mod count. Increment after byte value was saved
             lock (_confirmedModCount) _confirmedModCount[id] = modCount;
-
-            //save data persistently if necessary
-            if(_isPersistent) OnSetPersistent(id, value);
 
             //no callback or value with id exists
             if (!success)
@@ -150,8 +152,11 @@ namespace Main.Databases
             {
                 //invoke callbacks
                 //invocation not necessary if no type could be found (success is false): There are no callbacks
-                _callbackHandler.InvokeCallbacks(id, value);  //todo: call earlier to increase performance? 
+                _callbackHandler.InvokeCallbacks(id, value); 
             }
+            
+            //save data persistently if necessary
+            if(_isPersistent) OnSetPersistent(id, value);
 
             /*
              * try processing a local delayed modification request.
@@ -177,6 +182,8 @@ namespace Main.Databases
                 incrementNext = modifyRequest.IncrementModCount;
             }
 
+            Console.WriteLine($"{this} dequeued failed request! value: {Serialization.Deserialize<string>(request.Value)}");
+            
             //send previously delayed request to server
             Client.SendMessage(new SetValueMessage(request));
 

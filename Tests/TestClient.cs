@@ -6,7 +6,7 @@ namespace Tests
 {
     public class TestClient : SynchronisedClient
     {
-        public static int IdTracker;
+        public static int IdTracker = 1;
 
         public readonly string Name = IdTracker++.ToString();
         

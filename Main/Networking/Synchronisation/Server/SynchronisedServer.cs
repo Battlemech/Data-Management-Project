@@ -38,7 +38,7 @@ namespace Main.Networking.Synchronisation.Server
 
                 uint expected = IncrementModCount(databaseId, valueId);
                 bool success = request.ModCount == expected;
-
+                
                 //notify client of result
                 reply.ExpectedModCount = expected;
                 session.SendMessage(reply);
