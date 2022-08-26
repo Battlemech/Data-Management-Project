@@ -503,8 +503,16 @@ namespace Tests
             TestUtility.AreEqual(id+"4", () => Database1.Get<string>(id), "Synchronisation of value set before client connected");
             TestUtility.AreEqual((uint) 2, (() => Database1.GetModCount(id)));
             
-            //todo: update modCount locally on SetValueMessage if client just connected (local:1, received: 4565)
-            //todo: ignore duplicate SetValueMessages with modCount=ConfirmedModCount
+            //try modifying result as newly connected client
+            Database1.Modify<string>(id, (value) => value + "5");
+            
+            TestUtility.AreEqual(id+"45", (() => Database2.Get<string>(id)));
+            TestUtility.AreEqual(id+"45", (() => Database3.Get<string>(id)));
+            
+            //make sure modCount was tracked correctly
+            Assert.AreEqual(3, Database1.GetModCount(id));
+            Assert.AreEqual(3, Database2.GetModCount(id));
+            Assert.AreEqual(3, Database3.GetModCount(id));
         }
     }
 }
