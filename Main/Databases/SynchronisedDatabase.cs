@@ -116,9 +116,7 @@ namespace Main.Databases
         {
             //during synchronisation, multiple setValueMessages will be broadcast. This will filter duplicates
             if(TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount > modCount) return;
-            
-            Console.WriteLine($"{this} received: modCount={modCount}, value={Serialization.Deserialize<string>(value)}");
-            
+
             //update local value
             bool success;
             lock (_values)
