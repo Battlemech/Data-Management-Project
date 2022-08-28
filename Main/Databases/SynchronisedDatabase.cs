@@ -180,8 +180,6 @@ namespace Main.Databases
                 incrementNext = modifyRequest.IncrementModCount;
             }
 
-            Console.WriteLine($"{this} dequeued failed request! value: {Serialization.Deserialize<string>(request.Value)}");
-            
             //send previously delayed request to server
             Client.SendMessage(new SetValueMessage(request));
 

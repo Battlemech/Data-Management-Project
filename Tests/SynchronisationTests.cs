@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Main.Databases;
 using Main.Databases.Utility;
 using Main.Networking.Synchronisation.Client;
+using Main.Networking.Synchronisation.Messages;
 using Main.Networking.Synchronisation.Server;
 using Main.Utility;
 using NUnit.Framework;
@@ -513,6 +514,61 @@ namespace Tests
             Assert.AreEqual(3, Database1.GetModCount(id));
             Assert.AreEqual(3, Database2.GetModCount(id));
             Assert.AreEqual(3, Database3.GetModCount(id));
+        }
+
+        [Test]
+        public static void TestConnectDuringModification()
+        {
+            string id = nameof(TestConnectDuringModification);
+            Setup(id);
+            
+            //disconnect client 1
+            Assert.IsTrue(Client1.DisconnectAsync());
+            
+            int setCount = 10000;
+            
+            for (int i = 0; i < setCount/2; i++)
+            {
+                Database2.Modify<int>(id, value => value + 1);
+            }
+
+            //reconnect client 1
+            Assert.IsTrue(Client1.ConnectAsync());
+            
+            for (int i = 0; i < setCount/2; i++)
+            {
+                Database3.Modify<int>(id, value => value + 1);
+            }
+            
+            TestUtility.AreEqual(setCount, () => Database1.Get<int>(id));
+            TestUtility.AreEqual(setCount, () => Database2.Get<int>(id));
+            TestUtility.AreEqual(setCount, () => Database3.Get<int>(id));
+        }
+
+        [Test]
+        public static void TestRequestSuccess()
+        {
+            int modifyCount = 10000;
+            
+            string id = nameof(TestRequestSuccess);
+            Setup(id);
+            
+            Server.AddCallback<SetValueRequest>(((message, session) =>
+            {
+                uint expected = Server.GetModCount(message.DatabaseId, message.ValueId) - 1;
+                uint received = message.ModCount;
+                
+                Assert.AreEqual(expected, received);
+            }));
+
+            for (int i = 0; i < modifyCount; i++)
+            {
+                Database1.Modify<int>(id, value => value + 1);
+            }
+            
+            TestUtility.AreEqual(modifyCount, () => Database1.Get<int>(id));
+            TestUtility.AreEqual(modifyCount, () => Database2.Get<int>(id));
+            TestUtility.AreEqual(modifyCount, () => Database3.Get<int>(id));
         }
     }
 }

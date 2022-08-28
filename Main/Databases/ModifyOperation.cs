@@ -60,7 +60,7 @@ namespace Main.Databases
 
             //start saving bytes which arrive from network in case they are required later
             IncrementPendingCount(id);
-            
+
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 uint expectedModCount = reply.ExpectedModCount;
@@ -68,6 +68,8 @@ namespace Main.Databases
                 //modCount was like client expected
                 bool success = expectedModCount == modCount;
 
+                Console.WriteLine(success);
+                
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
                 if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
