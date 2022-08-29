@@ -5,21 +5,20 @@ namespace Main.Persistence
 {
     public static class SystemDatabase
     {
-        private static readonly Database Database = new Database("SYSTEM/INTERNAL/", isPersistent: true);
+        private const string Id = "SYSTEM/INTERNAL/";
+        private static readonly Database Database = new Database(Id, isPersistent: true);
 
-        public static Guid LoadGuid()
+        public static Guid Guid
         {
-            string id = "GUID";
-            Guid guid = Database.Get<Guid>(id);
-
-            //generate new guid if necessary
-            if (guid == default)
+            get
             {
-                guid = new Guid();
-                Database.Set(id, guid);
+                //create new guid if necessary
+                Database.Modify("Guid", value => (value == default) ? Guid.NewGuid() : value, out Guid result);
+                //return result
+                return result;    
             }
-
-            return guid;
         }
+
+        public static void DeleteData() => PersistentData.DeleteDatabase(Id);
     }
 }

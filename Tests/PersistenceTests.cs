@@ -79,11 +79,16 @@ namespace Tests
         [Test]
         public static void LoadGuid()
         {
-            Guid guid = SystemDatabase.LoadGuid();
+            //delete old Guid
+            SystemDatabase.DeleteData();
+            
+            Guid guid = SystemDatabase.Guid;
+
             for (int i = 0; i < 100; i++)
             {
-                Assert.AreEqual(guid, SystemDatabase.LoadGuid());
+                Assert.AreEqual(guid, SystemDatabase.Guid);
             }
+            Console.WriteLine(guid);
         }
     }
 }

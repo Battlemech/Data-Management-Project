@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
@@ -46,9 +47,32 @@ namespace Main.Databases
                 _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
                 if(_isSynchronised) OnModifyValueSynchronised(id, serializedBytes, modify, onResultConfirmed);
+                else onResultConfirmed?.Invoke(Serialization.Deserialize<T>(serializedBytes));
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             Scheduler.QueueTask(id, internalTask);
+        }
+
+        public void Modify<T>(string id, ModifyValueDelegate<T> modify, out T result)
+        {
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            T value = default;
+            
+            //start modification action
+            Modify<T>(id, modify, valueConfirmed =>
+            {
+                //save result locally
+                value = valueConfirmed;
+                
+                //signal waiting thread to continue
+                resetEvent.Set();
+            });
+
+            if (!resetEvent.WaitOne(Options.DefaultTimeout))
+                throw new Exception($"Failed to modify {id} within {Options.DefaultTimeout} ms!");
+
+            //assign value resulting from modification to out parameter
+            result = value;
         }
 
         private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
@@ -81,7 +105,7 @@ namespace Main.Databases
                     //todo: failed to reproduce this corner case randomly. Design test?
                     
                     //repeat operation
-                    //make sure the value isn't changed while modifying it
+                    //make sure the value isn't changed while modifying it //todo: why is this necessary?
                     lock (_values)
                     {
                         T newValue = modify.Invoke(Serialization.Deserialize<T>(GetConfirmedValue(id)));
