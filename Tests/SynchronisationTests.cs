@@ -555,6 +555,7 @@ namespace Tests
             
             Server.AddCallback<SetValueRequest>(((message, session) =>
             {
+                // -1 because the local mod count was already incremented by the previous SetValueRequest callback
                 uint expected = Server.GetModCount(message.DatabaseId, message.ValueId) - 1;
                 uint received = message.ModCount;
                 
