@@ -76,7 +76,7 @@ namespace Tests
                 "sync required", 15000);
         }
 
-        private static Guid LastGuid = default;
+        private static Guid _lastGuid = default;
         
         [Test]
         public static void LoadGuid()
@@ -86,9 +86,9 @@ namespace Tests
             
             Guid guid = SystemDatabase.Guid;
             
-            Assert.AreNotEqual(guid, LastGuid);
+            Assert.AreNotEqual(guid, _lastGuid);
 
-            LastGuid = guid;
+            _lastGuid = guid;
 
             for (int i = 0; i < 100; i++)
             {
