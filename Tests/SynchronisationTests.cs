@@ -571,5 +571,39 @@ namespace Tests
             TestUtility.AreEqual(modifyCount, () => Database2.Get<int>(id));
             TestUtility.AreEqual(modifyCount, () => Database3.Get<int>(id));
         }
+
+        [Test]
+        public static void TestOnModifyConfirm()
+        {
+            int modCount = 10000;
+            
+            string id = nameof(TestOnModifyConfirm);
+            Setup(id);
+
+            List<int> confirmedValues = new List<int>(modCount * 3);
+
+            for (int i = 0; i < modCount; i++)
+            {
+                Database1.Modify<int>(id, (value) => value + 1, confirmed =>
+                {
+                    Assert.IsFalse(confirmedValues.Contains(confirmed));
+                    confirmedValues.Add(confirmed);
+                });
+                Database2.Modify<int>(id, (value) => value + 1, confirmed =>
+                {
+                    Assert.IsFalse(confirmedValues.Contains(confirmed));
+                    confirmedValues.Add(confirmed);
+                });
+                Database3.Modify<int>(id, (value) => value + 1, confirmed =>
+                {
+                    Assert.IsFalse(confirmedValues.Contains(confirmed));
+                    confirmedValues.Add(confirmed);
+                });
+            }
+            
+            TestUtility.AreEqual(modCount * 3, () => Database1.Get<int>(id), timeInMs: 5000);
+            TestUtility.AreEqual(modCount * 3, () => Database2.Get<int>(id));
+            TestUtility.AreEqual(modCount * 3, () => Database3.Get<int>(id));
+        }
     }
 }

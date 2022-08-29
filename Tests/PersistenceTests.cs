@@ -79,10 +79,10 @@ namespace Tests
         [Test]
         public static void LoadGuid()
         {
-            Guid guid = LocalDatabase.LoadGuid();
+            Guid guid = SystemDatabase.LoadGuid();
             for (int i = 0; i < 100; i++)
             {
-                Assert.AreEqual(guid, LocalDatabase.LoadGuid());
+                Assert.AreEqual(guid, SystemDatabase.LoadGuid());
             }
         }
     }

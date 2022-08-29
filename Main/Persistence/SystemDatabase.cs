@@ -3,9 +3,9 @@ using Main.Databases;
 
 namespace Main.Persistence
 {
-    public static class LocalDatabase
+    public static class SystemDatabase
     {
-        public static readonly Database Database = new Database("SYSTEM/INTERNAL/", isPersistent: true);
+        private static readonly Database Database = new Database("SYSTEM/INTERNAL/", isPersistent: true);
 
         public static Guid LoadGuid()
         {

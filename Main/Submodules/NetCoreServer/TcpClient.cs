@@ -43,7 +43,7 @@ namespace Main.Submodules.NetCoreServer
         /// <param name="port">Server port</param>
         private TcpClient(EndPoint endpoint, string address, int port)
         {
-            Id = LocalDatabase.LoadGuid();
+            Id = SystemDatabase.LoadGuid();
             Address = address;
             Port = port;
             Endpoint = endpoint;

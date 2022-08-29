@@ -21,7 +21,7 @@ namespace Main.Databases
         /// add it locally. After a few ms, the values will be synchronised and in the same order globally.
         /// If you need to avoid inconsistent states, use SafeModify() instead!
         /// </remarks>
-        public void Modify<T>(string id, ModifyValueDelegate<T> modify)
+        public void Modify<T>(string id, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null)
         {
             byte[] serializedBytes;
 
@@ -40,13 +40,13 @@ namespace Main.Databases
                 //allowing the delegation of callbacks to a task
                 _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
-                if(_isSynchronised) OnModifyValueSynchronised(id, serializedBytes, modify);
+                if(_isSynchronised) OnModifyValueSynchronised(id, serializedBytes, modify, onResultConfirmed);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             Scheduler.QueueTask(id, internalTask);
         }
 
-        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify)
+        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
         {
             uint modCount = IncrementModCount(id);
 
@@ -68,37 +68,50 @@ namespace Main.Databases
                 //modCount was like client expected
                 bool success = expectedModCount == modCount;
 
-                Console.WriteLine(success);
-                
+                //result got confirmed by remote. Invoke delegate
+                if (success) onResultConfirmed?.Invoke(Serialization.Deserialize<T>(value));
                 //modCount wasn't like client expected, but client updated modCount while waiting for a reply
-                if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+                else if (TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
                 {
                     //todo: failed to reproduce this corner case randomly. Design test?
                     
                     //repeat operation
-                    byte[] serializedBytes;
                     //make sure the value isn't changed while modifying it
                     lock (_values)
                     {
                         T newValue = modify.Invoke(Serialization.Deserialize<T>(GetConfirmedValue(id)));
-                        serializedBytes = Serialization.Serialize(newValue);
+                        
+                        //result got confirmed by remote. Invoke delegate
+                        onResultConfirmed?.Invoke(newValue);
+                        
+                        value = Serialization.Serialize(newValue);
                     }
                     
-                    ExecuteDelayedSet(id, serializedBytes, expectedModCount, false);
+                    ExecuteDelayedSet(id, value, expectedModCount, false);
                     success = true;
                 }
                 
                 
                 //bytes no longer need to be saved for this request
                 DecrementPendingCount(id);
-                
-                if(success) return;
+
+                if (success) return;
                 
                 //update queue with expected modification count
                 request.ModCount = reply.ExpectedModCount;
 
                 //enqueue the request: It will be processed later
-                EnqueueFailedRequest(new FailedModifyRequest<T>(request, modify));
+                EnqueueFailedRequest(new FailedModifyRequest<T>(request, (currentValue =>
+                {
+                    //invoke modify delegate, generating new value
+                    T newValue = modify.Invoke(currentValue);
+                    
+                    //call onResultConfirmed if necessary
+                    onResultConfirmed?.Invoke(newValue);
+
+                    //return newValue to Callee (OnRemoteSet())
+                    return newValue;
+                })));
             });
         }
 
