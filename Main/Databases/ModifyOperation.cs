@@ -10,17 +10,22 @@ namespace Main.Databases
     
     public partial class Database
     {
+        
         /// <summary>
-        /// The modify operation considered previous values during modification of current value.
+        /// The modify operation considers current value during modification action.
         /// Necessary for synchronised collections: If multiple adds will be executed at the same time,
         /// the Set() function will overwrite the other values. The Modify() function will keep them during set.
         /// </summary>
         /// <remarks>
         /// This function creates inconsistent values during execution if multiple clients
-        /// start modifying the same value at the same time: Each client assumes they may modify the value and
-        /// add it locally. After a few ms, the values will be synchronised and in the same order globally.
-        /// If you need to avoid inconsistent states, use SafeModify() instead!
+        /// start modifying the same value at the same time. If you need to avoid inconsistent states
+        /// or want to make sure ModifyValueDelegate() is executed exactly once, use SafeModify() instead!
         /// </remarks>
+        /// <param name="id">Id of value being modified</param>
+        /// <param name="modify"> Modification of value. Can be executed a second time if client falsely assumes
+        /// to be up to date</param>
+        /// <param name="onResultConfirmed">Delegate called once the current value was confirmed by server</param>
+        /// <typeparam name="T">Type of value being modified</typeparam>
         public void Modify<T>(string id, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null)
         {
             byte[] serializedBytes;
