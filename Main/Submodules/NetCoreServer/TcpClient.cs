@@ -50,6 +50,17 @@ namespace Main.Submodules.NetCoreServer
         }
 
         /// <summary>
+        /// Client used for testing. Simulates a remote client, generates a random Id. Connects to localhost
+        /// </summary>
+        public TcpClient(int port)
+        {
+            Id = Guid.NewGuid();
+            Address = "127.0.0.1";
+            Port = port;
+            Endpoint = new IPEndPoint(IPAddress.Parse(Address), port);
+        }
+
+        /// <summary>
         /// Client Id
         /// </summary>
         public Guid Id { get; }

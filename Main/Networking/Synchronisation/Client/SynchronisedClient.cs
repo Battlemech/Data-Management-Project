@@ -30,6 +30,14 @@ namespace Main.Networking.Synchronisation.Client
             Constructor();
         }
 
+        /// <summary>
+        /// Client used for testing. Simulates a remote client, generates a random Id. Connects to localhost
+        /// </summary>
+        public SynchronisedClient(int port = Options.DefaultPort) : base(port)
+        {
+            Constructor();
+        }
+
         #endregion
 
         private void Constructor()

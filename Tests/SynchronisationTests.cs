@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Main;
 using Main.Databases;
 using Main.Databases.Utility;
 using Main.Networking.Synchronisation.Client;
@@ -30,9 +31,21 @@ namespace Tests
             
             //setup networking
             Server = new SynchronisedServer(Localhost, port);
-            Client1 = new TestClient(Localhost, port);
-            Client2 = new TestClient(Localhost, port);
-            Client3 = new TestClient(Localhost, port);
+            Client1 = new TestClient(port);
+            Client2 = new TestClient(port);
+            Client3 = new TestClient(port);
+
+            //start server and clients
+            Assert.IsTrue(Server.Start());
+            Assert.IsTrue(Client1.ConnectAsync());
+            Assert.IsTrue(Client2.ConnectAsync());
+            Assert.IsTrue(Client3.ConnectAsync());
+            
+            //wait until connection is established
+            Assert.IsTrue(Client1.WaitForConnect());
+            Assert.IsTrue(Client2.WaitForConnect());
+            Assert.IsTrue(Client3.WaitForConnect());
+            
             
             //setup databases
             Database1 = new Database(Localhost, false, false);
@@ -48,17 +61,6 @@ namespace Tests
             
             Database3.Client = Client3;
             Database3.IsSynchronised = true;
-            
-            //start server and clients
-            Assert.IsTrue(Server.Start());
-            Assert.IsTrue(Client1.ConnectAsync());
-            Assert.IsTrue(Client2.ConnectAsync());
-            Assert.IsTrue(Client3.ConnectAsync());
-            
-            //wait until connection is established
-            Assert.IsTrue(Client1.WaitForConnect());
-            Assert.IsTrue(Client2.WaitForConnect());
-            Assert.IsTrue(Client3.WaitForConnect());
         }
 
         [TearDown]
@@ -604,6 +606,60 @@ namespace Tests
             TestUtility.AreEqual(modCount * 3, () => Database1.Get<int>(id), timeInMs: 5000);
             TestUtility.AreEqual(modCount * 3, () => Database2.Get<int>(id));
             TestUtility.AreEqual(modCount * 3, () => Database3.Get<int>(id));
+        }
+
+        [Test]
+        public static void TestClientHostPersistence()
+        {
+            string id = nameof(TestClientHostPersistence);
+            Setup(id);
+            
+            TestUtility.AreEqual(1, () =>
+            {
+                int hostCount = 0;
+                if (Database1.IsHost) hostCount++;
+                if (Database2.IsHost) hostCount++;
+                if (Database3.IsHost) hostCount++;
+                return hostCount;
+            }, "Exactly one host", 5000);
+
+            Assert.IsTrue(Database1.IsHost);
+            Assert.IsFalse(Database2.IsHost);
+            Assert.IsFalse(Database3.IsHost);
+            
+            Database1.ClientPersistence = true;
+
+            TestUtility.AreEqual(2, () =>
+            {
+                int persistenceCount = 0;
+                if (Database1.IsPersistent) persistenceCount++;
+                if (Database2.IsPersistent) persistenceCount++;
+                if (Database3.IsPersistent) persistenceCount++;
+                return persistenceCount;
+            });
+
+            Database1.HostPersistence = true;
+            
+            TestUtility.AreEqual(3, () =>
+            {
+                int persistenceCount = 0;
+                if (Database1.IsPersistent) persistenceCount++;
+                if (Database2.IsPersistent) persistenceCount++;
+                if (Database3.IsPersistent) persistenceCount++;
+                return persistenceCount;
+            });
+
+            Database1.HostPersistence = false;
+            Database1.ClientPersistence = false;
+            
+            TestUtility.AreEqual(0, () =>
+            {
+                int persistenceCount = 0;
+                if (Database1.IsPersistent) persistenceCount++;
+                if (Database2.IsPersistent) persistenceCount++;
+                if (Database3.IsPersistent) persistenceCount++;
+                return persistenceCount;
+            });
         }
     }
 }

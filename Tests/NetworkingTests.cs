@@ -242,13 +242,5 @@ namespace Tests
             //wait for reply, expecting none to come
             Assert.IsFalse(originReceived.WaitOne(1000));
         }
-
-        [Test]
-        public static void TestLoadGuid()
-        {
-            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestLoadGuid));
-
-            TestClient client = new TestClient("127.0.0.1", port);
-        }
     }
 }

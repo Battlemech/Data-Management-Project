@@ -31,6 +31,14 @@ namespace Main.Networking.Messaging.Client
         {
         }
 
+        /// <summary>
+        /// Client used for testing. Simulates a remote client, generates a random Id. Connects to localhost
+        /// </summary>
+        public MessageClient(int port = Options.DefaultPort) : base(port)
+        {
+            
+        }
+
         public bool SendMessage<T>(T message) where T : Message
         {
             return SendAsync(message.Serialize());

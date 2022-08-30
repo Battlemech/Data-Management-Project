@@ -47,6 +47,7 @@ namespace Main.Networking.Messaging.Client
             return success;
         }
         
+        //todo: check for bool values and throw exceptions if request/messages could not be sent
         public bool SendRequest<TRequest, TReply>(TRequest requestMessage, OnReply<TReply> onReply, int timeout = Options.DefaultTimeout)
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>

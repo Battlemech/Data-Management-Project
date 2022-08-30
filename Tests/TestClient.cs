@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using Main;
 using Main.Networking.Synchronisation.Client;
 
@@ -9,21 +10,13 @@ namespace Tests
         public static int IdTracker = 1;
 
         public readonly string Name = IdTracker++.ToString();
-        
-        public TestClient(IPAddress address, int port = Options.DefaultPort) : base(address, port)
-        {
-        }
 
-        public TestClient(string address, int port = Options.DefaultPort) : base(address, port)
+        /// <summary>
+        /// Client used for testing. Simulates a remote client, generates a random Id. Connects to localhost
+        /// </summary>
+        public TestClient(int port = Options.DefaultPort) : base(port)
         {
-        }
-
-        public TestClient(DnsEndPoint endpoint) : base(endpoint)
-        {
-        }
-
-        public TestClient(IPEndPoint endpoint) : base(endpoint)
-        {
+            
         }
 
         public override string ToString()

@@ -22,9 +22,10 @@ namespace Main.Databases
         private void ConfigureSynchronisedPersistence()
         {
             //set hostId to current database if no other client claimed host-privileges
-            if(HostId == default)
+            if (HostId == default)
+            {
                 SafeModify<Guid>(nameof(HostId), value =>
-                {
+                {   
                     //set host id to this client if it is still the default one
                     Guid hostId = (value == default) ? Client.Id : value;
                     
@@ -36,8 +37,9 @@ namespace Main.Databases
                     }
                     
                     return hostId;
-                });
-            
+                });   
+            }
+
             //If isHost: change persistence
             AddCallback<bool>(nameof(HostPersistence), value =>
             {
