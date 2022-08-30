@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Main.Utility;
 
 namespace Main.Callbacks
@@ -100,8 +101,35 @@ namespace Main.Callbacks
             }
 
             return callbacks.Count;
+            
         }
 
+        public int InvokeCallbacks<T>(TKey id, T value)
+        {
+            List<Callback> callbacks;
+            
+            //retrieve callbacks
+            lock (_callbacks)
+            {
+                //try retrieving list of callbacks
+                bool success = _callbacks.TryGetValue(id, out callbacks);
+                
+                //no callbacks to invoke
+                if(!success || callbacks.Count == 0) return 0;
+
+                //copy callback list to allow modification
+                callbacks = new List<Callback>(callbacks);
+            }
+
+            //invoke callbacks
+            foreach (var callback in callbacks.Cast<Callback<T>>())
+            {
+                callback.InvokeCallback(value);
+            }
+
+            return callbacks.Count;
+        }
+        
         public bool TryGetType(TKey key, out Type type)
         {
             lock (_callbacks)
@@ -141,6 +169,11 @@ namespace Main.Callbacks
             _callback = callback;
         }
 
+        public void InvokeCallback(T value)
+        {
+            _callback.Invoke(value);
+        }
+        
         public override void InvokeCallback(object o)
         {
             switch (o)
