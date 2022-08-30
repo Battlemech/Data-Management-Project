@@ -1,4 +1,5 @@
-﻿using Main.Databases;
+﻿using System;
+using Main.Databases;
 using NUnit.Framework;
 
 namespace Tests
@@ -38,6 +39,26 @@ namespace Tests
             
             //make sure string length is still 21
             Assert.AreEqual(lastCallbackSet.Length, database.Get<int>("stringLength"));
+        }
+
+        [Test]
+        public static void TestUniqueParameter()
+        {
+            string id = nameof(TestUniqueParameter);
+            int invokationCount = 0;
+            
+            Database database = new Database(id);
+
+            for (int i = 0; i < 10; i++)
+            {
+                database.AddCallback<string>(id, s =>
+                {
+                    Console.WriteLine("Invoked callback!");
+                    invokationCount++;
+                }, unique: true, invokeCallback:true);    
+            }
+            
+            Assert.AreEqual(1, invokationCount);
         }
     }
 }

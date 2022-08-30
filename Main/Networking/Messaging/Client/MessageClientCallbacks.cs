@@ -1,4 +1,5 @@
-﻿using Main.Callbacks;
+﻿using System;
+using Main.Callbacks;
 
 namespace Main.Networking.Messaging.Client
 {
@@ -9,7 +10,7 @@ namespace Main.Networking.Messaging.Client
         /// <summary>
         /// Add a function to be executed when a message of a certain type was received asynchronously
         /// </summary>
-        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Message
+        public void AddCallback<T>(Action<T> onValueChange, string name = "") where T : Message
         {
             _callbackHandler.AddCallback(typeof(T).FullName, onValueChange, name);
         }

@@ -36,6 +36,8 @@ namespace Main.Databases
                 
                     Client = SynchronisedClient.Instance;
                 }
+                
+                ConfigureSynchronisedPersistence();
 
                 //return if there are no values to synchronise
                 lock (_values)

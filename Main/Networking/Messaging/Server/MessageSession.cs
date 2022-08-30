@@ -1,4 +1,5 @@
-﻿using Main.Callbacks;
+﻿using System;
+using Main.Callbacks;
 using Main.Submodules.NetCoreServer;
 using Main.Utility;
 
@@ -37,7 +38,7 @@ namespace Main.Networking.Messaging.Server
             _requestHandler.InvokeCallbacks(message.SerializedType, serializedMessage);
         }
         
-        public void AddCallback<T>(ValueChanged<T> onValueChange, string name = "") where T : Message
+        public void AddCallback<T>(Action<T> onValueChange, string name = "") where T : Message
         {
             _requestHandler.AddCallback(typeof(T).FullName, onValueChange, name);
         }

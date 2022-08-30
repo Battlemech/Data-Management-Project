@@ -97,5 +97,36 @@ namespace Main.Databases
             }));
             Scheduler.QueueTask(id, internalTask);
         }
+
+        public int InvokeCallbacks(string id)
+        {
+            byte[] serializedBytes;
+            
+            lock (_values)
+            {
+                if(!_values.ContainsKey(id)) return 0;
+
+                if (!TryGetType(id, out Type type))
+                    throw new Exception($"Failed to extract type of {id} while trying to invoke callbacks!" +
+                                        $"Try specifying the type in InvokeCallbacks");
+
+                serializedBytes = Serialization.Serialize(type, _values[id]);
+            }
+            
+            return _callbackHandler.InvokeCallbacks(id, serializedBytes);
+        }
+
+        public int InvokeCallbacks<T>(string id)
+        {
+            byte[] serializedBytes;
+
+            lock (_values)
+            {
+                if (!_values.ContainsKey(id)) return 0;
+                serializedBytes = Serialization.Serialize(typeof(T), _values[id]);
+            }
+
+            return _callbackHandler.InvokeCallbacks(id, serializedBytes);
+        }
     }
 }

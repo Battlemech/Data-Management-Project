@@ -10,7 +10,16 @@ namespace Main.Callbacks
     {
         private readonly Dictionary<TKey, List<Callback>> _callbacks = new Dictionary<TKey, List<Callback>>();
 
-        public void AddCallback<T>(TKey id, ValueChanged<T> onValueChange, string name = "")
+        /// <summary>
+        /// Adds a callback to an id
+        /// </summary>
+        /// <param name="id">Key of the callback</param>
+        /// <param name="onValueChange">Action to perform</param>
+        /// <param name="name">Name of the callback</param>
+        /// <param name="unique">True if the callback should not be added if another callback with the same name already exists for the same id</param>
+        /// <typeparam name="T">Type of the expected value</typeparam>
+        /// <returns>True if the callback has been added, otherwise false</returns>
+        public bool AddCallback<T>(TKey id, Action<T> onValueChange, string name = "", bool unique = false)
         {
             Callback<T> callback = new Callback<T>(name, onValueChange);
             
@@ -24,8 +33,14 @@ namespace Main.Callbacks
                     _callbacks.Add(id, savedCallbacks);
                 }
                 
+                //don't save duplicate callbacks if unique parameter was specified
+                if (unique && savedCallbacks.Count > 0 && savedCallbacks.Exists((savedCallback => savedCallback.Name == name)))
+                    return false;
+                
                 savedCallbacks.Add(callback);
             }
+
+            return true;
         }
 
         public int RemoveCallbacks(TKey id, string name = "")
@@ -58,7 +73,7 @@ namespace Main.Callbacks
             return removedCallbacks;
         }
         
-        public void InvokeCallbacks(TKey id, byte[] serializedBytes)
+        public int InvokeCallbacks(TKey id, byte[] serializedBytes)
         {
             List<Callback> callbacks;
             
@@ -69,7 +84,7 @@ namespace Main.Callbacks
                 bool success = _callbacks.TryGetValue(id, out callbacks);
                 
                 //no callbacks to invoke
-                if(!success || callbacks.Count == 0) return;
+                if(!success || callbacks.Count == 0) return 0;
 
                 //copy callback list to allow modification
                 callbacks = new List<Callback>(callbacks);
@@ -83,6 +98,8 @@ namespace Main.Callbacks
             {
                 callback.InvokeCallback(data);
             }
+
+            return callbacks.Count;
         }
 
         public bool TryGetType(TKey key, out Type type)
@@ -118,19 +135,28 @@ namespace Main.Callbacks
 
     public class Callback<T> : Callback
     {
-        private readonly ValueChanged<T> _callback;
-        public Callback(string name, ValueChanged<T> callback) : base(name)
+        private readonly Action<T> _callback;
+        public Callback(string name, Action<T> callback) : base(name)
         {
             _callback = callback;
         }
 
         public override void InvokeCallback(object o)
         {
-            //check type
-            if (o is not T data) throw new ArgumentException($"Expected {typeof(T)}, but got {o?.GetType()}");
-            
-            //invoke callback
-            _callback.Invoke(data);
+            switch (o)
+            {
+                //check type
+                case T data:
+                    //invoke callback
+                    _callback.Invoke(data);
+                    return;
+                case null:
+                    //invoke callback
+                    _callback.Invoke(default);
+                    return;
+                default:
+                    throw new ArgumentException($"Expected {typeof(T)}, but got {o?.GetType()}");
+            }
         }
 
         public override Type GetCallbackType()
