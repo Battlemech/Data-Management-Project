@@ -40,13 +40,18 @@ namespace Main.Databases
                 });   
             }
 
+            /*
+             * Specify unique parameter because synchronisation may be enabled, disabled and enabled again,
+             * triggering AddCallback() again
+             */
+            
             //If isHost: change persistence
             AddCallback<bool>(nameof(HostPersistence), value =>
             {
                 if(!IsHost) return;
                 IsPersistent = value;
             }, $"SYSTEM/INTERNAL/{nameof(HostPersistence)}", unique:true);
-            
+
             //if isClient: change persistence
             AddCallback<bool>(nameof(ClientPersistence), value =>
             {

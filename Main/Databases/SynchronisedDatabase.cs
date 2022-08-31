@@ -31,7 +31,7 @@ namespace Main.Databases
                 //if no client was set, use the default instance
                 if (Client == null)
                 {
-                    if (SynchronisedClient.Instance == null) throw new Exception(
+                    if (SynchronisedClient.Instance == null) throw new InvalidOperationException(
                         $"No synchronised Client exists which could manage synchronised database {Id}");
                 
                     Client = SynchronisedClient.Instance;

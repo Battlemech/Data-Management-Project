@@ -100,8 +100,8 @@ namespace Main.Networking.Messaging.Server
         protected override void OnConnected(TcpSession session)
         {
             if (session is not MessageSession messageSession)
-                throw new Exception(
-                    $"Expected connected session to be of type MessageSession, but is {session?.GetType()}");
+                throw new InvalidCastException($"Expected connected session to be of type MessageSession, " +
+                                               $"but is {session?.GetType()}");
             
             OnConnected(messageSession);
         }

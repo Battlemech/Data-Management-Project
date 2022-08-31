@@ -49,7 +49,7 @@ namespace Main.Databases
             
             Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
-                if(lockReply == null) throw new Exception($"Received no reply from server within {Options.DefaultTimeout} ms!");
+                if(lockReply == null) throw new TimeoutException($"Received no reply from server within {Options.DefaultTimeout} ms!");
 
                 uint expectedModCount = lockReply.ExpectedModCount;
                     

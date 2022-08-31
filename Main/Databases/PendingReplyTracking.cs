@@ -71,7 +71,7 @@ namespace Main.Databases
                 if (_confirmedValues.TryGetValue(id, out byte[] value)) return value;
             }
 
-            throw new Exception($"No value saved with id {id}");
+            throw new InvalidOperationException($"No value saved with id {id}");
         }
     }
 }

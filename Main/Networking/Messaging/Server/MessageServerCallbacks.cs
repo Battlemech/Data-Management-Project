@@ -4,8 +4,6 @@ using Main.Utility;
 
 namespace Main.Networking.Messaging.Server
 {
-    public delegate void OnMessageReceived<T>(T message, MessageSession session) where T : Message;
-    
     public partial class MessageServer
     {
         private readonly Dictionary<string, List<ServerCallback>> _callbacks =
@@ -15,7 +13,7 @@ namespace Main.Networking.Messaging.Server
         /// Add a function to be executed when a message of a certain type was received asynchronously
         /// </summary>
         /// <remarks>The servers callbacks are not thread-save per default!</remarks>
-        public void AddCallback<T>(OnMessageReceived<T> onValueChange, string name = "") where T : Message
+        public void AddCallback<T>(Action<T, MessageSession> onValueChange, string name = "") where T : Message
         {
             ServerCallback<T> callback = new ServerCallback<T>(name, onValueChange);
             string id = typeof(T).FullName;
@@ -113,8 +111,8 @@ namespace Main.Networking.Messaging.Server
 
         private class ServerCallback<T> : ServerCallback where T : Message
         {
-            private readonly OnMessageReceived<T> _received;
-            public ServerCallback(string name, OnMessageReceived<T> received) : base(name)
+            private readonly Action<T, MessageSession> _received;
+            public ServerCallback(string name, Action<T, MessageSession> received) : base(name)
             {
                 _received = received;
             }

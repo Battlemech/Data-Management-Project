@@ -107,7 +107,7 @@ namespace Main.Databases
                 if(!_values.ContainsKey(id)) return 0;
 
                 if (!TryGetType(id, out Type type))
-                    throw new Exception($"Failed to extract type of {id} while trying to invoke callbacks!" +
+                    throw new ArgumentException($"Failed to extract type of {id} while trying to invoke callbacks!" +
                                         $"Try specifying the type in InvokeCallbacks");
 
                 serializedBytes = Serialization.Serialize(type, _values[id]);

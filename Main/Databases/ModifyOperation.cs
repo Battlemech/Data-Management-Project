@@ -69,7 +69,7 @@ namespace Main.Databases
             });
 
             if (!resetEvent.WaitOne(Options.DefaultTimeout))
-                throw new Exception($"Failed to modify {id} within {Options.DefaultTimeout} ms!");
+                throw new TimeoutException($"Failed to modify {id} within {Options.DefaultTimeout} ms!");
 
             //assign value resulting from modification to out parameter
             result = value;
