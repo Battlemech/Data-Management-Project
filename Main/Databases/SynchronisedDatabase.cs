@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Main.Networking;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Utility;
@@ -80,7 +81,7 @@ namespace Main.Databases
             
             //no need to increment pending request count: previous data is simply overwritten by operation
 
-            Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
+            bool success = Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 uint expectedModCount = reply.ExpectedModCount;
                 
@@ -102,26 +103,8 @@ namespace Main.Databases
                 //enqueue the request: It will be processed later
                 EnqueueFailedRequest(request);
             });
-        }
 
-        /// <summary>
-        /// Invoked when a value was modified while no connection was established.
-        /// </summary>
-        private void OnOfflineModification(string id, byte[] value)
-        {
-            //too many modifications were already executed. No delayed synchronisation possible
-            if(GetModCount(id) > 1) return;
-            
-            OnInitialized<Guid>(nameof(HostId), (guid =>
-            {
-                bool isHost = guid == Client.Id;
-                uint currentModCount = GetModCount(id);
-                
-                //too many modifications were already executed. No delayed synchronisation possible
-                if((!isHost && currentModCount > 0) || (isHost && currentModCount > 1)) return;
-
-                //todo: synchronise data
-            }));
+            if (!success) throw new NotConnectedException();
         }
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)

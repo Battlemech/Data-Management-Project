@@ -58,13 +58,30 @@ namespace Tests
             TestUtility.AreEqual(id, () => database.Get<string>(id+id));
             
             //test trigger if default
-            database.OnInitialized<int>("1", i => database.Set("2", i + 1));
+            database.OnInitialized<int>("1", i =>
+            {
+                database.Set("2", i + 1);
+                Console.WriteLine("OnInitialized was triggered");
+            });
             database.Set<int>("1", default);
             
             //wait until callback from set was triggered
             TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
-            Assert.AreEqual(1, database.Get<int>("2"));
+            Assert.AreEqual(0, database.Get<int>("2"));
             
+            //set value to 1, invoking OnInitialized
+            database.Set<int>("1", 0); //doesn't trigger because its default value
+            
+            //wait until callback from set was triggered
+            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
+            Assert.AreEqual(0, database.Get<int>("2"));
+            
+            //set value to 1, invoking OnInitialized
+            database.Set<int>("1", 1); //doesn't trigger because its default value
+            
+            //wait until callback from set was triggered
+            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
+            Assert.AreEqual(2, database.Get<int>("2"));
         }
         
     }

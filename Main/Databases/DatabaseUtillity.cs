@@ -37,8 +37,8 @@ namespace Main.Databases
 
         private bool TryInvoke<T>(T obj, Action<T> onInitialized)
         {
-            if(obj == null || obj.Equals(default)) return false;
-                    
+            if (EqualityComparer<T>.Default.Equals(obj, default(T))) return false;
+            
             onInitialized.Invoke(obj);
 
             return true;

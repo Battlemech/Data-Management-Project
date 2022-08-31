@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using Main.Databases;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Server;
 using Main.Persistence;
+using Main.Utility;
 using NUnit.Framework;
 
 namespace Tests
@@ -95,6 +97,57 @@ namespace Tests
                 Assert.AreEqual(guid, SystemDatabase.Guid);
             }
             Console.WriteLine(guid);
+        }
+
+        [Test]
+        public static void OfflineModification()
+        {
+            string id = "IntList";
+            
+            //setup networking
+            int port = TestUtility.GetPort(nameof(PersistenceTests), nameof(OfflineModification));
+            SynchronisedServer server = new SynchronisedServer("127.0.0.1", port);
+            server.Start();
+
+            //create two clients
+            TestClient client1 = new TestClient(port);
+            TestClient client2 = new TestClient(port);
+
+            //create two databases
+            Database database1 = new Database("DB", true);
+            Database database2 = new Database("DB") { Client = client2 };
+
+            //set values -> offline sets
+            database1.Set(id, new List<int>(){1, 2});
+            database2.Set(id, new List<int>(1));
+            
+            //connect clients
+            client1.ConnectAsync();
+            client2.ConnectAsync();
+            
+            Assert.IsTrue(client1.WaitForConnect());
+            Assert.IsTrue(client2.WaitForConnect());
+            
+            Console.WriteLine($"Values before connect: Host=1:{LogWriter.StringifyCollection(database1.Get<List<int>>(id))}, 2:{LogWriter.StringifyCollection(database2.Get<List<int>>(id))}");
+            
+            //make databases synchronised
+            database1.IsSynchronised = true;
+            database2.IsSynchronised = true;
+
+            //make sure client 1 is host
+            TestUtility.AreEqual(1, () =>
+            {
+                int hostCount = 0;
+                if (database1.IsHost) hostCount++;
+                if (database2.IsHost) hostCount++;
+                return hostCount;
+            }, "One host");
+            
+            Console.WriteLine($"Database {((database1.IsHost) ? "1" : "2")} is host");
+            
+            if(database1.IsHost) TestUtility.AreEqual(new List<int>(){1, 2}, () => database2.Get<List<int>>(id));
+            else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database2.Get<List<int>>(id));
+            else Assert.Fail("No database is host");
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Main.Networking;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Utility;
@@ -47,7 +48,7 @@ namespace Main.Databases
             //start saving bytes which arrive from network in case they are required later
             IncrementPendingCount(id);
             
-            Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
+            bool success = Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
                 if(lockReply == null) throw new TimeoutException($"Received no reply from server within {Options.DefaultTimeout} ms!");
 
@@ -81,6 +82,8 @@ namespace Main.Databases
                 //enqueue failed request
                 EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify, true));
             });
+
+            if (!success) throw new NotConnectedException();
         }
 
         public T SafeModifySync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)

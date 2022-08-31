@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Main.Networking;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Utility;
@@ -90,7 +91,7 @@ namespace Main.Databases
             //start saving bytes which arrive from network in case they are required later
             IncrementPendingCount(id);
 
-            Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
+            bool success = Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 uint expectedModCount = reply.ExpectedModCount;
                 
@@ -142,6 +143,8 @@ namespace Main.Databases
                     return newValue;
                 })));
             });
+
+            if (!success) throw new NotConnectedException();
         }
 
         private void ExecuteDelayedSet(string id, byte[] serializedBytes, uint modCount, bool incrementModCount)
