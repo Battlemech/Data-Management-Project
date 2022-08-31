@@ -109,9 +109,19 @@ namespace Main.Databases
         /// </summary>
         private void OnOfflineModification(string id, byte[] value)
         {
-            //todo: request change from server. Change instantly if host
+            //too many modifications were already executed. No delayed synchronisation possible
+            if(GetModCount(id) > 1) return;
             
-            //todo: update syncRequired to false
+            OnInitialized<Guid>(nameof(HostId), (guid =>
+            {
+                bool isHost = guid == Client.Id;
+                uint currentModCount = GetModCount(id);
+                
+                //too many modifications were already executed. No delayed synchronisation possible
+                if((!isHost && currentModCount > 0) || (isHost && currentModCount > 1)) return;
+
+                //todo: synchronise data
+            }));
         }
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
