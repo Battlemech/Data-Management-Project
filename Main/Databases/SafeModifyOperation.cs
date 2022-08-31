@@ -101,7 +101,7 @@ namespace Main.Databases
             
             if(modificationExecuted.WaitOne(timeout)) return current;
 
-            throw new Exception($"Failed to execute modify operation within {timeout} ms!");
+            throw new TimeoutException($"Failed to execute modify operation within {timeout} ms!");
         }
 
         private void ExecuteModification<T>(string id, ModifyValueDelegate<T> modify)
