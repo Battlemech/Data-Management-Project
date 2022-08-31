@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Main.Databases;
 using Main.Databases.Utility;
 using NUnit.Framework;
@@ -37,6 +38,33 @@ namespace Tests
             database.Remove<List<string>, string>(id, id);
             
             Assert.AreEqual(0, database.Get<List<string>>(id).Count);
+        }
+
+        [Test]
+        public static void TestOnInitialized()
+        {
+            string id = nameof(TestOnInitialized);
+
+            Database database = new Database(id);
+            database.OnInitialized<string>(id, (s =>
+            {
+                database.Set(id+id, id);
+            }));
+            
+            //trigger onInitialized
+            database.Set(id, "yeah");
+            
+            //test delayed trigger
+            TestUtility.AreEqual(id, () => database.Get<string>(id+id));
+            
+            //test trigger if default
+            database.OnInitialized<int>("1", i => database.Set("2", i + 1));
+            database.Set<int>("1", default);
+            
+            //wait until callback from set was triggered
+            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
+            Assert.AreEqual(1, database.Get<int>("2"));
+            
         }
         
     }

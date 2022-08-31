@@ -1,4 +1,5 @@
 ﻿using System;
+using Main.Networking.Synchronisation.Client;
 
 namespace Main.Databases
 {
@@ -19,6 +20,22 @@ namespace Main.Databases
             set => Set(nameof(ClientPersistence), value);
         }
 
+        public SynchronisedClient Client
+        {
+            get => _client;
+            set
+            {
+                //transfer management of this database from one client to another
+                _client?.RemoveDatabase(this);
+                value.AddDatabase(this);
+
+                //update local value
+                _client = value;
+            }
+        }
+        private SynchronisedClient _client;
+
+        
         private void ConfigureSynchronisedPersistence()
         {
             //set hostId to current database if no other client claimed host-privileges

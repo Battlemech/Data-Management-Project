@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 
@@ -7,104 +8,45 @@ namespace Main.Databases
 {
     public partial class Database
     {
-        /// <summary>
-        /// Contains a list of failed set requests, containing the expected modification count
-        /// </summary>
-        private readonly Dictionary<string, Queue<SetValueRequest>> _failedRequests =
-            new Dictionary<string, Queue<SetValueRequest>>();
+        private int _onInitializedTracker;
         
-        //keeps track of all get attempts which failed to return an object
-        private readonly Dictionary<string, Type> _failedGets = new Dictionary<string, Type>();
-
-        public SynchronisedClient Client
-        {
-            get => _client;
-            set
-            {
-                //transfer management of this database from one client to another
-                _client?.RemoveDatabase(this);
-                value.AddDatabase(this);
-
-                //update local value
-                _client = value;
-            }
-        }
-        private SynchronisedClient _client;
-
         /// <summary>
-        /// Returns the number of value synchronisation tasks which are still ongoing 
+        /// Invokes an action once a value isn't null or default 
         /// </summary>
-        public int GetOngoingSets(string id)
+        /// <param name="id"></param>
+        /// <param name="onInitialized"></param>
+        /// <typeparam name="T"></typeparam>
+        public void OnInitialized<T>(string id, Action<T> onInitialized)
         {
-            lock (_failedRequests)
+            lock (_values) //prevent modification on retrieved object
             {
-                return !_failedRequests.TryGetValue(id, out var requests) ? 0 : requests.Count;
-            }
-        }
-
-        private bool TryGetType(string id, out Type type)
-        {
-            //try retrieving type from currently saved objects
-            if (_values.TryGetValue(id, out object current) && current != null)
-            {
-                type = current.GetType();
-                return true;
-            }
-            
-            //try retrieving type from failed get requests
-            if (_failedGets.TryGetValue(id, out type)) return true;
-
-            //try retrieving type from callbacks
-            return _callbackHandler.TryGetType(id, out type);
-        }
-
-        private bool TryGetType(string id)
-        {
-            return TryGetType(id, out _);
-        }
-
-        private void EnqueueFailedRequest(SetValueRequest request)
-        {
-            string id = request.ValueId;
-            
-            lock (_failedRequests)
-            {
-                if (!_failedRequests.TryGetValue(id, out Queue<SetValueRequest> requests))
+                if(TryInvoke(Get<T>(id), onInitialized)) return;
+                
+                //get thread safe index increment
+                string callbackName = $"SYSTEM/INTERNAL/{id}-{Interlocked.Increment(ref _onInitializedTracker)}";
+                
+                //invoke action once if value is not null or default
+                AddCallback<T>(id, (obj =>
                 {
-                    requests = new Queue<SetValueRequest>();
-                    _failedRequests.Add(id, requests);
-                }
-                    
-                requests.Enqueue(request);
+                    if(!TryInvoke(obj, onInitialized)) return;
+
+                    RemoveCallbacks(callbackName);
+                }), callbackName);
             }
         }
 
-        private bool TryDequeueFailedRequest(string id, uint maxModCount, out SetValueRequest request)
+        private bool TryInvoke<T>(T obj, Action<T> onInitialized)
         {
-            request = null;
-            
-            lock (_failedRequests)
-            {
-                //no queue with requested id exists
-                if (!_failedRequests.TryGetValue(id, out Queue<SetValueRequest> requests)) return false;
-
-                //queue is empty
-                if (requests.Count == 0) return false;
-
-                //request needs to be processed later
-                if(requests.Peek().ModCount > maxModCount) return false;
-
-                //dequeue delayed request
-                request = requests.Dequeue();
-            }
+            if(obj == null || obj.Equals(default)) return false;
+                    
+            onInitialized.Invoke(obj);
 
             return true;
         }
 
         public override string ToString()
         {
-            //todo: replace with: return _isSynchronised ? $"DB({Client})-{Id}" : $"DB-{Id}";
-            return _isSynchronised ? $"{Client}" : $"DB-{Id}";
+            return _isSynchronised ? $"({Client})-{Id}" : $"DB-{Id}";
         }
     }
 }
