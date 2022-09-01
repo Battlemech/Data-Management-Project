@@ -128,7 +128,7 @@ namespace Tests
             Assert.IsTrue(client1.WaitForConnect());
             Assert.IsTrue(client2.WaitForConnect());
             
-            Console.WriteLine($"Values before connect: Host=1:{LogWriter.StringifyCollection(database1.Get<List<int>>(id))}, 2:{LogWriter.StringifyCollection(database2.Get<List<int>>(id))}");
+            Console.WriteLine($"Values before IsSynchronised=true: Host=1:{LogWriter.StringifyCollection(database1.Get<List<int>>(id))}, 2:{LogWriter.StringifyCollection(database2.Get<List<int>>(id))}");
             
             //make databases synchronised
             database1.IsSynchronised = true;

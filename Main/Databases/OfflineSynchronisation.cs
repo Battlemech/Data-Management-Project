@@ -10,6 +10,8 @@ namespace Main.Databases
         /// </summary>
         private void OnOfflineModification(string id, byte[] value)
         {
+            Console.WriteLine($"{this}: id={id}. Waiting for HostId to be initialized!");
+            
             OnInitialized<Guid>(nameof(HostId), (guid =>
             {
                 bool isHost = guid == Client.Id;

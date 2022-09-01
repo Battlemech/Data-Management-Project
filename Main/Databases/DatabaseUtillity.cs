@@ -30,7 +30,7 @@ namespace Main.Databases
                 {
                     if(!TryInvoke(obj, onInitialized)) return;
 
-                    RemoveCallbacks(callbackName);
+                    RemoveCallbacks(id, callbackName);
                 }), callbackName);
             }
         }
