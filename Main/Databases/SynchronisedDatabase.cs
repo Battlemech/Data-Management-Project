@@ -44,15 +44,28 @@ namespace Main.Databases
                 {
                     //return if there are no values to synchronise
                     if(_values.Count == 0) return;
-
-                    foreach (var kv in _values)
-                    {
-                        string id = kv.Key;
-                        
-                        if(TryGetType(id, out Type type))
-                            OnOfflineModification(id, Serialization.Serialize(type, kv.Value));
-                    }  
                 }
+
+                Task synchronisationTask = new Task((() =>
+                {
+                    lock (_values)
+                    {
+                        //return if there are no values to synchronise
+                        if (_values.Count == 0) return;
+
+                        foreach (var kv in _values)
+                        {
+                            string id = kv.Key;
+
+                            //type could not be extracted -> object is null -> null is default value on every client
+                            if (TryGetType(id, out Type type))
+                                OnOfflineModification(id, Serialization.Serialize(type, kv.Value));
+                        }
+
+                    }
+                }));
+                
+                Scheduler.QueueTask(synchronisationTask);
             }
         }
         private bool _isSynchronised;
