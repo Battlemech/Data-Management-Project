@@ -39,27 +39,20 @@ namespace Main.Databases
                 }
                 
                 ConfigureSynchronisedPersistence();
-
-                //return if there are no values to synchronise
+                
                 lock (_values)
                 {
+                    //return if there are no values to synchronise
                     if(_values.Count == 0) return;
-                }
-                
-                //delegate value synchronisation to new task
-                Task synchronisationTask = new Task((() =>
-                {
-                    lock (_values)
+
+                    foreach (var kv in _values)
                     {
-                        if(_values.Count == 0) return;
+                        string id = kv.Key;
                         
-                        foreach (var kv in _values)
-                        {
-                            OnOfflineModification(kv.Key, Serialization.Serialize(kv.Value));
-                        }   
-                    }
-                }));
-                Scheduler.QueueTask(synchronisationTask);
+                        if(TryGetType(id, out Type type))
+                            OnOfflineModification(id, Serialization.Serialize(type, kv.Value));
+                    }  
+                }
             }
         }
         private bool _isSynchronised;

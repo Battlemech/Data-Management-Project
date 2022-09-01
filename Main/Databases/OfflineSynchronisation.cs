@@ -17,14 +17,14 @@ namespace Main.Databases
             OnInitialized<Guid>(nameof(HostId), (guid =>
             {
                 bool isHost = guid == Client.Id;
-                
+
                 //if host modified data without connection: Synchronise it
                 if (isHost)
                 {
                     OnSetSynchronised(id, value);
                     return;
                 }
-                
+
                 //if client modified data and it was already changed: return
                 if(GetModCount(id) > 0) return;
                 

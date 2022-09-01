@@ -51,7 +51,7 @@ namespace Main.Databases
 
         public override string ToString()
         {
-            return _isSynchronised ? $"({Client})-{Id}" : $"DB-{Id}";
+            return Client != null ? $"({Client})-{Id}" : $"DB-{Id}";
         }
     }
 }

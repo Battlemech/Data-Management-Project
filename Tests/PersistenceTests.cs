@@ -114,13 +114,13 @@ namespace Tests
             TestClient client2 = new TestClient(port);
 
             //create two databases
-            Database database1 = new Database("DB", true);
+            Database database1 = new Database("DB") { Client = client1};
             Database database2 = new Database("DB") { Client = client2 };
 
             //add debug outputs //todo: why does adding callbacks here fix the test???
             //database1.AddCallback<List<int>>(id, ints => Console.WriteLine($"Database1: List={LogWriter.StringifyCollection(ints)}"));
             //database2.AddCallback<List<int>>(id, ints => Console.WriteLine($"Database2: List={LogWriter.StringifyCollection(ints)}"));
-            
+
             //set values -> offline sets
             database1.Set(id, new List<int>(){1, 2});
             database2.Set(id, new List<int>(){1});
@@ -131,9 +131,7 @@ namespace Tests
             
             Assert.IsTrue(client1.WaitForConnect());
             Assert.IsTrue(client2.WaitForConnect());
-            
-            Console.WriteLine($"Values before IsSynchronised=true: Host=1:{LogWriter.StringifyCollection(database1.Get<List<int>>(id))}, 2:{LogWriter.StringifyCollection(database2.Get<List<int>>(id))}");
-            
+
             //make databases synchronised
             database1.IsSynchronised = true;
             database2.IsSynchronised = true;
@@ -148,7 +146,7 @@ namespace Tests
             }, "One host");
             
             Console.WriteLine($"Database {((database1.IsHost) ? "1" : "2")} is host");
-            
+
             if(database1.IsHost) TestUtility.AreEqual(new List<int>(){1, 2}, () => database2.Get<List<int>>(id));
             else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database1.Get<List<int>>(id));
             else Assert.Fail("No database is host");
