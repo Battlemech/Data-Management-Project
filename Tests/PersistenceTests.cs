@@ -117,6 +117,10 @@ namespace Tests
             Database database1 = new Database("DB", true);
             Database database2 = new Database("DB") { Client = client2 };
 
+            //add debug outputs //todo: why does adding callbacks here fix the test???
+            //database1.AddCallback<List<int>>(id, ints => Console.WriteLine($"Database1: List={LogWriter.StringifyCollection(ints)}"));
+            //database2.AddCallback<List<int>>(id, ints => Console.WriteLine($"Database2: List={LogWriter.StringifyCollection(ints)}"));
+            
             //set values -> offline sets
             database1.Set(id, new List<int>(){1, 2});
             database2.Set(id, new List<int>(){1});
@@ -146,7 +150,7 @@ namespace Tests
             Console.WriteLine($"Database {((database1.IsHost) ? "1" : "2")} is host");
             
             if(database1.IsHost) TestUtility.AreEqual(new List<int>(){1, 2}, () => database2.Get<List<int>>(id));
-            else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database2.Get<List<int>>(id));
+            else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database1.Get<List<int>>(id));
             else Assert.Fail("No database is host");
         }
     }
