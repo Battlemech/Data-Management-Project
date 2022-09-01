@@ -51,11 +51,6 @@ namespace Main.Databases
                     {
                         HostPersistence = IsPersistent;
                         ClientPersistence = IsPersistent && Options.DefaultClientPersistence;
-                        Console.WriteLine($"{this} is host! Returning HostId: {hostId}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{this} is client!  Returning HostId: {hostId}");
                     }
                     
                     return hostId;

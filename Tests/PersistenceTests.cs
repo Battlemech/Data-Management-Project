@@ -119,7 +119,7 @@ namespace Tests
 
             //set values -> offline sets
             database1.Set(id, new List<int>(){1, 2});
-            database2.Set(id, new List<int>(1));
+            database2.Set(id, new List<int>(){1});
             
             //connect clients
             client1.ConnectAsync();
