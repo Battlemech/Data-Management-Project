@@ -72,7 +72,14 @@ namespace Main.Databases
                 };
             }
         }
-        
+
+        public void BlockingGet<T>(string id, Action<T> action)
+        {
+            lock (_values)
+            {
+                action.Invoke(Get<T>(id));
+            }
+        }
 
         public void Set<T>(string id, T value)
         {
