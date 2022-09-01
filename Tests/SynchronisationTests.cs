@@ -661,5 +661,19 @@ namespace Tests
                 return persistenceCount;
             });
         }
+
+        [Test]
+        public static void TestHostId()
+        {
+            Setup(nameof(TestHostId));
+
+            Database1.AddCallback<Guid>("HostId", guid => Console.WriteLine($"Set hostId to: {guid}"));
+            
+            Thread.Sleep(1000);
+            
+            Assert.IsTrue(Database1.IsHost);
+            Assert.IsFalse(Database2.IsHost);
+            Assert.IsFalse(Database3.IsHost);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Main.Utility;
 
 namespace Main.Databases
@@ -10,13 +11,12 @@ namespace Main.Databases
         /// </summary>
         private void OnOfflineModification(string id, byte[] value)
         {
-            Console.WriteLine($"{this}: id={id}. Waiting for HostId to be initialized!");
+            //prevent modification of hostId if offline
+            if(id == nameof(HostId)) return;
             
             OnInitialized<Guid>(nameof(HostId), (guid =>
             {
                 bool isHost = guid == Client.Id;
-                
-                Console.WriteLine($"{this}: id={id}. IsHost: {isHost}");
                 
                 //if host modified data without connection: Synchronise it
                 if (isHost)

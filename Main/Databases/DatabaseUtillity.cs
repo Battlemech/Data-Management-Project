@@ -11,7 +11,7 @@ namespace Main.Databases
         private int _onInitializedTracker;
         
         /// <summary>
-        /// Invokes an action once a value isn't null or default 
+        /// Invokes an action exactly one time as soon as the value isn't null or default 
         /// </summary>
         /// <param name="id"></param>
         /// <param name="onInitialized"></param>
@@ -37,11 +37,16 @@ namespace Main.Databases
 
         private bool TryInvoke<T>(T obj, Action<T> onInitialized)
         {
-            if (EqualityComparer<T>.Default.Equals(obj, default(T))) return false;
+            if (IsNullOrDefault(obj)) return false;
             
             onInitialized.Invoke(obj);
 
             return true;
+        }
+
+        private static bool IsNullOrDefault<T>(T obj)
+        {
+            return EqualityComparer<T>.Default.Equals(obj, default(T));
         }
 
         public override string ToString()
