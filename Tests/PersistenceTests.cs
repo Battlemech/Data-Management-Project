@@ -117,10 +117,6 @@ namespace Tests
             Database database1 = new Database("DB") { Client = client1};
             Database database2 = new Database("DB") { Client = client2 };
 
-            //add debug outputs //todo: why does adding callbacks here fix the test???
-            //database1.AddCallback<List<int>>(id, ints => Console.WriteLine($"Database1: List={LogWriter.StringifyCollection(ints)}"));
-            //database2.AddCallback<List<int>>(id, ints => Console.WriteLine($"Database2: List={LogWriter.StringifyCollection(ints)}"));
-
             //set values -> offline sets
             database1.Set(id, new List<int>(){1, 2});
             database2.Set(id, new List<int>(){1});
