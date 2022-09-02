@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using Main.Databases;
 using Main.Databases.Utility;
+using Main.Persistence;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 
 namespace Tests
 {
@@ -83,6 +85,6 @@ namespace Tests
             TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
             TestUtility.AreEqual(2, () => database.Get<int>("2"));
         }
-        
+
     }
 }

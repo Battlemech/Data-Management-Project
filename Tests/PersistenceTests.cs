@@ -147,5 +147,23 @@ namespace Tests
             else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database1.Get<List<int>>(id));
             else Assert.Fail("No database is host");
         }
+        
+        [Test]
+        public static void TestPersistentModify()
+        {
+            Database database = new Database("Test", true);
+            database.Modify<int>("Test", value =>
+            {
+                Console.WriteLine(value);
+                return value + 1;
+            });
+            Console.WriteLine(database.Get<int>("Test"));
+            
+            TestUtility.AreEqual(true, (() => PersistentData.TryLoad("Test", "Test", out int value) && value == 1));
+            
+            //load database again
+            Database loaded = new Database("Test", true);
+            Assert.AreEqual(1, loaded.Get<int>("Test"));
+        }
     }
 }
