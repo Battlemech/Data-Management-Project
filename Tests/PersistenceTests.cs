@@ -165,5 +165,19 @@ namespace Tests
             Database loaded = new Database("Test", true);
             Assert.AreEqual(1, loaded.Get<int>("Test"));
         }
+
+        [Test]
+        public static void TestPersistenceAfterSet()
+        {
+            string id = nameof(TestPersistenceAfterSet);
+            Database database = new Database(id);
+            database.Set(id, id);
+
+            database.IsPersistent = true;
+            Thread.Sleep(1000);
+
+            database = new Database(id, true);
+            Assert.AreEqual(id, database.Get<string>(id));
+        }
     }
 }
