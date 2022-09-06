@@ -41,7 +41,7 @@ namespace Main.Threading
         {
             int schedulerCount = _queuedSchedulers.Count;
 
-            //create scheduler if necessary
+            //create scheduler if necessary //todo: better solution?
             if (schedulerCount == 0)
             {
                 _queuedSchedulers.TryAdd("", new QueuedScheduler());

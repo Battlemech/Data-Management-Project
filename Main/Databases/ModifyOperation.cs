@@ -144,7 +144,9 @@ namespace Main.Databases
                 })));
             });
 
-            if (!success) throw new NotConnectedException();
+            if (success) return;
+
+            throw new NotConnectedException();
         }
 
         private void ExecuteDelayedSet(string id, byte[] serializedBytes, uint modCount, bool incrementModCount)

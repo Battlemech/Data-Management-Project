@@ -9,6 +9,8 @@ using Main.Databases.Utility;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Networking.Synchronisation.Server;
+using Main.Objects;
+using Main.Persistence;
 using Main.Utility;
 using NUnit.Framework;
 
@@ -674,6 +676,31 @@ namespace Tests
             Assert.IsTrue(Database1.IsHost);
             Assert.IsFalse(Database2.IsHost);
             Assert.IsFalse(Database3.IsHost);
+        }
+
+        [Test]
+        public static void TestSynchronisedObjectSynchronisation()
+        {
+            string testName = nameof(TestSynchronisedObjectSynchronisation);
+            Setup(testName);
+            
+            Database1.Set(testName, new PlayerData("PlayerData"){Name = "Jeff"});
+            
+            TestUtility.AreEqual("Jeff", () => Database1.Get<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database2.Get<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database3.Get<PlayerData>(testName)?.Name);
+        }
+        
+        private class PlayerData : SynchronisedObject
+        {
+            public string Name
+            {
+                get => GetDatabase().Get<string>(nameof(Name));
+                set => GetDatabase().Set(nameof(Name), value);
+            }
+            public PlayerData(string databaseId) : base(databaseId)
+            {
+            }
         }
     }
 }

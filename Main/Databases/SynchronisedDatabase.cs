@@ -37,9 +37,10 @@ namespace Main.Databases
                 
                     Client = SynchronisedClient.Instance;
                 }
-                
+
+                //try resolving HostId. If client is not connected: Delay synchronisation until client connects
                 ConfigureSynchronisedPersistence();
-                
+
                 lock (_values)
                 {
                     //return if there are no values to synchronise
@@ -110,7 +111,9 @@ namespace Main.Databases
                 EnqueueFailedRequest(request);
             });
 
-            if (!success) throw new NotConnectedException();
+            if (success) return;
+
+            throw new NotConnectedException();
         }
 
         protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)

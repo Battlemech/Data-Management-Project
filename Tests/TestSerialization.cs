@@ -6,6 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
+using Main.Networking;
+using Main.Networking.Synchronisation.Client;
+using Main.Objects;
 using Main.Utility;
 using NUnit.Framework;
 

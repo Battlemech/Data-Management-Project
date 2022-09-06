@@ -83,7 +83,7 @@ namespace Main.Databases
                 EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify, true));
             });
 
-            if (!success) throw new NotConnectedException();
+            if(!success) throw new NotConnectedException();
         }
 
         public T SafeModifySync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
