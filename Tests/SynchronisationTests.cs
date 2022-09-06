@@ -9,6 +9,7 @@ using Main.Databases.Utility;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Networking.Synchronisation.Server;
+using Main.Objects;
 using Main.Persistence;
 using Main.Utility;
 using NUnit.Framework;
@@ -678,33 +679,28 @@ namespace Tests
         }
 
         [Test]
-        public static void TestDelayedSynchronisation()
+        public static void TestSynchronisedObjectSynchronisation()
         {
-            string id = nameof(TestDelayedSynchronisation);
-            Setup(id);
+            string testName = nameof(TestSynchronisedObjectSynchronisation);
+            Setup(testName);
             
-            //disconnect client 1
-            Client1.DisconnectAsync();
-            TestUtility.AreEqual(false, (() => Client1.IsConnected));
-            Thread.Sleep(1000);
+            Database1.Set(testName, new PlayerData("PlayerData"){Name = "Jeff"});
             
-            //set values in database 1
-            Database1.Set("1", "1");
-            Database1.Modify<string>("2", (current) => "2");
-            
-            TestUtility.AreEqual(0, () => Database1.Scheduler.QueuedTasksCount, "Processed sets!");
-            
-            //reconnect client 1
-            Client1.ConnectAsync();
-            Assert.IsTrue(Client1.WaitForConnect());
-            
-            TestUtility.AreEqual("1", () => Database1.Get<string>("1"));
-            TestUtility.AreEqual("1", () => Database2.Get<string>("1"));
-            TestUtility.AreEqual("1", () => Database3.Get<string>("1"));
-            
-            TestUtility.AreEqual("2", () => Database1.Get<string>("2"));
-            TestUtility.AreEqual("2", () => Database2.Get<string>("2"));
-            TestUtility.AreEqual("2", () => Database3.Get<string>("2"));
+            TestUtility.AreEqual("Jeff", () => Database1.Get<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database2.Get<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database3.Get<PlayerData>(testName)?.Name);
+        }
+        
+        private class PlayerData : SynchronisedObject
+        {
+            public string Name
+            {
+                get => GetDatabase().Get<string>(nameof(Name));
+                set => GetDatabase().Set(nameof(Name), value);
+            }
+            public PlayerData(string databaseId) : base(databaseId)
+            {
+            }
         }
     }
 }
