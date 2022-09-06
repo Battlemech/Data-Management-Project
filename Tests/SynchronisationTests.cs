@@ -9,6 +9,7 @@ using Main.Databases.Utility;
 using Main.Networking.Synchronisation.Client;
 using Main.Networking.Synchronisation.Messages;
 using Main.Networking.Synchronisation.Server;
+using Main.Persistence;
 using Main.Utility;
 using NUnit.Framework;
 
@@ -674,6 +675,36 @@ namespace Tests
             Assert.IsTrue(Database1.IsHost);
             Assert.IsFalse(Database2.IsHost);
             Assert.IsFalse(Database3.IsHost);
+        }
+
+        [Test]
+        public static void TestDelayedSynchronisation()
+        {
+            string id = nameof(TestDelayedSynchronisation);
+            Setup(id);
+            
+            //disconnect client 1
+            Client1.DisconnectAsync();
+            TestUtility.AreEqual(false, (() => Client1.IsConnected));
+            Thread.Sleep(1000);
+            
+            //set values in database 1
+            Database1.Set("1", "1");
+            Database1.Modify<string>("2", (current) => "2");
+            
+            TestUtility.AreEqual(0, () => Database1.Scheduler.QueuedTasksCount, "Processed sets!");
+            
+            //reconnect client 1
+            Client1.ConnectAsync();
+            Assert.IsTrue(Client1.WaitForConnect());
+            
+            TestUtility.AreEqual("1", () => Database1.Get<string>("1"));
+            TestUtility.AreEqual("1", () => Database2.Get<string>("1"));
+            TestUtility.AreEqual("1", () => Database3.Get<string>("1"));
+            
+            TestUtility.AreEqual("2", () => Database1.Get<string>("2"));
+            TestUtility.AreEqual("2", () => Database2.Get<string>("2"));
+            TestUtility.AreEqual("2", () => Database3.Get<string>("2"));
         }
     }
 }

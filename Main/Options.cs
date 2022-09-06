@@ -1,4 +1,8 @@
-﻿namespace Main
+﻿using System;
+using System.Collections.Generic;
+using Main.Databases;
+
+namespace Main
 {
     public static class Options
     {
@@ -12,5 +16,10 @@
         
         //default timeout in ms
         public const int DefaultTimeout = 3000;
+
+        /// <summary>
+        /// Array of types which will be ignored during serialization of objects
+        /// </summary>
+        public static readonly Type[] IgnoredTypes = new[] { typeof(Database) };
     }
 }

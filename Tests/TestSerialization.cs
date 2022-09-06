@@ -6,6 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
+using Main.Networking;
+using Main.Networking.Synchronisation.Client;
+using Main.Objects;
 using Main.Utility;
 using NUnit.Framework;
 
@@ -180,6 +183,34 @@ namespace Tests
 
             resetEvent.Set();
             Task.WaitAll(tasks, 10000);
+        }
+
+        [Test]
+        public static void TestSynchronisedObjectSerialization()
+        {
+            //create client to allow retrieval of databases
+            SynchronisedClient client = new TestClient();
+            
+            string id = nameof(TestSynchronisedObjectSerialization);
+            
+            //create player data
+            PlayerData playerData = new PlayerData(id){Name = "Hans"};
+            byte[] serializedBytes = Serialization.Serialize(playerData);
+
+            PlayerData copy = Serialization.Deserialize<PlayerData>(serializedBytes);
+            Assert.AreEqual("Hans", copy.Name);
+        }
+
+        private class PlayerData : SynchronisedObject
+        {
+            public string Name
+            {
+                get => GetDatabase().Get<string>(nameof(Name));
+                set => GetDatabase().Set(nameof(Name), value);
+            }
+            public PlayerData(string databaseId) : base(databaseId)
+            {
+            }
         }
     }
 }
