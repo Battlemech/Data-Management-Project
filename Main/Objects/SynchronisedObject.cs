@@ -50,8 +50,13 @@ namespace Main.Objects
 
                 _database = client.Get(DatabaseId);
             }
-
+            
             return _database;
         }
+
+        public void Modify<T>(string id, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null) =>
+            GetDatabase().Modify(id, modify, onResultConfirmed);
+
+        public void SafeModify<T>(string id, ModifyValueDelegate<T> modify) => GetDatabase().SafeModify(id, modify);
     }
 }
