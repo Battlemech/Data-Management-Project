@@ -27,7 +27,7 @@ namespace Main.Databases
                 }
 
                 //see if database exists
-                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSavedObject> savedObjects);
+                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<SavedObject> savedObjects);
 
                 if (!databaseExists) OnNoData();
                 else OnDataFound(savedObjects);
@@ -67,9 +67,9 @@ namespace Main.Databases
         /// <summary>
         /// Invoked when persistent data was found
         /// </summary>
-        private void OnDataFound(List<TrackedSavedObject> savedObjects)
+        private void OnDataFound(List<SavedObject> savedObjects)
         {
-            List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
+            List<SavedObject> toSynchronise = new List<SavedObject>(savedObjects.Count);
             bool syncRequired = !IsSynchronised;
 
             lock (_values)
@@ -86,13 +86,13 @@ namespace Main.Databases
                 //load all values from database which didn't already exist
                 foreach (var tso in savedObjects)
                 {
-                    string id = tso.ValueStorageId;
+                    string id = tso.ValueId;
                     
                     //Skip if object with loaded id already exists
                     if (existingIds.Contains(id)) continue;
                     
                     //- Load it
-                    _values[id] = Serialization.Deserialize<object>(tso.Buffer);
+                    _values[id] = Serialization.Deserialize<object>(tso.Bytes);
                     
                     //skip objects which don't have to be synchronised
                     if(!tso.SyncRequired) continue;
@@ -111,7 +111,7 @@ namespace Main.Databases
                 //inform peers that data was modified while no connection was established
                 foreach (var tso in toSynchronise)
                 {
-                    OnOfflineModification(tso.ValueStorageId, tso.Buffer);
+                    OnOfflineModification(tso.ValueId, tso.Bytes);
                 }
             }));
             Scheduler.QueueTask(synchronisationTask);

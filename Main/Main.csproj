@@ -7,6 +7,8 @@
     <ItemGroup>
       <PackageReference Include="Dapper" Version="2.0.123" />
       <PackageReference Include="GroBuf" Version="1.8.1" />
+      <PackageReference Include="Mono.Data.Sqlite" Version="1.0.61" />
+      <PackageReference Include="sqlite3" Version="3.8.8.3" />
       <PackageReference Include="System.Data.SQLite.Core" Version="1.0.116" />
     </ItemGroup>
 

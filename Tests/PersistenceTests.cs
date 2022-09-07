@@ -61,7 +61,7 @@ namespace Tests
             TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
                 "Persistent data write", 15000);
             Thread.Sleep(100); //wait for transaction to complete
-            TestUtility.AreEqual(false, () => PersistentData.SyncRequired(id, id),
+            TestUtility.AreEqual(true, () => PersistentData.TryGetSyncRequired(id, id, out bool syncRequired) && !syncRequired,
                 "sync required", 15000);
 
             //disable synchronisation
@@ -74,7 +74,7 @@ namespace Tests
             TestUtility.AreEqual(0, () => PersistentData.DataToSaveCount,
                 "Persistent data write", 15000);
             Thread.Sleep(100); //wait for transaction to complete
-            TestUtility.AreEqual(true, () => PersistentData.SyncRequired(id, id),
+            TestUtility.AreEqual(true, () =>  PersistentData.TryGetSyncRequired(id, id, out bool syncRequired) && syncRequired,
                 "sync required", 15000);
         }
 
