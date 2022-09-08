@@ -54,9 +54,22 @@ namespace Main.Objects
             return _database;
         }
 
-        public void Modify<T>(string id, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null) =>
-            GetDatabase().Modify(id, modify, onResultConfirmed);
+        protected bool Equals(SynchronisedObject other)
+        {
+            return DatabaseId == other.DatabaseId;
+        }
 
-        public void SafeModify<T>(string id, ModifyValueDelegate<T> modify) => GetDatabase().SafeModify(id, modify);
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((SynchronisedObject)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (DatabaseId != null ? DatabaseId.GetHashCode() : 0);
+        }
     }
 }
