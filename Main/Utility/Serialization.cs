@@ -52,7 +52,12 @@ namespace Main.Utility
         
         public IGroBufCustomSerializer Get(Type declaredType, Func<Type, IGroBufCustomSerializer> factory, IGroBufCustomSerializer baseSerializer)
         {
-            if (_ignoredTypes.Contains(declaredType)) return _ignoreObjectSerializer;
+            //if declared type can be assigned to the type to ignore: Don't serialize it
+            foreach (var ignoredType in _ignoredTypes)
+            {
+                if (declaredType.IsAssignableTo(ignoredType)) return _ignoreObjectSerializer;
+            }
+            
             return null;
         }
         
