@@ -45,7 +45,7 @@ namespace Main.Databases
                     object loadedObject = Serialization.Deserialize(serializedData, typeof(T));
 
                     if (loadedObject is not T expectedObject)
-                        throw new ArgumentException($"Loaded object {loadedObject.GetType()}, but expected {typeof(T)}");
+                        throw new ArgumentException($"Loaded object {loadedObject?.GetType()}, but expected {typeof(T)}");
                     
                     //assign obj
                     obj = expectedObject;

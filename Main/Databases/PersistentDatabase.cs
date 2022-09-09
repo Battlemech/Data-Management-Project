@@ -58,7 +58,8 @@ namespace Main.Databases
             //save its values
             foreach (var kv in _values)
             {
-                PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
+                ValueStorage valueStorage = kv.Value;
+                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
             }
         }
         
@@ -76,7 +77,8 @@ namespace Main.Databases
             //save all current values persistently
             foreach (var kv in _values)
             {
-                PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
+                ValueStorage valueStorage = kv.Value;
+                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
             }
 
             //load all values from database which didn't already exist
@@ -85,14 +87,11 @@ namespace Main.Databases
                 string id = tso.ValueStorageId;
                     
                 //Skip if object with loaded id already exists
-                if (existingIds.Contains(id)) continue;
+                if (existingIds.Contains(id) || _values.ContainsKey(id)) continue;
 
-                //try deserializing value
-                if (TryGetType(id, out Type type))
-                    //if value could not be added: Value was set while loading data. Don't overwrite new value, continue
-                    if(!_values.TryAdd(id, new ValueStorage<object>(this, id, Serialization.Deserialize(tso.Buffer, type))))
-                        continue;
-                    
+                //save value to be deserialized later
+                _serializedData[id] = tso.Buffer;
+
                 //skip objects which don't have to be synchronised
                 if(!tso.SyncRequired) continue;
                     
