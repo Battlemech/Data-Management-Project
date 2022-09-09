@@ -89,11 +89,11 @@ namespace Tests
             string id = nameof(TestSimpleSet);
             
             //set value in database 1
-            Database1.Set(id, id);
+            Database1.SetValue(id, id);
             
             //wait for synchronisation in databases 2 and 3
-            TestUtility.AreEqual(id, (() => Database2.Get<string>(id)), "Test remote set after first get");
-            TestUtility.AreEqual(id, (() => Database3.Get<string>(id)), "Test remote set before first get");
+            TestUtility.AreEqual(id, (() => Database2.GetValue<string>(id)), "Test remote set after first get");
+            TestUtility.AreEqual(id, (() => Database3.GetValue<string>(id)), "Test remote set before first get");
         }
 
         [Test]
@@ -106,8 +106,8 @@ namespace Tests
             Database1.Add<List<int>, int>(id, 25);
             
             //wait for synchronisation in databases 2 and 3
-            TestUtility.AreEqual(new List<int>(){25}, (() => Database2.Get<List<int>>(id)), "Test remote set after first get");
-            TestUtility.AreEqual(new List<int>(){25}, (() => Database3.Get<List<int>>(id)), "Test remote set before first get");
+            TestUtility.AreEqual(new List<int>(){25}, (() => Database2.GetValue<List<int>>(id)), "Test remote set after first get");
+            TestUtility.AreEqual(new List<int>(){25}, (() => Database3.GetValue<List<int>>(id)), "Test remote set before first get");
         }
 
         [Test]
@@ -128,7 +128,7 @@ namespace Tests
                     
                     for (int i = 0; i < setCount; i++)
                     {
-                        Database1.Set(id, i);
+                        Database1.SetValue(id, i);
                     }
                 })),
                 new Task((() =>
@@ -138,7 +138,7 @@ namespace Tests
                     
                     for (int i = 0; i < setCount; i++)
                     {
-                        Database2.Set(id, -i);
+                        Database2.SetValue(id, -i);
                     }
                 })),
                 new Task((() =>
@@ -148,7 +148,7 @@ namespace Tests
                     
                     for (int i = 0; i < setCount; i++)
                     {
-                        Database3.Set(id, i * setCount);
+                        Database3.SetValue(id, i * setCount);
                     }
                 }))
             };
@@ -172,9 +172,9 @@ namespace Tests
             //check all values
             TestUtility.AreEqual(true, (() =>
             {
-                int a = Database1.Get<int>(id);
-                int b = Database2.Get<int>(id);
-                int c = Database3.Get<int>(id);
+                int a = Database1.GetValue<int>(id);
+                int b = Database2.GetValue<int>(id);
+                int c = Database3.GetValue<int>(id);
                 return a == b && b == c;
             }), "values are equal", 10000 );
             
@@ -186,9 +186,9 @@ namespace Tests
             //check all values
             TestUtility.AreEqual(true, (() =>
             {
-                int a = Database1.Get<int>(id);
-                int b = Database2.Get<int>(id);
-                int c = Database3.Get<int>(id);
+                int a = Database1.GetValue<int>(id);
+                int b = Database2.GetValue<int>(id);
+                int c = Database3.GetValue<int>(id);
                 return a == b && b == c;
             }), "values are equal", 10000 );
 
@@ -270,11 +270,11 @@ namespace Tests
             //make sure data was synchronised in all databases
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
-                TestUtility.AreEqual(true, (() => database.Get<List<int>>(id) != null), "List is not null");
-                TestUtility.IsChanging(addCount * 3, () => database.Get<List<int>>(id).Count, "ElementCount");
+                TestUtility.AreEqual(true, (() => database.GetValue<List<int>>(id) != null), "List is not null");
+                TestUtility.IsChanging(addCount * 3, () => database.GetValue<List<int>>(id).Count, "ElementCount");
                 TestUtility.AreEqual(true, (() =>
                 {
-                    List<int> list = database.Get<List<int>>(id);
+                    List<int> list = database.GetValue<List<int>>(id);
                     for (int i = 0; i < addCount * 3; i++)
                     {
                         if(list.Contains(i)) continue;
@@ -285,13 +285,13 @@ namespace Tests
                     return true;
                 }));
                 
-                Assert.AreEqual(addCount * 3, database.Get<List<int>>(id).Count, "ElementCount - Late check");
+                Assert.AreEqual(addCount * 3, database.GetValue<List<int>>(id).Count, "ElementCount - Late check");
             }
             
             stopwatch.Stop();
             Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
             
-            Console.WriteLine(LogWriter.StringifyCollection(Database1.Get<List<int>>(id)));
+            Console.WriteLine(LogWriter.StringifyCollection(Database1.GetValue<List<int>>(id)));
         }
 
         [Test]
@@ -302,9 +302,9 @@ namespace Tests
             
             Database1.SafeModify<int>(id, (value) => 100);
             
-            TestUtility.AreEqual(100, () => Database1.Get<int>(id));
-            TestUtility.AreEqual(100, () => Database2.Get<int>(id));
-            TestUtility.AreEqual(100, () => Database3.Get<int>(id));
+            TestUtility.AreEqual(100, () => Database1.GetValue<int>(id));
+            TestUtility.AreEqual(100, () => Database2.GetValue<int>(id));
+            TestUtility.AreEqual(100, () => Database3.GetValue<int>(id));
             
             Assert.AreEqual(1, Database1.GetModCount(id));
             Assert.AreEqual(1, Database2.GetModCount(id));
@@ -408,10 +408,10 @@ namespace Tests
             //make sure data was synchronised in all databases
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
-                TestUtility.AreEqual(addCount * 3, () => database.Get<List<int>>(id)?.Count, "ElementCount");
+                TestUtility.AreEqual(addCount * 3, () => database.GetValue<List<int>>(id)?.Count, "ElementCount");
                 TestUtility.AreEqual(true, (() =>
                 {
-                    List<int> list = database.Get<List<int>>(id);
+                    List<int> list = database.GetValue<List<int>>(id);
                     for (int i = 0; i < addCount * 3; i++)
                     {
                         if(list[i] == i) continue;
@@ -426,7 +426,7 @@ namespace Tests
             stopwatch.Stop();
             Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
             
-            Console.WriteLine(LogWriter.StringifyCollection(Database1.Get<List<int>>(id)));
+            Console.WriteLine(LogWriter.StringifyCollection(Database1.GetValue<List<int>>(id)));
             
             Assert.AreEqual(addCount * 3, Database1.GetModCount(id));
             Assert.AreEqual(addCount * 3, Database2.GetModCount(id));
@@ -485,10 +485,10 @@ namespace Tests
             Assert.IsTrue(Client1.DisconnectAsync());
             
             //set value
-            Database2.Set(id, id);
+            Database2.SetValue(id, id);
             
             //wait for modification
-            TestUtility.AreEqual(id, () => Database3.Get<string>(id));
+            TestUtility.AreEqual(id, () => Database3.GetValue<string>(id));
             Database3.Modify<string>(id, (value) =>
             {
                 Console.WriteLine($"Database3: Modifying: {value}. Adding:4");
@@ -496,8 +496,8 @@ namespace Tests
             });
             
             //wait for value to be synchronised in network
-            TestUtility.AreEqual(id+"4", () => Database3.Get<string>(id), "Synchronisation before test");
-            TestUtility.AreEqual(id+"4", () => Database2.Get<string>(id), "Synchronisation before test");
+            TestUtility.AreEqual(id+"4", () => Database3.GetValue<string>(id), "Synchronisation before test");
+            TestUtility.AreEqual(id+"4", () => Database2.GetValue<string>(id), "Synchronisation before test");
             TestUtility.AreEqual((uint) 2, () => Server.GetModCount(Database1.Id, id));
             
             //reconnect client 1
@@ -505,14 +505,14 @@ namespace Tests
             Assert.IsTrue(Client1.WaitForConnect());
             
             //wait for value to be synchronised on previously disconnected client
-            TestUtility.AreEqual(id+"4", () => Database1.Get<string>(id), "Synchronisation of value set before client connected");
+            TestUtility.AreEqual(id+"4", () => Database1.GetValue<string>(id), "Synchronisation of value set before client connected");
             TestUtility.AreEqual((uint) 2, (() => Database1.GetModCount(id)));
             
             //try modifying result as newly connected client
             Database1.Modify<string>(id, (value) => value + "5");
             
-            TestUtility.AreEqual(id+"45", (() => Database2.Get<string>(id)));
-            TestUtility.AreEqual(id+"45", (() => Database3.Get<string>(id)));
+            TestUtility.AreEqual(id+"45", (() => Database2.GetValue<string>(id)));
+            TestUtility.AreEqual(id+"45", (() => Database3.GetValue<string>(id)));
             
             //make sure modCount was tracked correctly
             Assert.AreEqual(3, Database1.GetModCount(id));
@@ -544,9 +544,9 @@ namespace Tests
                 Database3.Modify<int>(id, value => value + 1);
             }
             
-            TestUtility.AreEqual(setCount, () => Database1.Get<int>(id));
-            TestUtility.AreEqual(setCount, () => Database2.Get<int>(id));
-            TestUtility.AreEqual(setCount, () => Database3.Get<int>(id));
+            TestUtility.AreEqual(setCount, () => Database1.GetValue<int>(id));
+            TestUtility.AreEqual(setCount, () => Database2.GetValue<int>(id));
+            TestUtility.AreEqual(setCount, () => Database3.GetValue<int>(id));
         }
 
         [Test]
@@ -571,9 +571,9 @@ namespace Tests
                 Database1.Modify<int>(id, value => value + 1);
             }
             
-            TestUtility.AreEqual(modifyCount, () => Database1.Get<int>(id));
-            TestUtility.AreEqual(modifyCount, () => Database2.Get<int>(id));
-            TestUtility.AreEqual(modifyCount, () => Database3.Get<int>(id));
+            TestUtility.AreEqual(modifyCount, () => Database1.GetValue<int>(id));
+            TestUtility.AreEqual(modifyCount, () => Database2.GetValue<int>(id));
+            TestUtility.AreEqual(modifyCount, () => Database3.GetValue<int>(id));
         }
 
         [Test]
@@ -605,9 +605,9 @@ namespace Tests
                 });
             }
             
-            TestUtility.AreEqual(modCount * 3, () => Database1.Get<int>(id), timeInMs: 5000);
-            TestUtility.AreEqual(modCount * 3, () => Database2.Get<int>(id));
-            TestUtility.AreEqual(modCount * 3, () => Database3.Get<int>(id));
+            TestUtility.AreEqual(modCount * 3, () => Database1.GetValue<int>(id), timeInMs: 5000);
+            TestUtility.AreEqual(modCount * 3, () => Database2.GetValue<int>(id));
+            TestUtility.AreEqual(modCount * 3, () => Database3.GetValue<int>(id));
         }
 
         [Test]
@@ -684,19 +684,19 @@ namespace Tests
             string testName = nameof(TestSynchronisedObjectSynchronisation);
             Setup(testName);
             
-            Database1.Set(testName, new PlayerData("PlayerData"){Name = "Jeff"});
+            Database1.SetValue(testName, new PlayerData("PlayerData"){Name = "Jeff"});
             
-            TestUtility.AreEqual("Jeff", () => Database1.Get<PlayerData>(testName)?.Name);
-            TestUtility.AreEqual("Jeff", () => Database2.Get<PlayerData>(testName)?.Name);
-            TestUtility.AreEqual("Jeff", () => Database3.Get<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database1.GetValue<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database2.GetValue<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database3.GetValue<PlayerData>(testName)?.Name);
         }
         
         private class PlayerData : SynchronisedObject
         {
             public string Name
             {
-                get => GetDatabase().Get<string>(nameof(Name));
-                set => GetDatabase().Set(nameof(Name), value);
+                get => GetDatabase().GetValue<string>(nameof(Name));
+                set => GetDatabase().SetValue(nameof(Name), value);
             }
             public PlayerData(string databaseId) : base(databaseId)
             {

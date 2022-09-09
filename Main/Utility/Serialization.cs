@@ -38,6 +38,11 @@ namespace Main.Utility
         {
             return Serializer.Deserialize(type, bytes);
         }
+
+        public static T Copy<T>(T o)
+        {
+            return Serializer.Copy(o);
+        }
     }
     
     public class IgnoreObjectSerializerCollection : IGroBufCustomSerializerCollection

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Main.Persistence;
@@ -55,12 +56,9 @@ namespace Main.Databases
             bool syncRequired = !IsSynchronised;
             
             //save its values
-            lock (_values)
+            foreach (var kv in _values)
             {
-                foreach (var kv in _values)
-                {
-                    PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
-                }
+                PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
             }
         }
         
@@ -72,34 +70,34 @@ namespace Main.Databases
             List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
             bool syncRequired = !IsSynchronised;
 
-            lock (_values)
+            //get list of currently known ids
+            List<string> existingIds = _values.Keys.ToList();
+
+            //save all current values persistently
+            foreach (var kv in _values)
             {
-                //get list of currently known ids
-                List<string> existingIds = _values.Keys.ToList();
+                PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
+            }
 
-                //save all current values persistently
-                foreach (var kv in _values)
-                {
-                    PersistentData.Save(Id, kv.Key, Serialization.Serialize(kv.Value), syncRequired);
-                }
+            //load all values from database which didn't already exist
+            foreach (var tso in savedObjects)
+            {
+                string id = tso.ValueStorageId;
+                    
+                //Skip if object with loaded id already exists
+                if (existingIds.Contains(id)) continue;
 
-                //load all values from database which didn't already exist
-                foreach (var tso in savedObjects)
-                {
-                    string id = tso.ValueStorageId;
+                //try deserializing value
+                if (TryGetType(id, out Type type))
+                    //if value could not be added: Value was set while loading data. Don't overwrite new value, continue
+                    if(!_values.TryAdd(id, new ValueStorage<object>(this, id, Serialization.Deserialize(tso.Buffer, type))))
+                        continue;
                     
-                    //Skip if object with loaded id already exists
-                    if (existingIds.Contains(id)) continue;
+                //skip objects which don't have to be synchronised
+                if(!tso.SyncRequired) continue;
                     
-                    //- Load it
-                    _values[id] = Serialization.Deserialize<object>(tso.Buffer);
-                    
-                    //skip objects which don't have to be synchronised
-                    if(!tso.SyncRequired) continue;
-                    
-                    //queue object for synchronisation
-                    toSynchronise.Add(tso);
-                }
+                //queue object for synchronisation
+                toSynchronise.Add(tso);
             }
 
             //no need to inform peers if database is not synchronised

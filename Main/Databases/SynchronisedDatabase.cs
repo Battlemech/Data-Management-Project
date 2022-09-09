@@ -122,14 +122,23 @@ namespace Main.Databases
             if(TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount > modCount) return;
 
             //update local value
-            bool success;
-            lock (_values)
+            if (_values.TryGetValue(id, out ValueStorage valueStorage))
             {
-                //retrieve type from object
-                success = TryGetType(id, out Type type);
-                
-                //save value locally
-                if (success) _values[id] = Serialization.Deserialize(value, type);
+                //value exists locally. Update it
+                valueStorage.UnsafeSet(Serialization.Deserialize(value, valueStorage.GetEnclosedType()));
+            }
+            else
+            {
+                //value doesn't exist locally. Save bytes for later deserialization
+                _serializedData[id] = value;
+
+                //if value was created by other thread during modification
+                if (_values.TryGetValue(id, out valueStorage))
+                {
+                    //update newly created value
+                    valueStorage.UnsafeSet(Serialization.Deserialize(value, valueStorage.GetEnclosedType()));
+                    _serializedData.Remove(id);
+                }
             }
             
             //increase modification count after updating local value
@@ -144,18 +153,8 @@ namespace Main.Databases
             //track remotely confirmed mod count. Increment after byte value was saved
             lock (_confirmedModCount) _confirmedModCount[id] = modCount;
 
-            //no callback or value with id exists
-            if (!success)
-            {
-                //save data to be deserialized
-                _serializedData[id] = value;
-            }
-            else
-            {
-                //invoke callbacks
-                //invocation not necessary if no type could be found (success is false): There are no callbacks
-                _callbackHandler.InvokeCallbacks(id, value); 
-            }
+            //invoke callbacks
+            _callbackHandler.InvokeCallbacks(id, value);
             
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);

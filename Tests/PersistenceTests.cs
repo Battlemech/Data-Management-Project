@@ -25,12 +25,12 @@ namespace Tests
                 Database database = new Database(id, true);
                 
                 //load expected old value
-                Assert.AreEqual(i, database.Get<int>(id));
+                Assert.AreEqual(i, database.GetValue<int>(id));
                 
-                database.Set(id, i + 1);
+                database.SetValue(id, i + 1);
 
                 //make sure the value has been updated correctly in database
-                Assert.AreEqual(i + 1, database.Get<int>(id));
+                Assert.AreEqual(i + 1, database.GetValue<int>(id));
                 
                 //make sure the value was saved correctly in persistent data
                 TestUtility.AreEqual(true, () => PersistentData.TryLoad(id, id, out int value) && value == i + 1, "PersistentSave");
@@ -53,7 +53,7 @@ namespace Tests
             
             //create persistent and synchronised database
             Database database = new Database(id, true, true);
-            database.Set(id, false);
+            database.SetValue(id, false);
 
             //database was synchronised. Sync not required
             TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), //todo: why does this take so long?
@@ -66,7 +66,7 @@ namespace Tests
 
             //disable synchronisation
             database.IsSynchronised = false;
-            database.Set(id, true);
+            database.SetValue(id, true);
             
             //database wasn't synchronised. Sync required
             TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount),  //todo: why does this take so long?
@@ -118,8 +118,8 @@ namespace Tests
             Database database2 = new Database("DB") { Client = client2 };
 
             //set values -> offline sets
-            database1.Set(id, new List<int>(){1, 2});
-            database2.Set(id, new List<int>(){1});
+            database1.SetValue(id, new List<int>(){1, 2});
+            database2.SetValue(id, new List<int>(){1});
             
             //connect clients
             client1.ConnectAsync();
@@ -143,8 +143,8 @@ namespace Tests
             
             Console.WriteLine($"Database {((database1.IsHost) ? "1" : "2")} is host");
 
-            if(database1.IsHost) TestUtility.AreEqual(new List<int>(){1, 2}, () => database2.Get<List<int>>(id));
-            else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database1.Get<List<int>>(id));
+            if(database1.IsHost) TestUtility.AreEqual(new List<int>(){1, 2}, () => database2.GetValue<List<int>>(id));
+            else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database1.GetValue<List<int>>(id));
             else Assert.Fail("No database is host");
         }
         
@@ -157,13 +157,13 @@ namespace Tests
                 Console.WriteLine(value);
                 return value + 1;
             });
-            Console.WriteLine(database.Get<int>("Test"));
+            Console.WriteLine(database.GetValue<int>("Test"));
             
             TestUtility.AreEqual(true, (() => PersistentData.TryLoad("Test", "Test", out int value) && value == 1));
             
             //load database again
             Database loaded = new Database("Test", true);
-            Assert.AreEqual(1, loaded.Get<int>("Test"));
+            Assert.AreEqual(1, loaded.GetValue<int>("Test"));
         }
 
         [Test]
@@ -171,13 +171,13 @@ namespace Tests
         {
             string id = nameof(TestPersistenceAfterSet);
             Database database = new Database(id);
-            database.Set(id, id);
+            database.SetValue(id, id);
 
             database.IsPersistent = true;
             Thread.Sleep(1000);
 
             database = new Database(id, true);
-            Assert.AreEqual(id, database.Get<string>(id));
+            Assert.AreEqual(id, database.GetValue<string>(id));
         }
     }
 }
