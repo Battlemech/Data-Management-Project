@@ -21,9 +21,6 @@ namespace Main.Databases
             get => _isSynchronised;
             set
             {
-                //do nothing if database is (not) synchronised already
-                if (value == _isSynchronised) return;
-
                 _isSynchronised = value;
                 
                 //enable synchronisation if necessary
@@ -38,31 +35,20 @@ namespace Main.Databases
                     Client = SynchronisedClient.Instance;
                 }
 
-                //try resolving HostId. If client is not connected: Delay synchronisation until client connects
+                //try resolving HostId
                 ConfigureSynchronisedPersistence();
 
-                lock (_values)
-                {
-                    //return if there are no values to synchronise
-                    if(_values.Count == 0) return;
-                }
+                //return if there are no values to synchronise
+                if(_values.Count == 0) return;
 
                 Task synchronisationTask = new Task((() =>
                 {
-                    lock (_values)
+                    //return if there are no values to synchronise
+                    if (_values.Count == 0) return;
+
+                    foreach (var vs in _values.Values)
                     {
-                        //return if there are no values to synchronise
-                        if (_values.Count == 0) return;
-
-                        foreach (var kv in _values)
-                        {
-                            string id = kv.Key;
-
-                            //type could not be extracted -> object is null -> null is default value on every client
-                            if (TryGetType(id, out Type type))
-                                OnOfflineModification(id, Serialization.Serialize(type, kv.Value));
-                        }
-
+                        vs.BlockingGetObject((o => OnOfflineModification(vs.Id, Serialization.Serialize(vs.GetEnclosedType(), o))));
                     }
                 }));
                 
@@ -122,14 +108,23 @@ namespace Main.Databases
             if(TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount > modCount) return;
 
             //update local value
-            bool success;
-            lock (_values)
+            if (_values.TryGetValue(id, out ValueStorage valueStorage))
             {
-                //retrieve type from object
-                success = TryGetType(id, out Type type);
-                
-                //save value locally
-                if (success) _values[id] = Serialization.Deserialize(value, type);
+                //value exists locally. Update it
+                valueStorage.UnsafeSet(Serialization.Deserialize(value, valueStorage.GetEnclosedType()));
+            }
+            else
+            {
+                //value doesn't exist locally. Save bytes for later deserialization
+                _serializedData[id] = value;
+
+                //if value was created by other thread during modification
+                if (_values.TryGetValue(id, out valueStorage))
+                {
+                    //update newly created value
+                    valueStorage.UnsafeSet(Serialization.Deserialize(value, valueStorage.GetEnclosedType()));
+                    _serializedData.Remove(id);
+                }
             }
             
             //increase modification count after updating local value
@@ -144,18 +139,8 @@ namespace Main.Databases
             //track remotely confirmed mod count. Increment after byte value was saved
             lock (_confirmedModCount) _confirmedModCount[id] = modCount;
 
-            //no callback or value with id exists
-            if (!success)
-            {
-                //save data to be deserialized
-                _serializedData[id] = value;
-            }
-            else
-            {
-                //invoke callbacks
-                //invocation not necessary if no type could be found (success is false): There are no callbacks
-                _callbackHandler.InvokeCallbacks(id, value); 
-            }
+            //invoke callbacks
+            _callbackHandler.InvokeCallbacks(id, value);
             
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);

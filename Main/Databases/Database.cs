@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Main.Threading;
@@ -11,7 +12,7 @@ namespace Main.Databases
         public readonly string Id;
         public readonly IdLockedScheduler Scheduler = new IdLockedScheduler();
 
-        private readonly Dictionary<string, object> _values = new Dictionary<string, object>();
+        private readonly ConcurrentDictionary<string, ValueStorage> _values = new ConcurrentDictionary<string, ValueStorage>();
 
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
         {
@@ -29,69 +30,58 @@ namespace Main.Databases
             IsPersistent = isPersistent;
         }
 
-        public T Get<T>(string id)
+        public ValueStorage<T> Get<T>(string id)
         {
-            lock (_values)
+            //try retrieving the value
+            bool success = _values.TryGetValue(id, out ValueStorage value);
+
+            //if it wasn't found: Add default value
+            if (!success)
             {
-                //try retrieving the value
-                bool success = _values.TryGetValue(id, out object value);
-
-                //if it wasn't found: Add default value
-                if (!success)
+                T obj;
+                //try loading the object from not-deserialized data (occurs if type is missing)
+                if (_serializedData.TryGetValue(id, out byte[] serializedData)) //todo: remove instead?
                 {
-                    T obj;
-                    //try loading the object from not-deserialized data (occurs if type is missing)
-                    if (_isSynchronised && _serializedData.TryGetValue(id, out byte[] serializedData))
-                    {
-                        object loadedObject = Serialization.Deserialize(serializedData, typeof(T));
-                        
-                        if (loadedObject is T expectedObject) obj = expectedObject;
-                        else throw new ArgumentException($"Loaded object {loadedObject.GetType()}, but expected {typeof(T)}");
-                    }
-                    else
-                    {
-                        obj = default;
-                        
-                        //if it won't be possible to extract the type later
-                        if (obj == null)
-                        {
-                            //keep track of failed get attempts to allow synchronisedDatabase to create objects of requested types
-                            _failedGets[id] = typeof(T);
-                        }
-                    }
+                    object loadedObject = Serialization.Deserialize(serializedData, typeof(T));
 
-                    _values.Add(id, obj);
-                    return obj;
+                    if (loadedObject is not T expectedObject)
+                        throw new ArgumentException($"Loaded object {loadedObject?.GetType()}, but expected {typeof(T)}");
+                    
+                    //assign obj
+                    obj = expectedObject;
+                }
+                else
+                {
+                    obj = default;
+                        
+                    //if it won't be possible to extract the type later
+                    if (obj == null)
+                    {
+                        //keep track of failed get attempts to allow synchronisedDatabase to create objects of requested types
+                        _failedGets[id] = typeof(T);
+                    }
                 }
 
-                return value switch
-                {
-                    T result => result,
-                    null => default,
-                    _ => throw new ArgumentException($"Saved value has type {value.GetType()}, not {typeof(T)}")
-                };
+                ValueStorage<T> valueStorage = new ValueStorage<T>(this, id, obj);
+
+                //if adding valueStorage object failed: other thread must have added it in the meantime. Try getting it again
+                if (!_values.TryAdd(id, valueStorage)) return Get<T>(id);
+                
+                return valueStorage;
             }
+
+            //return valueStorage if it is of expected type
+            if (value is ValueStorage<T> expected) return expected;
+
+            throw new ArgumentException($"Saved value has type {value.GetObject()?.GetType()}, not {typeof(T)}");
         }
 
-        public void BlockingGet<T>(string id, Action<T> action)
-        {
-            lock (_values)
-            {
-                action.Invoke(Get<T>(id));
-            }
-        }
+        public T GetValue<T>(string id) => Get<T>(id).Get();
 
-        public void Set<T>(string id, T value)
+        public void SetValue<T>(string id, T value) => Get<T>(id).Set(value);
+        
+        protected internal void OnSet(string id, byte[] serializedBytes)
         {
-            byte[] serializedBytes;
-            
-            //set value in dictionary
-            lock (_values)
-            {
-                _values[id] = value;
-                serializedBytes = Serialization.Serialize(value);
-            }
-            
             //process the set if database is synchronised or persistent
             Task internalTask = new Task((() =>
             {
@@ -107,32 +97,13 @@ namespace Main.Databases
 
         public int InvokeCallbacks(string id)
         {
-            byte[] serializedBytes;
+            if(!_values.ContainsKey(id)) return 0;
+
+            if (!TryGetType(id, out Type type))
+                throw new ArgumentException($"Failed to extract type of {id} while trying to invoke callbacks!");
+
+            byte[] serializedBytes = Serialization.Serialize(type, _values[id].GetObject());
             
-            lock (_values)
-            {
-                if(!_values.ContainsKey(id)) return 0;
-
-                if (!TryGetType(id, out Type type))
-                    throw new ArgumentException($"Failed to extract type of {id} while trying to invoke callbacks!" +
-                                        $"Try specifying the type in InvokeCallbacks");
-
-                serializedBytes = Serialization.Serialize(type, _values[id]);
-            }
-            
-            return _callbackHandler.InvokeCallbacks(id, serializedBytes);
-        }
-
-        public int InvokeCallbacks<T>(string id)
-        {
-            byte[] serializedBytes;
-
-            lock (_values)
-            {
-                if (!_values.ContainsKey(id)) return 0;
-                serializedBytes = Serialization.Serialize(typeof(T), _values[id]);
-            }
-
             return _callbackHandler.InvokeCallbacks(id, serializedBytes);
         }
     }

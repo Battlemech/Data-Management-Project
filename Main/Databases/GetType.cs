@@ -11,9 +11,9 @@ namespace Main.Databases
         private bool TryGetType(string id, out Type type)
         {
             //try retrieving type from currently saved objects
-            if (_values.TryGetValue(id, out object current) && current != null)
+            if (_values.TryGetValue(id, out ValueStorage valueStorage))
             {
-                type = current.GetType();
+                type = valueStorage.GetEnclosedType();
                 return true;
             }
             

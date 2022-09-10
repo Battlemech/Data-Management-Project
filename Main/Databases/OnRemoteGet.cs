@@ -15,8 +15,8 @@ namespace Main.Databases
             List<SetValueMessage> messages = new List<SetValueMessage>();
             
             //copy current values to prevent modification during lookup
-            Dictionary<string, object> values = new Dictionary<string, object>(_values);
-            
+            List<ValueStorage> values = new List<ValueStorage>(_values.Select(kv => kv.Value.Copy()));
+
             //track amount of completed lookups
             int completedLookups = 0;
             
@@ -39,7 +39,7 @@ namespace Main.Databases
                     lock (messages)
                     {
                         if (success)
-                            messages.Add(new SetValueMessage(Id, id, serverModCount, Serialization.Serialize(type, values[id])));
+                            messages.Add(new SetValueMessage(Id, id, serverModCount, Serialization.Serialize(type, values.Find(v => v.Id == id).GetObject())));
                         
                         //other lookups still need to be completed. Wait
                         completedLookups++;
@@ -53,7 +53,6 @@ namespace Main.Databases
             }
             
             //delegate will always be invoked: remoteModCount will always be at least one: Server will not send request for empty database
-            
         }
     }
 }

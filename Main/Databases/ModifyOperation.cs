@@ -12,7 +12,7 @@ namespace Main.Databases
     
     public partial class Database
     {
-        
+
         /// <summary>
         /// The modify operation considers current value during modification action.
         /// Necessary for synchronised collections: If multiple adds will be executed at the same time,
@@ -29,17 +29,13 @@ namespace Main.Databases
         /// <param name="onResultConfirmed">Delegate called once the current value was confirmed by server</param>
         /// <typeparam name="T">Type of value being modified</typeparam>
         public void Modify<T>(string id, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null)
-        {
-            byte[] serializedBytes;
+            => Get<T>(id).Modify(modify, onResultConfirmed);
 
-            //set value in dictionary
-            lock (_values)
-            {
-                T value = modify.Invoke(Get<T>(id));
-                _values[id] = value;
-                serializedBytes = Serialization.Serialize(value);
-            }
-            
+        public void Modify<T>(string id, ModifyValueDelegate<T> modify, out T result)
+            => Get<T>(id).Modify(modify, out result);
+        
+        protected internal void OnModify<T>(string id, byte[] serializedBytes, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
+        {
             //process the set if database is synchronised or persistent
             Task internalTask = new Task((() =>
             {
@@ -52,28 +48,6 @@ namespace Main.Databases
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             Scheduler.QueueTask(id, internalTask);
-        }
-
-        public void Modify<T>(string id, ModifyValueDelegate<T> modify, out T result)
-        {
-            ManualResetEvent resetEvent = new ManualResetEvent(false);
-            T value = default;
-            
-            //start modification action
-            Modify<T>(id, modify, valueConfirmed =>
-            {
-                //save result locally
-                value = valueConfirmed;
-                
-                //signal waiting thread to continue
-                resetEvent.Set();
-            });
-
-            if (!resetEvent.WaitOne(Options.DefaultTimeout))
-                throw new TimeoutException($"Failed to modify {id} within {Options.DefaultTimeout} ms!");
-
-            //assign value resulting from modification to out parameter
-            result = value;
         }
 
         private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)

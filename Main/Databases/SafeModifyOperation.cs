@@ -34,7 +34,7 @@ namespace Main.Databases
             }
 
             //serialize bytes to save current value (safe from modification)
-            byte[] bytes = Serialization.Serialize(Get<T>(id));
+            byte[] bytes = Get<T>(id).BlockingGet((Serialization.Serialize));
 
             //wait for access from server
             uint modCount = GetModCount(id);
@@ -109,14 +109,7 @@ namespace Main.Databases
 
         private void ExecuteModification<T>(string id, ModifyValueDelegate<T> modify)
         {
-            byte[] serializedBytes;
-            //set value in dictionary
-            lock (_values)
-            {
-                T value = modify.Invoke(Get<T>(id));
-                _values[id] = value;
-                serializedBytes = Serialization.Serialize(value);
-            }
+            byte[] serializedBytes = Get<T>(id).InternalSet(modify);
             
             //process the set if database is synchronised or persistent
             Task internalTask = new Task((() =>

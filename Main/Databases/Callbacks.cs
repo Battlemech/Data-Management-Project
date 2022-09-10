@@ -25,10 +25,7 @@ namespace Main.Databases
             //only invoke callback if it was added successfully
             if (invokeCallback && success)
             {
-                lock (_values) //prevent modification on value
-                {
-                    onValueChange.Invoke(Get<T>(id));
-                }
+                Get<T>(id).BlockingGet((onValueChange.Invoke));
             }
                 
 

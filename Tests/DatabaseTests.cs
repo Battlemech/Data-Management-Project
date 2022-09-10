@@ -15,8 +15,8 @@ namespace Tests
         public static void TestGetNull()
         {
             Database database = new Database(nameof(TestGetNull));
-            Assert.AreEqual(0, database.Get<int>(""));
-            Assert.AreEqual(0, database.Get<int>(""));
+            Assert.AreEqual(0, database.GetValue<int>(""));
+            Assert.AreEqual(0, database.GetValue<int>(""));
         }
 
         [Test]
@@ -27,7 +27,7 @@ namespace Tests
             Database database = new Database(id);
             database.Add<List<string>, string>(id, id);
             
-            Assert.AreEqual(database.Get<List<string>>(id)[0], id);
+            Assert.AreEqual(database.GetValue<List<string>>(id)[0], id);
         }
 
         [Test]
@@ -36,10 +36,10 @@ namespace Tests
             string id = nameof(TestRemove);
 
             Database database = new Database(id);
-            database.Set(id, new List<string>(){id});
+            database.SetValue(id, new List<string>(){id});
             database.Remove<List<string>, string>(id, id);
             
-            Assert.AreEqual(0, database.Get<List<string>>(id).Count);
+            Assert.AreEqual(0, database.GetValue<List<string>>(id).Count);
         }
 
         [Test]
@@ -50,40 +50,40 @@ namespace Tests
             Database database = new Database(id);
             database.OnInitialized<string>(id, (s =>
             {
-                database.Set(id+id, id);
+                database.SetValue(id+id, id);
             }));
             
             //trigger onInitialized
-            database.Set(id, "yeah");
+            database.SetValue(id, "yeah");
             
             //test delayed trigger
-            TestUtility.AreEqual(id, () => database.Get<string>(id+id));
+            TestUtility.AreEqual(id, () => database.GetValue<string>(id+id));
             
             //test trigger if default
             database.OnInitialized<int>("1", i =>
             {
-                database.Set("2", i + 1);
+                database.SetValue("2", i + 1);
                 Console.WriteLine($"OnInitialized was triggered. Set id:2={i+1}");
             });
-            database.Set<int>("1", default);
+            database.SetValue<int>("1", default);
             
             //wait until callback from set was triggered
             TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
-            Assert.AreEqual(0, database.Get<int>("2"));
+            Assert.AreEqual(0, database.GetValue<int>("2"));
             
             //set value to 1, not invoking OnInitialized
-            database.Set<int>("1", 0); //doesn't trigger because its default value
+            database.SetValue<int>("1", 0); //doesn't trigger because its default value
             
             //wait until callback from set was triggered
             TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
-            Assert.AreEqual(0, database.Get<int>("2"));
+            Assert.AreEqual(0, database.GetValue<int>("2"));
             
             //set value to 1, invoking OnInitialized
-            database.Set<int>("1", 1); 
+            database.SetValue<int>("1", 1); 
             
             //wait until callback from set was triggered
             TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
-            TestUtility.AreEqual(2, () => database.Get<int>("2"));
+            TestUtility.AreEqual(2, () => database.GetValue<int>("2"));
         }
 
     }

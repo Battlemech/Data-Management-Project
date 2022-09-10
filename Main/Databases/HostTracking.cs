@@ -5,19 +5,19 @@ namespace Main.Databases
 {
     public partial class Database
     {
-        public Guid HostId => Get<Guid>(nameof(HostId));
+        public Guid HostId => GetValue<Guid>(nameof(HostId));
         public bool IsHost => Client.Id == HostId;
 
         public bool HostPersistence
         {
-            get => Get<bool>(nameof(HostPersistence));
-            set => Set(nameof(HostPersistence), value);
+            get => GetValue<bool>(nameof(HostPersistence));
+            set => SetValue(nameof(HostPersistence), value);
         }
 
         public bool ClientPersistence
         {
-            get => Get<bool>(nameof(ClientPersistence));
-            set => Set(nameof(ClientPersistence), value);
+            get => GetValue<bool>(nameof(ClientPersistence));
+            set => SetValue(nameof(ClientPersistence), value);
         }
 
         public SynchronisedClient Client
