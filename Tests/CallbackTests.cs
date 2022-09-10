@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Main.Databases;
 using NUnit.Framework;
 
@@ -59,6 +60,29 @@ namespace Tests
             }
             
             Assert.AreEqual(1, invokationCount);
+        }
+
+        [Test]
+        public static void TestRemoveCallbackOnException()
+        {
+            int causedExceptions = 0;
+            
+            string id = nameof(TestRemoveCallbackOnException);
+            Database database = new Database(id);
+            database.AddCallback<string>(id, (value) =>
+            {
+                causedExceptions++;
+                throw new NotImplementedException();
+            }, removeOnError: true);
+            
+            database.SetValue(id, "Test");
+            database.SetValue(id, "Test2");
+            
+            Thread.Sleep(1000);
+            
+            Assert.AreEqual(1, causedExceptions);
+            
+            Assert.AreEqual(0, database.GetCallbackCount(id));
         }
     }
 }
