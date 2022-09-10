@@ -54,17 +54,12 @@ namespace Main.Objects
             return _database;
         }
 
-        protected bool Equals(SynchronisedObject other)
-        {
-            return DatabaseId == other.DatabaseId;
-        }
-
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((SynchronisedObject)obj);
+            if (obj is not SynchronisedObject so) return false;
+            return so.DatabaseId == DatabaseId;
         }
 
         public override int GetHashCode()

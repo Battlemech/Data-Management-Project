@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Main.Databases;
 using NUnit.Framework;
 
@@ -17,28 +18,28 @@ namespace Tests
             //save string length in second database variable
             database.AddCallback<string>("string", (data) =>
             {
-                database.Set("stringLength", data.Length);
+                database.SetValue("stringLength", data.Length);
             });
 
             //test if callback was added
             foreach (var input in new []{"", "test", "my master", "fck yeah boy", lastCallbackSet})
             {
-                database.Set("string", input);
+                database.SetValue("string", input);
                 TestUtility.AreEqual(input.Length, () =>
                 {
-                    return database.Get<int>("stringLength");
+                    return database.GetValue<int>("stringLength");
                 });
             }
             
             //test if callback was removed
             Assert.AreEqual(1, database.RemoveCallbacks("string"));
             
-            database.Set("string", "42");
+            database.SetValue("string", "42");
             //wait for callbacks to execute
             TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount, "Callbacks are executed");
             
             //make sure string length is still 21
-            Assert.AreEqual(lastCallbackSet.Length, database.Get<int>("stringLength"));
+            Assert.AreEqual(lastCallbackSet.Length, database.GetValue<int>("stringLength"));
         }
 
         [Test]
@@ -59,6 +60,29 @@ namespace Tests
             }
             
             Assert.AreEqual(1, invokationCount);
+        }
+
+        [Test]
+        public static void TestRemoveCallbackOnException()
+        {
+            int causedExceptions = 0;
+            
+            string id = nameof(TestRemoveCallbackOnException);
+            Database database = new Database(id);
+            database.AddCallback<string>(id, (value) =>
+            {
+                causedExceptions++;
+                throw new NotImplementedException();
+            }, removeOnError: true);
+            
+            database.SetValue(id, "Test");
+            database.SetValue(id, "Test2");
+            
+            Thread.Sleep(1000);
+            
+            Assert.AreEqual(1, causedExceptions);
+            
+            Assert.AreEqual(0, database.GetCallbackCount(id));
         }
     }
 }

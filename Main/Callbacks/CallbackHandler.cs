@@ -5,8 +5,6 @@ using Main.Utility;
 
 namespace Main.Callbacks
 {
-    public delegate void ValueChanged<T>(T value);
-    
     public class CallbackHandler<TKey>
     {
         private readonly Dictionary<TKey, List<Callback>> _callbacks = new Dictionary<TKey, List<Callback>>();
@@ -18,11 +16,12 @@ namespace Main.Callbacks
         /// <param name="onValueChange">Action to perform</param>
         /// <param name="name">Name of the callback</param>
         /// <param name="unique">True if the callback should not be added if another callback with the same name already exists for the same id</param>
+        /// <param name="removeOnError">True if the callback should be removed once an error occurs</param>
         /// <typeparam name="T">Type of the expected value</typeparam>
         /// <returns>True if the callback has been added, otherwise false</returns>
-        public bool AddCallback<T>(TKey id, Action<T> onValueChange, string name = "", bool unique = false)
+        public bool AddCallback<T>(TKey id, Action<T> onValueChange, string name = "", bool unique = false, bool removeOnError = false)
         {
-            Callback<T> callback = new Callback<T>(name, onValueChange);
+            Callback<T> callback = new Callback<T>(name, onValueChange, removeOnError);
             
             lock (_callbacks)
             {
@@ -97,7 +96,22 @@ namespace Main.Callbacks
             //invoke callbacks
             foreach (var callback in callbacks)
             {
-                callback.InvokeCallback(data);
+                //if callback caused an exception and is supposed to be removed:
+                if (!callback.InvokeCallback(data) && callback.RemoveOnError)
+                {
+                    //remove the callback
+                    lock (_callbacks)
+                    {
+                        foreach (Callback savedCallback in _callbacks[id])
+                        {
+                            if (savedCallback.Equals(callback))
+                            {
+                                _callbacks[id].Remove(callback);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             return callbacks.Count;
@@ -124,10 +138,33 @@ namespace Main.Callbacks
             //invoke callbacks
             foreach (var callback in callbacks.Cast<Callback<T>>())
             {
-                callback.InvokeCallback(value);
+                //if callback caused an exception and is supposed to be removed:
+                if (!callback.InvokeCallback(value) && callback.RemoveOnError)
+                {
+                    //remove the callback
+                    lock (_callbacks)
+                    {
+                        foreach (Callback savedCallback in _callbacks[id])
+                        {
+                            if (savedCallback.Equals(callback))
+                            {
+                                _callbacks[id].Remove(callback);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             return callbacks.Count;
+        }
+
+        public int GetCallbackCount(TKey key, string name = "")
+        {
+            lock (_callbacks)
+            {
+                return !_callbacks.TryGetValue(key, out List<Callback> callbacks) ? 0 : callbacks.Count(callback => callback.Name == name);
+            }
         }
         
         public bool TryGetType(TKey key, out Type type)
@@ -151,42 +188,53 @@ namespace Main.Callbacks
     public abstract class Callback
     {
         public readonly string Name;
+        public readonly bool RemoveOnError;
 
-        protected Callback(string name)
+        protected Callback(string name, bool removeOnError)
         {
             Name = name;
+            RemoveOnError = removeOnError;
         }
 
-        public abstract void InvokeCallback(object o);
+        public abstract bool InvokeCallback(object o);
         public abstract Type GetCallbackType();
     }
 
     public class Callback<T> : Callback
     {
         private readonly Action<T> _callback;
-        public Callback(string name, Action<T> callback) : base(name)
+        public Callback(string name, Action<T> callback, bool removeOnError) : base(name, removeOnError)
         {
             _callback = callback;
         }
 
-        public void InvokeCallback(T value)
+        public bool InvokeCallback(T value)
         {
-            _callback.Invoke(value);
+            try
+            {
+                _callback.Invoke(value);
+            }
+            catch (Exception e)
+            {
+                if(RemoveOnError) LogWriter.Log($"Removing callback {Name} because it caused an exception.\nException: " + e);
+                else LogWriter.LogException(e);
+                return false;
+            }
+
+            return true;
         }
         
-        public override void InvokeCallback(object o)
+        public override bool InvokeCallback(object o)
         {
             switch (o)
             {
                 //check type
                 case T data:
                     //invoke callback
-                    _callback.Invoke(data);
-                    return;
+                    return InvokeCallback(data);
                 case null:
                     //invoke callback
-                    _callback.Invoke(default);
-                    return;
+                    return InvokeCallback(default);
                 default:
                     throw new ArgumentException($"Expected {typeof(T)}, but got {o?.GetType()}");
             }

@@ -25,7 +25,7 @@ namespace Main.Networking.Synchronisation.Server
             {
                 //skip databases without any modifications
                 if(kv.Value.Count == 0) continue;
-                
+
                 //informing them of the current modCount of a value in a database
                 GetValueRequest request = new GetValueRequest() { DatabaseId = kv.Key, ModificationCount = kv.Value };
                 
@@ -46,6 +46,8 @@ namespace Main.Networking.Synchronisation.Server
                     //filter duplicate SetValueMessages and messages with a lower modCount
                     foreach (var message in FilterMessages(setValueMessages))
                     {
+                        Console.WriteLine($"New info: {message}");
+                        
                         //forward them to the newly connected client
                         session.SendMessage(message);
                     }

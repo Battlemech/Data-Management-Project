@@ -18,9 +18,9 @@ namespace Main.Databases
         /// <typeparam name="T"></typeparam>
         public void OnInitialized<T>(string id, Action<T> onInitialized)
         {
-            lock (_values) //prevent modification on retrieved object
+            Get<T>(id).BlockingGet((value) =>
             {
-                if(TryInvoke(Get<T>(id), onInitialized)) return;
+                if(TryInvoke(value, onInitialized)) return;
                 
                 //get thread safe index increment
                 string callbackName = $"SYSTEM/INTERNAL/{id}-{Interlocked.Increment(ref _onInitializedTracker)}";
@@ -31,8 +31,8 @@ namespace Main.Databases
                     if(!TryInvoke(obj, onInitialized)) return;
 
                     RemoveCallbacks(id, callbackName);
-                }), callbackName);
-            }
+                }), callbackName); 
+            });
         }
 
         private bool TryInvoke<T>(T obj, Action<T> onInitialized)
