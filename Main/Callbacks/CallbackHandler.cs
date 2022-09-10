@@ -216,7 +216,7 @@ namespace Main.Callbacks
             }
             catch (Exception e)
             {
-                if(RemoveOnError) LogWriter.Log($"Callback: {Name} caused an exception. Removing it");
+                if(RemoveOnError) LogWriter.Log($"Removing callback {Name} because it caused an exception.\nException: " + e);
                 else LogWriter.LogException(e);
                 return false;
             }
