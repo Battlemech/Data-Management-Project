@@ -13,7 +13,7 @@ namespace Main.Databases
         {
             //prevent modification of hostId if offline
             if(id == nameof(HostId)) return;
-            
+
             //wait for hostId to be synchronised in network
             OnInitialized<Guid>(nameof(HostId), (guid =>
             {

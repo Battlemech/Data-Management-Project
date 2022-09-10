@@ -16,6 +16,8 @@ namespace Main.Databases
 
         public abstract object GetObject();
 
+        public abstract void BlockingGetObject(Action<object> value);
+
         public abstract void UnsafeSet(object o);
 
         protected internal abstract ValueStorage Copy();
@@ -31,6 +33,11 @@ namespace Main.Databases
         public override object GetObject()
         {
             return _data;
+        }
+
+        public override void BlockingGetObject(Action<object> action)
+        {
+            lock (Id) action.Invoke(_data);
         }
 
         public override void UnsafeSet(object o)

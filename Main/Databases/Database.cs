@@ -30,7 +30,7 @@ namespace Main.Databases
             IsPersistent = isPersistent;
         }
 
-        private ValueStorage<T> Get<T>(string id)
+        public ValueStorage<T> Get<T>(string id)
         {
             //try retrieving the value
             bool success = _values.TryGetValue(id, out ValueStorage value);

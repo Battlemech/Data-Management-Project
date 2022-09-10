@@ -119,7 +119,10 @@ namespace Tests
 
             //set values -> offline sets
             database1.SetValue(id, new List<int>(){1, 2});
-            database2.SetValue(id, new List<int>(){1});
+            database2.SetValue(id, new List<int>(){3});
+            
+            Assert.AreEqual(0, database1.Scheduler.QueuedTasksCount);
+            Assert.AreEqual(0, database2.Scheduler.QueuedTasksCount);
             
             //connect clients
             client1.ConnectAsync();
@@ -144,7 +147,7 @@ namespace Tests
             Console.WriteLine($"Database {((database1.IsHost) ? "1" : "2")} is host");
 
             if(database1.IsHost) TestUtility.AreEqual(new List<int>(){1, 2}, () => database2.GetValue<List<int>>(id));
-            else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){1}, () => database1.GetValue<List<int>>(id));
+            else if(database2.IsHost) TestUtility.AreEqual(new List<int>(){3}, () => database1.GetValue<List<int>>(id));
             else Assert.Fail("No database is host");
         }
         

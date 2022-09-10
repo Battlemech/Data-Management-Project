@@ -21,9 +21,6 @@ namespace Main.Databases
             get => _isSynchronised;
             set
             {
-                //do nothing if database is (not) synchronised already
-                if (value == _isSynchronised) return;
-
                 _isSynchronised = value;
                 
                 //enable synchronisation if necessary
@@ -38,31 +35,20 @@ namespace Main.Databases
                     Client = SynchronisedClient.Instance;
                 }
 
-                //try resolving HostId. If client is not connected: Delay synchronisation until client connects
+                //try resolving HostId
                 ConfigureSynchronisedPersistence();
 
-                lock (_values)
-                {
-                    //return if there are no values to synchronise
-                    if(_values.Count == 0) return;
-                }
+                //return if there are no values to synchronise
+                if(_values.Count == 0) return;
 
                 Task synchronisationTask = new Task((() =>
                 {
-                    lock (_values)
+                    //return if there are no values to synchronise
+                    if (_values.Count == 0) return;
+
+                    foreach (var vs in _values.Values)
                     {
-                        //return if there are no values to synchronise
-                        if (_values.Count == 0) return;
-
-                        foreach (var kv in _values)
-                        {
-                            string id = kv.Key;
-
-                            //type could not be extracted -> object is null -> null is default value on every client
-                            if (TryGetType(id, out Type type))
-                                OnOfflineModification(id, Serialization.Serialize(type, kv.Value));
-                        }
-
+                        vs.BlockingGetObject((o => OnOfflineModification(vs.Id, Serialization.Serialize(vs.GetEnclosedType(), o))));
                     }
                 }));
                 
