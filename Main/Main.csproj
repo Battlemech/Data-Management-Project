@@ -12,4 +12,8 @@
       <PackageReference Include="System.Data.SQLite.Core" Version="1.0.116" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Unity Assemblies" />
+    </ItemGroup>
+
 </Project>
