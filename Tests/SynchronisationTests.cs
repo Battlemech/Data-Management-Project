@@ -702,5 +702,23 @@ namespace Tests
             {
             }
         }
+        
+        [Test]
+        public static void TestSafeModifyLocalCallback()
+        {
+            string id = nameof(TestSafeModifyLocalCallback);
+            Setup(id);
+
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            Database1.AddCallback<string>(id, s =>
+            {
+                Console.WriteLine($"New value: {s}");
+                resetEvent.Set();
+            });
+            
+            Database1.SafeModify<string>(id, value => "Test");
+            
+            Assert.IsTrue(resetEvent.WaitOne(3000));
+        } 
     }
 }
