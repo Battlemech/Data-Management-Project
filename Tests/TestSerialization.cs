@@ -4,12 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP.Utility;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
-using Main.Networking;
-using Main.Networking.Synchronisation.Client;
-using Main.Objects;
-using Main.Utility;
 using NUnit.Framework;
 
 namespace Tests

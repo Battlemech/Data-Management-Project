@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
-using Main;
-using Main.Networking.Synchronisation.Client;
+using DMP;
+using DMP.Networking.Synchronisation.Client;
 
 namespace Tests
 {

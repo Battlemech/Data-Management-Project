@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Main.Databases;
-using Main.Networking.Synchronisation.Client;
-using Main.Networking.Synchronisation.Server;
-using Main.Persistence;
-using Main.Utility;
+using DMP.Databases;
+using DMP.Networking.Synchronisation.Client;
+using DMP.Networking.Synchronisation.Server;
+using DMP.Persistence;
 using NUnit.Framework;
 
 namespace Tests
