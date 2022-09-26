@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Main.Networking;
-using Main.Utility;
+using DMP.Networking;
+using DMP.Utility;
 using NUnit.Framework;
 
 namespace Tests

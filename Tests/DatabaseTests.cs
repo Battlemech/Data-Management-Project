@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Main.Databases;
-using Main.Databases.Utility;
-using Main.Persistence;
+using DMP.Databases;
+using DMP.Databases.Utility;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 

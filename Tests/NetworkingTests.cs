@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Main;
-using Main.Networking.Messaging;
-using Main.Networking.Messaging.Client;
-using Main.Networking.Messaging.Server;
+using DMP;
+using DMP.Networking.Messaging;
+using DMP.Networking.Messaging.Client;
+using DMP.Networking.Messaging.Server;
 using NUnit.Framework;
 
 namespace Tests

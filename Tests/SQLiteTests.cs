@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Main.Persistence;
-using Main.Utility;
+using DMP.Persistence;
+using DMP.Utility;
 using NUnit.Framework;
 
 namespace Tests

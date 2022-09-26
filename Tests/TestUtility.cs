@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using Main;
-using Main.Utility;
+using DMP;
+using DMP.Utility;
 using NUnit.Framework;
 
 namespace Tests

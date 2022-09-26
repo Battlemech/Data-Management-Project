@@ -3,15 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Main;
-using Main.Databases;
-using Main.Databases.Utility;
-using Main.Networking.Synchronisation.Client;
-using Main.Networking.Synchronisation.Messages;
-using Main.Networking.Synchronisation.Server;
-using Main.Objects;
-using Main.Persistence;
-using Main.Utility;
+using DMP.Databases;
+using DMP.Databases.Utility;
+using DMP.Networking.Synchronisation.Client;
+using DMP.Networking.Synchronisation.Messages;
+using DMP.Networking.Synchronisation.Server;
+using DMP.Objects;
+using DMP.Utility;
 using NUnit.Framework;
 
 namespace Tests

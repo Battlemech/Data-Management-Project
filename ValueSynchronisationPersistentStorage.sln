@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Main", "Main\Main.csproj", "{0FF12F06-B398-4909-A76A-FD1ECF701E6A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMP", "DMP\DMP.csproj", "{0FF12F06-B398-4909-A76A-FD1ECF701E6A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{5F55EF8F-BD8E-4D78-BD36-FD58732A894E}"
 EndProject
