@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DMP.Persistence;
@@ -52,8 +53,6 @@ namespace DMP.Databases
             //create database persistently
             PersistentData.CreateDatabase(Id);
 
-            bool syncRequired = !IsSynchronised;
-            
             //save its values
             foreach (var kv in _values)
             {
@@ -99,7 +98,7 @@ namespace DMP.Databases
             }
 
             //no need to inform peers if database is not synchronised
-            if(!_isSynchronised) return;
+            if(!_isSynchronised || Client == null || !Client.IsConnected) return;
 
             //delegate task to increase performance
             Task synchronisationTask = new Task((() =>

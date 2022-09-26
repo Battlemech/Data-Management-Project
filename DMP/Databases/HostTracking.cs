@@ -27,7 +27,7 @@ namespace DMP.Databases
             {
                 //transfer management of this database from one client to another
                 _client?.RemoveDatabase(this);
-                value.AddDatabase(this);
+                value?.AddDatabase(this);
 
                 //update local value
                 _client = value;

@@ -42,7 +42,7 @@ namespace DMP.Databases
                 //allowing the delegation of callbacks to a task
                 _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
-                if(_isSynchronised) OnModifyValueSynchronised(id, serializedBytes, modify, onResultConfirmed);
+                if(_isSynchronised && Client.IsConnected) OnModifyValueSynchronised(id, serializedBytes, modify, onResultConfirmed);
                 else onResultConfirmed?.Invoke(Serialization.Deserialize<T>(serializedBytes));
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));

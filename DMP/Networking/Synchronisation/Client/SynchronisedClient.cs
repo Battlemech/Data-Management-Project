@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using DMP.Networking.Messaging.Client;
 using DMP.Networking.Synchronisation.Messages;
 
@@ -60,12 +61,6 @@ namespace DMP.Networking.Synchronisation.Client
                     SendMessage(new GetValueReply(message) { SetValueMessages = messages });
                 });
             });
-        }
-
-        ~SynchronisedClient()
-        {
-            //remove static reference if it was this client
-            if (Instance == this) Instance = null;
         }
     }
 }

@@ -17,7 +17,7 @@ namespace DMP.Databases
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
         {
             Id = id;
-            
+
             /*
              * Setting these properties will enable/disable synchronisation and persistence.
              * Potentially enabling synchronisation first allows send serialized data(bytes) directly,
@@ -89,7 +89,7 @@ namespace DMP.Databases
                 //allowing the delegation of callbacks to a task
                 _callbackHandler.InvokeCallbacks(id, serializedBytes);
                 
-                if(_isSynchronised) OnSetSynchronised(id, serializedBytes);
+                if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             Scheduler.QueueTask(id, internalTask);
