@@ -27,7 +27,7 @@ namespace DMP.Databases
         public void SafeModify<T>(string id, ModifyValueDelegate<T> modify)
         {
             //if client isn't connected: No need to request access
-            if (!_isSynchronised)
+            if (!_isSynchronised || !Client.IsConnected)
             {
                 ExecuteModification(id, modify);
                 return;

@@ -35,28 +35,40 @@ namespace DMP.Databases
                     Client = SynchronisedClient.Instance;
                 }
 
-                //try resolving HostId
-                ConfigureSynchronisedPersistence();
-
-                //return if there are no values to synchronise
-                if(_values.Count == 0) return;
-
-                Task synchronisationTask = new Task((() =>
+                //if client is not connected: Mark this database for later synchronisation
+                if (!Client.IsConnected)
                 {
-                    //return if there are no values to synchronise
-                    if (_values.Count == 0) return;
-
-                    foreach (var vs in _values.Values)
-                    {
-                        vs.BlockingGetObject((o => OnOfflineModification(vs.Id, Serialization.Serialize(vs.GetEnclosedType(), o))));
-                    }
-                }));
+                    Client.OnFailedSynchronise(this);
+                    return;
+                }
                 
-                Scheduler.QueueTask(synchronisationTask);
+                OnConnectionEstablished();
             }
         }
         private bool _isSynchronised;
 
+        protected internal void OnConnectionEstablished()
+        {
+            //try resolving HostId
+            ConfigureSynchronisedPersistence();
+
+            //return if there are no values to synchronise
+            if(_values.Count == 0) return;
+
+            Task synchronisationTask = new Task((() =>
+            {
+                //return if there are no values to synchronise
+                if (_values.Count == 0) return;
+
+                foreach (var vs in _values.Values)
+                {
+                    vs.BlockingGetObject((o => OnOfflineModification(vs.Id, Serialization.Serialize(vs.GetEnclosedType(), o))));
+                }
+            }));
+                
+            Scheduler.QueueTask(synchronisationTask);
+        }
+        
         /// <summary>
         /// Invoked when a value is set
         /// </summary>

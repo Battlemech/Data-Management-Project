@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Threading;
 using DMP.Databases;
+using DMP.Databases.Utility;
+using DMP.Databases.ValueStorage;
 using DMP.Networking.Synchronisation.Client;
 using DMP.Networking.Synchronisation.Server;
+using DMP.Objects;
 using DMP.Persistence;
 using NUnit.Framework;
 
@@ -180,6 +183,87 @@ namespace Tests
 
             database = new Database(id, true);
             Assert.AreEqual(id, database.GetValue<string>(id));
+        }
+
+        [Test]
+        public static void TestSynchronisedObjectOfflineSaving()
+        {
+            string id = nameof(TestSynchronisedObjectOfflineSaving);
+            PersistentData.DeleteDatabase(id);
+
+            for (int i = 0; i < 10; i++)
+            {
+                if (i != 0)
+                {
+                    TestUtility.AreEqual(true, () => PersistentData.DoesDatabaseExist(id));
+                    TestUtility.AreEqual(true, () => PersistentData.DoesDatabaseExist(Environment.UserName));
+                }
+                
+                SynchronisedClient client = new TestClient();
+                Database database = new Database(id, true)
+                {
+                    Client = client
+                };
+
+                ValueStorage<PlayerData> playerData = database.Get<PlayerData>(id);
+                
+                if(i == 0) Assert.AreEqual(null, playerData.Get());
+                else Assert.AreNotEqual(null, playerData.Get());
+                
+                playerData.Modify((value =>
+                {
+                    //init player data if necessary
+                    if (value == null)
+                    {
+                        value = new PlayerData(Environment.UserName);
+                    }
+                    
+                    //increment its mod count
+                    value.AccessCount.Modify((currentValue => currentValue + 1));
+                    return value;
+                }));
+
+                Assert.AreEqual(i + 1, playerData.Get().AccessCount.Get());
+                Console.WriteLine($"Iteration {i} succeeded");
+            }
+        }
+
+        [Test]
+        public static void TestSynchronisedObjectSerialization()
+        {
+            SynchronisedClient client = new TestClient();
+            
+            for (int i = 0; i < 10; i++)
+            {
+                PlayerData playerData = new PlayerData("Test");
+                
+                Assert.AreEqual(i, playerData.AccessCount.Get());
+                playerData.AccessCount.Modify((value => value + 1));
+                Assert.AreEqual(i + 1, playerData.AccessCount.Get());
+
+                TestUtility.AreEqual(true, (() => PersistentData.DoesDatabaseExist("Test")), "Database was saved");
+                TestUtility.AreEqual(true, () =>
+                {
+                    bool success = PersistentData.TryLoad("Test", nameof(playerData.AccessCount), out int value);
+
+                    if (!success) return false;
+
+                    return value == i + 1;
+                }, "Value was saved");
+
+                //de-initialize client
+                playerData.GetDatabase().Client = null;
+            }
+        }
+        
+        private class PlayerData : SynchronisedObject
+        {
+            public PlayerData(string databaseId) : base(databaseId, true)
+            {
+                Console.WriteLine($"Created player data {databaseId}");
+            }
+
+            public ValueStorage<int> AccessCount => GetDatabase().Get<int>(nameof(AccessCount));
         }
     }
 }
