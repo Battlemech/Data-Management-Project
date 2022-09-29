@@ -4,6 +4,7 @@ using DMP.Utility;
 namespace DMP.Databases.ValueStorage
 {
     public delegate TOut SafeOperationDelegate<T, TOut>(T current);
+    public delegate T SetValueDelegate<out T>();
     
     public partial class ValueStorage<T> : ValueStorage
     {
@@ -53,6 +54,18 @@ namespace DMP.Databases.ValueStorage
             {
                 _data = value;
                 serializedBytes = Serialization.Serialize(value);
+            }
+            
+            Database.OnSet(Id, serializedBytes);
+        }
+
+        public void BlockingSet(SetValueDelegate<T> setValueDelegate)
+        {
+            byte[] serializedBytes;
+            lock (Id)
+            {
+                _data = setValueDelegate.Invoke();
+                serializedBytes = Serialization.Serialize(_data);
             }
             
             Database.OnSet(Id, serializedBytes);
