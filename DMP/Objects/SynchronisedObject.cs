@@ -6,7 +6,7 @@ namespace DMP.Objects
 {
     public abstract class SynchronisedObject
     {
-        public readonly string DatabaseId;
+        public readonly string Id;
         
         public bool IsHost => GetDatabase().IsHost;
         public Guid HostId => GetDatabase().HostId;
@@ -32,10 +32,10 @@ namespace DMP.Objects
         //value is ignored during serialization (See Options.cs)
         private Database _database = null;
         
-        protected SynchronisedObject(string databaseId, bool isPersistent = false)
+        protected SynchronisedObject(string id, bool isPersistent = false)
         {
-            DatabaseId = databaseId;
-            _database = new Database(databaseId, isPersistent, true);
+            Id = id;
+            _database = new Database(id, isPersistent, true);
         }
         
         public Database GetDatabase()
@@ -48,7 +48,7 @@ namespace DMP.Objects
                 if (client == null) 
                     throw new InvalidOperationException("Can't retrieve SynchronisedObject if no local SynchronisedClient exists!");
 
-                _database = client.Get(DatabaseId);
+                _database = client.Get(Id);
             }
             
             return _database;
@@ -58,13 +58,13 @@ namespace DMP.Objects
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj is SynchronisedObject so) return so.DatabaseId == DatabaseId;
+            if (obj is SynchronisedObject so) return so.Id == Id;
             return false;
         }
 
         public override int GetHashCode()
         {
-            return (DatabaseId != null ? DatabaseId.GetHashCode() : 0);
+            return (Id != null ? Id.GetHashCode() : 0);
         }
     }
 }
