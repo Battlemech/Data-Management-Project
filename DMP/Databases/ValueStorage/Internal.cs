@@ -42,9 +42,8 @@ namespace DMP.Databases.ValueStorage
 
         public override void UnsafeSet(object o)
         {
-            if (o is not T data) throw new ArgumentException($"Expected {typeof(T)}, but got: {o?.GetType()}");
-
-            lock (Id) _data = data;
+            if(o is T data) lock (Id) _data = data;
+            else throw new ArgumentException($"Expected {typeof(T)}, but got: {o?.GetType()}");
         }
 
         protected internal override ValueStorage Copy()
