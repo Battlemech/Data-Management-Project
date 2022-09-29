@@ -58,8 +58,8 @@ namespace DMP.Objects
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj is not SynchronisedObject so) return false;
-            return so.DatabaseId == DatabaseId;
+            if (obj is SynchronisedObject so) return so.DatabaseId == DatabaseId;
+            return false;
         }
 
         public override int GetHashCode()
