@@ -36,11 +36,10 @@ namespace DMP.Networking.Synchronisation.Client
         {
             lock (_databases)
             {
-                bool success = _databases.TryAdd(database.Id, database);
+                if (_databases.ContainsKey(database.Id))
+                    throw new Exception($"A synchronised database with id {database.Id} is already being managed by {this}!");
                 
-                if(success) return;
-
-                throw new Exception($"A synchronised database with id {database.Id} is already being managed by {this}!");
+                _databases.Add(database.Id, database);
             }
         }
 

@@ -57,7 +57,7 @@ namespace DMP.Utility
             //if declared type can be assigned to the type to ignore: Don't serialize it
             foreach (var ignoredType in _ignoredTypes)
             {
-                if (declaredType.IsAssignableTo(ignoredType)) return _ignoreObjectSerializer;
+                if (ignoredType.IsAssignableFrom(declaredType)) return _ignoreObjectSerializer;
             }
             
             return null;

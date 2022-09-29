@@ -30,9 +30,9 @@ namespace DMP.Networking.Synchronisation.Client
 
             lock (_toSynchronise)
             {
-                while (_toSynchronise.TryDequeue(out Database database))
+                while (_toSynchronise.Count != 0)
                 {
-                    database.OnConnectionEstablished();
+                    _toSynchronise.Dequeue().OnConnectionEstablished();
                 }
             }
         }
