@@ -34,8 +34,24 @@ namespace DMP.Objects
         
         protected SynchronisedObject(string id, bool isPersistent = false)
         {
+            if (id.Contains("/")) 
+                throw new ArgumentException("Id may not contain '/', it is used as an internal separator!");
+            
             Id = id;
             _database = new Database(id, isPersistent, true);
+        }
+
+        /// <summary>
+        /// Creates a child object for "synchronisedObject", copying its id as prefix, followed by the new object as suffix.
+        /// Uses a "/" as separator.
+        /// </summary>
+        protected SynchronisedObject(SynchronisedObject synchronisedObject, string id, bool isPersistent = false)
+        {
+            if (id.Contains("/")) 
+                throw new ArgumentException("Id may not contain '/', it is used as an internal separator!");
+            
+            Id = $"{synchronisedObject.Id}/{id}";
+            _database = new Database(Id, isPersistent, true);
         }
         
         public Database GetDatabase()
