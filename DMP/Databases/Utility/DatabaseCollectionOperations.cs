@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DMP.Databases.ValueStorage;
 
 namespace DMP.Databases.Utility
 {
@@ -17,7 +18,21 @@ namespace DMP.Databases.Utility
                 return value;
             });
         }
-        
+
+        public static void Add<TCollection, TValue>(this ValueStorage<TCollection> valueStorage, TValue toAdd)
+            where TCollection : ICollection<TValue>, new()
+        {
+            valueStorage.Modify((value =>
+            {
+                //initialize collection if necessary
+                value ??= new TCollection();
+                
+                //add value
+                value.Add(toAdd);
+                return value;
+            }));
+        }
+
         public static void Remove<TCollection, TValue>(this Database database, string id, TValue toRemove) 
             where TCollection : ICollection<TValue>, new()
         {
@@ -30,6 +45,20 @@ namespace DMP.Databases.Utility
                 value.Remove(toRemove);
                 return value;
             });
+        }
+
+        public static void Remove<TCollection, TValue>(this ValueStorage<TCollection> valueStorage, TValue toRemove)
+            where TCollection : ICollection<TValue>, new()
+        {
+            valueStorage.Modify((value =>
+            {
+                //if database doesnt exist: Create empty
+                if (value == null) return new TCollection();
+                
+                //remove value
+                value.Remove(toRemove);
+                return value;
+            }));
         }
     }
 }
