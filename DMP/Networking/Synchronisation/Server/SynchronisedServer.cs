@@ -1,12 +1,19 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Net;
 using DMP.Networking.Messaging.Server;
 using DMP.Networking.Synchronisation.Messages;
+using DMP.Submodules.NetCoreServer;
 using DMP.Utility;
 
 namespace DMP.Networking.Synchronisation.Server
 {
     public partial class SynchronisedServer : MessageServer
     {
+        private readonly ConcurrentDictionary<string, RequestTracker> _requestTrackers =
+            new ConcurrentDictionary<string, RequestTracker>();
+        
         public SynchronisedServer(IPAddress address, int port = Options.DefaultPort) : base(address, port)
         {
             Constructor();
@@ -46,7 +53,7 @@ namespace DMP.Networking.Synchronisation.Server
                 if (!success)
                 {
                     request.ModCount = expected;
-                    EnqueueDelayedSetRequest(request, session);
+                    GetTracker(databaseId).EnqueueDelayedSetRequest(valueId, expected, session);
                 }
                 else
                 {
@@ -58,7 +65,8 @@ namespace DMP.Networking.Synchronisation.Server
             //A client waited to send the setValueMessage and forwarded it once he was allowed to
             AddCallback<SetValueMessage>(((message, session) =>
             {
-                bool success = TryRemoveDelayedRequest(message, session);
+                RequestTracker tracker = GetTracker(message.DatabaseId);
+                bool success = tracker.TryRemoveDelayedSetRequest(message.ValueId, message.ModCount, session, out bool deleteDatabase);
 
                 if (!success)
                 {
@@ -68,6 +76,9 @@ namespace DMP.Networking.Synchronisation.Server
                 }
 
                 BroadcastToOthers(message, session);
+                
+                //checks if, after processing the delayed set, a delayed database delete may be processed
+                if(deleteDatabase) Broadcast(new DeleteDatabaseMessage() { DatabaseId = message.DatabaseId});
             }));
             
             AddCallback<LockValueRequest>(((request, session) =>
@@ -77,10 +88,30 @@ namespace DMP.Networking.Synchronisation.Server
                 uint expected = IncrementModCount(databaseId, valueId);
                 
                 //a set request will be received later. Make sure server expects it
-                EnqueueDelayedSetRequest(databaseId, valueId, expected, session);
+                GetTracker(databaseId).EnqueueDelayedSetRequest(valueId, expected, session);
 
                 session.SendMessage(new LockValueReply(request) { ExpectedModCount = expected });
             }));
+            
+            AddCallback<DeleteDatabaseMessage>(((message, _) =>
+            {
+                //instantly forward delete message if no other requests are queued
+                if (GetTracker(message.DatabaseId).TryDeleteDatabase())
+                {
+                    Broadcast(message);
+                }
+            }));
+        }
+        
+        private RequestTracker GetTracker(string databaseId)
+        {
+            if (!_requestTrackers.TryGetValue(databaseId, out RequestTracker tracker))
+            {
+                tracker = new RequestTracker();
+                if (!_requestTrackers.TryAdd(databaseId, tracker)) return GetTracker(databaseId);
+            }
+
+            return tracker;
         }
     }
 }
