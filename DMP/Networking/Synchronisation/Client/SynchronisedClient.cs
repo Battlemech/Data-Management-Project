@@ -61,6 +61,11 @@ namespace DMP.Networking.Synchronisation.Client
                     SendMessage(new GetValueReply(message) { SetValueMessages = messages });
                 });
             });
+            
+            AddCallback<DeleteDatabaseMessage>((message =>
+            {
+                Get(message.DatabaseId).OnDelete();
+            }));
         }
     }
 }

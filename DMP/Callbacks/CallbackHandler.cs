@@ -72,6 +72,16 @@ namespace DMP.Callbacks
             //return number of removed callbacks
             return removedCallbacks;
         }
+
+        public int RemoveAllCallbacks()
+        {
+            lock (_callbacks)
+            {
+                int count = _callbacks.Count;
+                _callbacks.Clear();
+                return count;
+            }
+        }
         
         public int InvokeCallbacks(TKey id, byte[] serializedBytes)
         {

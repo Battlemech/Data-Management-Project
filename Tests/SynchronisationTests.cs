@@ -717,6 +717,26 @@ namespace Tests
             Database1.SafeModify<string>(id, value => "Test");
             
             Assert.IsTrue(resetEvent.WaitOne(3000));
-        } 
+        }
+
+        [Test]
+        public static void TestDelete()
+        {
+            string id = nameof(TestDelete);
+            Setup(id);
+            
+            Database1.SetValue(id, "Test");
+            
+            TestUtility.AreEqual("Test", (() => Database1.GetValue<string>(id)));
+            TestUtility.AreEqual("Test", (() => Database2.GetValue<string>(id)));
+            TestUtility.AreEqual("Test", (() => Database3.GetValue<string>(id)));
+            
+            Database1.Delete();
+            
+            TestUtility.AreEqual(null, (() => Database1.GetValue<string>(id)));
+            TestUtility.AreEqual(null, (() => Database2.GetValue<string>(id)));
+            TestUtility.AreEqual(nullg, (() => Database3.GetValue<string>(id)));
+
+        }
     }
 }

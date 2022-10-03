@@ -39,6 +39,7 @@ namespace DMP.Objects
             
             Id = id;
             _database = new Database(id, isPersistent, true);
+            _database.OnReferenced(this);
         }
 
         /// <summary>
@@ -52,6 +53,7 @@ namespace DMP.Objects
             
             Id = $"{synchronisedObject.Id}/{id}";
             _database = new Database(Id, isPersistent, true);
+            _database.OnReferenced(this);
         }
         
         public Database GetDatabase()
@@ -65,9 +67,20 @@ namespace DMP.Objects
                     throw new InvalidOperationException("Can't retrieve SynchronisedObject if no local SynchronisedClient exists!");
 
                 _database = client.Get(Id);
+                _database.OnReferenced(this);
             }
             
             return _database;
+        }
+
+        public void Delete()
+        {
+            GetDatabase().Delete();
+        }
+        
+        protected internal virtual void OnDelete()
+        {
+            _database = null;
         }
 
         public override bool Equals(object obj)
