@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Serialization;
 using DMP.Databases;
 using DMP.Networking.Synchronisation.Client;
 
@@ -40,6 +41,8 @@ namespace DMP.Objects
             Id = id;
             _database = new Database(id, isPersistent, true);
             _database.OnReferenced(this);
+            
+            OnCreated();
         }
 
         /// <summary>
@@ -54,6 +57,8 @@ namespace DMP.Objects
             Id = $"{synchronisedObject.Id}/{id}";
             _database = new Database(Id, isPersistent, true);
             _database.OnReferenced(this);
+            
+            OnCreated();
         }
         
         public Database GetDatabase()
@@ -73,6 +78,14 @@ namespace DMP.Objects
             return _database;
         }
 
+        /// <summary>
+        /// Called when the object is created by the constructor, or when the object is loaded/received on a remote client
+        /// </summary>
+        protected virtual void OnCreated()
+        {
+            
+        }
+        
         public void Delete()
         {
             GetDatabase().Delete();
@@ -91,6 +104,12 @@ namespace DMP.Objects
             return false;
         }
 
+        [OnDeserialized]
+        public void Test(StreamingContext context)
+        {
+            OnCreated();
+        }
+        
         public override int GetHashCode()
         {
             return (Id != null ? Id.GetHashCode() : 0);

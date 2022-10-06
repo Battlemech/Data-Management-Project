@@ -735,7 +735,7 @@ namespace Tests
             
             TestUtility.AreEqual(null, (() => Database1.GetValue<string>(id)));
             TestUtility.AreEqual(null, (() => Database2.GetValue<string>(id)));
-            TestUtility.AreEqual(nullg, (() => Database3.GetValue<string>(id)));
+            TestUtility.AreEqual(null, (() => Database3.GetValue<string>(id)));
 
         }
     }
