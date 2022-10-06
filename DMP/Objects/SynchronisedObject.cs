@@ -81,6 +81,7 @@ namespace DMP.Objects
         /// <summary>
         /// Called when the object is created by the constructor, or when the object is loaded/received on a remote client
         /// </summary>
+        /// <remarks>Is invoked in the constructor of the SynchronisedObject, meaning it will be executed before super constructors of SynchronisedObject are called!</remarks>
         protected virtual void OnCreated()
         {
             
