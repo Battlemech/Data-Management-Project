@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP.Databases;
 using DMP.Databases.Utility;
+using DMP.Databases.ValueStorage;
 using DMP.Networking.Synchronisation.Client;
 using DMP.Networking.Synchronisation.Messages;
 using DMP.Networking.Synchronisation.Server;
@@ -737,6 +739,55 @@ namespace Tests
             TestUtility.AreEqual(null, (() => Database2.GetValue<string>(id)));
             TestUtility.AreEqual(null, (() => Database3.GetValue<string>(id)));
 
+        }
+
+        [Test]
+        public static void TestObjectConstructor()
+        {
+            string id = nameof(TestObjectConstructor);
+            Setup(id);
+            
+            //init test object
+            Database1.SetValue(id, new TestObject("Test"));
+
+            //wait until its loaded on all databases
+            TestUtility.AreEqual(true, () => Database1.GetValue<TestObject>(id) != null);
+            TestUtility.AreEqual(true, () => Database2.GetValue<TestObject>(id) != null);
+            TestUtility.AreEqual(true, () => Database3.GetValue<TestObject>(id) != null);
+
+            Console.WriteLine("TestObject was loaded on all clients!");
+            
+            //TestObject has InvokeCount 1: It was increased when TestObject was created
+            TestUtility.AreEqual(1, () => Database1.GetValue<TestObject>(id).InvokeCount.Get(), "Creator initialisation");
+            
+            //Accessing values on each database -> Invoking their constructors
+            SynchronisedClient.SetInstance(Client2); //simulate client where SynchronisedObject is retrieved to be client 2
+            TestUtility.AreEqual(2, () => Database2.GetValue<TestObject>(id).InvokeCount.Get(), "Accessed by number two");
+            
+            SynchronisedClient.SetInstance(Client3); //simulate client where SynchronisedObject is retrieved to be client 3
+            TestUtility.AreEqual(3, () => Database3.GetValue<TestObject>(id).InvokeCount.Get(), "Accessed by number three");
+            
+            SynchronisedClient.SetInstance(Client1);
+        }
+        
+        private class TestObject : SynchronisedObject
+        {
+            public ValueStorage<int> InvokeCount => GetDatabase().Get<int>(nameof(InvokeCount));
+
+            public TestObject(string id, bool isPersistent = false) : base(id, isPersistent)
+            {
+                
+            }
+
+            protected override void Constructor()
+            {
+                Console.WriteLine($"Invoked constructor on {GetDatabase().Client}.");
+                InvokeCount.Modify((value =>
+                {
+                    Console.WriteLine($"New invokeCount: {value + 1}");    
+                    return value + 1;
+                }));
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 using DMP.Databases;
+using DMP.Databases.ValueStorage;
 using DMP.Networking.Synchronisation.Client;
 
 namespace DMP.Objects
@@ -40,9 +41,9 @@ namespace DMP.Objects
             
             Id = id;
             _database = new Database(id, isPersistent, true);
-            _database.OnReferenced(this);
             
-            OnCreated();
+            //if the synchronised object was referenced the first time on this client: Invoke its constructor
+            if(_database.TryTrackObject(this)) Constructor();
         }
 
         /// <summary>
@@ -56,9 +57,9 @@ namespace DMP.Objects
             
             Id = $"{synchronisedObject.Id}/{id}";
             _database = new Database(Id, isPersistent, true);
-            _database.OnReferenced(this);
             
-            OnCreated();
+            //if the synchronised object was referenced the first time on this client: Invoke its constructor
+            if(_database.TryTrackObject(this)) Constructor();
         }
         
         public Database GetDatabase()
@@ -71,18 +72,25 @@ namespace DMP.Objects
                 if (client == null) 
                     throw new InvalidOperationException("Can't retrieve SynchronisedObject if no local SynchronisedClient exists!");
 
+                //retrieve the database
                 _database = client.Get(Id);
-                _database.OnReferenced(this);
+                
+                //if the synchronised object was referenced the first time on this client: Invoke its constructor
+                if(_database.TryTrackObject(this)) Constructor();
             }
             
             return _database;
         }
 
         /// <summary>
-        /// Called when the object is created by the constructor, or when the object is loaded/received on a remote client
+        /// <list type="number">
+        ///     <listheader> <description>Constructor() is called in two cases:</description> </listheader>
+        ///     <item> <description>By the constructor when the SynchronisedObject is created</description> </item>
+        ///     <item> <description>The first time any of its values is accessed after it was created on a remote client or loaded from persistence</description> </item>
+        /// </list>
         /// </summary>
-        /// <remarks>Is invoked in the constructor of the SynchronisedObject, meaning it will be executed before super constructors of SynchronisedObject are called!</remarks>
-        protected virtual void OnCreated()
+        /// <remarks>If its invoked in the constructor of the SynchronisedObject, it will be executed before super constructors of SynchronisedObject are called!</remarks>
+        protected virtual void Constructor()
         {
             
         }
@@ -105,12 +113,6 @@ namespace DMP.Objects
             return false;
         }
 
-        [OnDeserialized]
-        public void Test(StreamingContext context)
-        {
-            OnCreated();
-        }
-        
         public override int GetHashCode()
         {
             return (Id != null ? Id.GetHashCode() : 0);

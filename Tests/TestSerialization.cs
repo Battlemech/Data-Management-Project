@@ -196,6 +196,7 @@ namespace Tests
             
             byte[] bytes = Serialization.Serialize(o);
             TestObject copy = Serialization.Deserialize<TestObject>(bytes);
+
             //make sure constructor() was called by deserialization callback
             Assert.IsTrue(copy.ConstructorCalled);
         }
@@ -208,8 +209,9 @@ namespace Tests
                 
             }
 
-            protected override void OnCreated()
+            protected override void Constructor()
             {
+                Console.WriteLine("Invoked constructor");
                 ConstructorCalled = true;
             }
         }
