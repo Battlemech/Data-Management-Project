@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DMP.Databases.ValueStorage;
 using DMP.Networking.Synchronisation.Messages;
@@ -9,7 +10,8 @@ namespace DMP.Databases
 {
     public partial class Database
     {
-        private readonly List<SynchronisedObject> _objects = new List<SynchronisedObject>();
+        //tracks all synchronised objects
+        private readonly HashSet<SynchronisedObject> _objects = new HashSet<SynchronisedObject>();
 
         public void Delete()
         {
@@ -20,14 +22,6 @@ namespace DMP.Databases
         private void RequestDelete()
         {
             Client.SendMessage(new DeleteDatabaseMessage() { DatabaseId = Id});
-        }
-
-        protected internal void OnReferenced(SynchronisedObject synchronisedObject)
-        {
-            lock (_objects)
-            {
-                _objects.Add(synchronisedObject);
-            }
         }
         
         protected internal void OnDelete()

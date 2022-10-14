@@ -67,5 +67,13 @@ namespace DMP.Networking.Synchronisation.Client
                 Get(message.DatabaseId).OnDelete();
             }));
         }
+
+        /// <summary>
+        /// Used as a debug function for testing. Overwrites the current client instance
+        /// </summary>
+        public static void SetInstance(SynchronisedClient client)
+        {
+            Instance = client;
+        }
     }
 }
