@@ -71,8 +71,6 @@ namespace DMP.Databases.ValueStorage
             Database.OnSet(Id, serializedBytes);
         }
 
-        public int InvokeCallbacks() => Database.InvokeCallbacks(Id);
-
         public void OnInitialized(Action<T> onInitialized) => Database.OnInitialized(Id, onInitialized);
     }
 }

@@ -116,7 +116,7 @@ namespace DMP.Databases
             {
                 //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
                 //allowing the delegation of callbacks to a task
-                _callbackHandler.InvokeCallbacks(id, serializedBytes);
+                _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
             Scheduler.QueueTask(id, internalTask);
