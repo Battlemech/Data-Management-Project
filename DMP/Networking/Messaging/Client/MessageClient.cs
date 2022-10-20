@@ -55,7 +55,7 @@ namespace DMP.Networking.Messaging.Client
 
         protected void OnReceived(Message message, byte[] serializedBytes)
         {
-            _callbackHandler.InvokeCallbacks(message.SerializedType, serializedBytes);
+            _callbackHandler.InvokeAllCallbacks(message.SerializedType, serializedBytes);
         }
     }
 }

@@ -18,6 +18,8 @@ namespace DMP.Databases.ValueStorage
 
         public abstract void BlockingGetObject(Action<object> value);
 
+        public abstract T BlockingGetObject<T>(SafeOperationDelegate<object, T> safeOperation);
+
         public abstract void UnsafeSet(object o);
 
         protected internal abstract ValueStorage Copy();
@@ -38,6 +40,11 @@ namespace DMP.Databases.ValueStorage
         public override void BlockingGetObject(Action<object> action)
         {
             lock (Id) action.Invoke(_data);
+        }
+
+        public override TOut BlockingGetObject<TOut>(SafeOperationDelegate<object, TOut> safeOperation)
+        {
+            lock (Id) return safeOperation.Invoke(_data);
         }
 
         public override void UnsafeSet(object o)

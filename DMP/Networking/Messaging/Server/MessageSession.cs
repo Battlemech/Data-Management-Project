@@ -35,7 +35,7 @@ namespace DMP.Networking.Messaging.Server
             _server.InvokeCallbacks(message.SerializedType, serializedMessage,this);
             
             //invoke callbacks specific to this message session
-            _requestHandler.InvokeCallbacks(message.SerializedType, serializedMessage);
+            _requestHandler.InvokeAllCallbacks(message.SerializedType, serializedMessage);
         }
         
         public void AddCallback<T>(Action<T> onValueChange, string name = "") where T : Message

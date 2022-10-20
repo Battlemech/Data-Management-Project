@@ -86,7 +86,7 @@ namespace DMP.Databases
             {
                 //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
                 //allowing the delegation of callbacks to a task
-                _callbackHandler.InvokeCallbacks(id, serializedBytes);
+                _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
                 
                 if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
@@ -94,16 +94,16 @@ namespace DMP.Databases
             Scheduler.QueueTask(id, internalTask);
         }
 
-        public int InvokeCallbacks(string id)
+        public int InvokeAllCallbacks(string id)
         {
             if(!_values.ContainsKey(id)) return 0;
 
             if (!TryGetType(id, out Type type))
                 throw new ArgumentException($"Failed to extract type of {id} while trying to invoke callbacks!");
-
-            byte[] serializedBytes = Serialization.Serialize(type, _values[id].GetObject());
             
-            return _callbackHandler.InvokeCallbacks(id, serializedBytes);
+            byte[] serializedBytes = _values[id].BlockingGetObject(o => Serialization.Serialize(type, o));
+            
+            return _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
         }
     }
 }

@@ -80,7 +80,7 @@ namespace DMP.Databases
             AddCallback<Guid>(nameof(HostId), (value =>
             {
                 //invoke callback
-                InvokeCallbacks(value == Client.Id ? nameof(HostPersistence) : nameof(ClientPersistence));
+                InvokeAllCallbacks(value == Client.Id ? nameof(HostPersistence) : nameof(ClientPersistence));
             }), $"SYSTEM/INTERNAL/{nameof(HostId)}", true, unique:true);
         }
     }

@@ -11,5 +11,7 @@ namespace DMP.Databases.ValueStorage
         public int GetCallbackCount(string name = "") => Database.GetCallbackCount(Id, name);
 
         public int RemoveCallbacks(string name = "") => Database.RemoveCallbacks(Id, name);
+        
+        public int InvokeAllCallbacks() => Database.InvokeAllCallbacks(Id);
     }
 }

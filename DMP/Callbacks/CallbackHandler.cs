@@ -82,8 +82,8 @@ namespace DMP.Callbacks
                 return count;
             }
         }
-        
-        public int InvokeCallbacks(TKey id, byte[] serializedBytes)
+
+        public int InvokeAllCallbacks(TKey id, byte[] serializedBytes)
         {
             List<Callback> callbacks;
             
@@ -125,10 +125,9 @@ namespace DMP.Callbacks
             }
 
             return callbacks.Count;
-            
         }
 
-        public int InvokeCallbacks<T>(TKey id, T value)
+        public int InvokeAllCallbacks<T>(TKey id, T value)
         {
             List<Callback> callbacks;
             
