@@ -33,6 +33,26 @@ namespace DMP.Databases.Utility
             }));
         }
 
+        public static void Add<TCollection, TKey, TValue>(this ValueStorage<TCollection> valueStorage, TKey key,
+            TValue value) where TCollection : IDictionary<TKey, TValue>
+        {
+            valueStorage.Modify((dictionary =>
+            {
+                dictionary.Add(key, value);
+                return dictionary;
+            }));
+        }
+
+        public static void RemoveKey<TCollection, TKey, TValue>(this ValueStorage<TCollection> valueStorage, TKey key) 
+            where TCollection : IDictionary<TKey, TValue>
+        {
+            valueStorage.Modify((dictionary =>
+            {
+                dictionary.Remove(key);
+                return dictionary;
+            }));
+        }
+        
         public static void Remove<TCollection, TValue>(this Database database, string id, TValue toRemove) 
             where TCollection : ICollection<TValue>, new()
         {
