@@ -111,6 +111,18 @@ namespace DMP.Networking.Messaging.Server
             
         }
 
+        protected override void OnDisconnected(TcpSession session)
+        {
+            if(session is MessageSession messageSession) OnDisconnected(messageSession);
+            else throw new InvalidCastException($"Expected connected session to be of type MessageSession, " +
+                                                $"but is {session?.GetType()}");
+        }
+
+        protected virtual void OnDisconnected(MessageSession messageSession)
+        {
+            
+        }
+
         protected override TcpSession CreateSession()
         {
             return new MessageSession(this);
