@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
 
@@ -6,7 +7,7 @@ namespace DMP.Utility
 {
     public static class Serialization
     {
-        private static readonly Serializer Serializer = new Serializer(new AllFieldsExtractor(), options : GroBufOptions.WriteEmptyObjects, customSerializerCollection: new IgnoreObjectSerializerCollection(Options.IgnoredTypes));
+        private static readonly Serializer Serializer = new Serializer(new AllFieldsExtractor(), options : GroBufOptions.WriteEmptyObjects, customSerializerCollection: new IgnoreObjectSerializerCollection());
 
         /// <summary>
         /// Serializes the object
@@ -47,9 +48,9 @@ namespace DMP.Utility
         private readonly IgnoreObjectSerializer _ignoreObjectSerializer = new IgnoreObjectSerializer();
         private readonly Type[] _ignoredTypes;
 
-        public IgnoreObjectSerializerCollection(params Type[] ignoredTypes)
+        public IgnoreObjectSerializerCollection()
         {
-            _ignoredTypes = ignoredTypes;
+            _ignoredTypes = Options.IgnoredTypes.ToArray();
         }
         
         public IGroBufCustomSerializer Get(Type declaredType, Func<Type, IGroBufCustomSerializer> factory, IGroBufCustomSerializer baseSerializer)

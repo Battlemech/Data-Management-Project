@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP;
 using DMP.Networking.Synchronisation.Client;
 using DMP.Objects;
 using DMP.Utility;
@@ -199,6 +200,16 @@ namespace Tests
 
             //make sure constructor() was called by deserialization callback
             Assert.IsTrue(copy.ConstructorCalled);
+        }
+
+        [Test]
+        public static void TestIgnoredTypes()
+        {
+            //ignore strings
+            Options.IgnoredTypes.Add(typeof(string));
+            
+            //make sure strings are ignored
+            Assert.IsNull(Serialization.Deserialize<string>(Serialization.Serialize("Test")));
         }
         
         private class TestObject : SynchronisedObject
