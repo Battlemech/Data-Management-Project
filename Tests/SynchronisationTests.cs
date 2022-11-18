@@ -511,6 +511,7 @@ namespace Tests
             //try modifying result as newly connected client
             Database1.Modify<string>(id, (value) => value + "5");
             
+            TestUtility.AreEqual(id+"45", (() => Database1.GetValue<string>(id)));
             TestUtility.AreEqual(id+"45", (() => Database2.GetValue<string>(id)));
             TestUtility.AreEqual(id+"45", (() => Database3.GetValue<string>(id)));
             
