@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DMP.Networking.Messaging.Client;
+using DMP.Utility;
 
 namespace DMP.Networking.Messaging.Server
 {
@@ -74,6 +75,8 @@ namespace DMP.Networking.Messaging.Server
                 
                 //remove the callback
                 RemoveCallbacks<TReply>(callbackId);
+                
+                LogWriter.LogWarning($"Failed to receive reply within {timeout}ms!");
                 
                 //invoke it with null as value
                 onReply.Invoke(null);

@@ -31,7 +31,6 @@ namespace DMP.Networking.Synchronisation.Server
                 //replies contain all values which are currently not being modified on the client
                 SendRequestsToOthers<GetValueRequest, GetValueReply>(request, session, replies =>
                 {
-                    
                     //get all received replies
                     List<SetValueMessage> setValueMessages = new List<SetValueMessage>();
                     foreach (var reply in replies)
@@ -42,6 +41,8 @@ namespace DMP.Networking.Synchronisation.Server
                         setValueMessages.AddRange(reply.SetValueMessages);
                     }
 
+                    Console.WriteLine($"Unfiltered replies: {replies.Count}. Replies which are not null: {setValueMessages.Count}");
+                    
                     //filter duplicate SetValueMessages and messages with a lower modCount
                     foreach (var message in FilterMessages(setValueMessages))
                     {
@@ -61,6 +62,8 @@ namespace DMP.Networking.Synchronisation.Server
             foreach (var message in messages)
             {
                 string id = message.ValueId;
+             
+                Console.WriteLine($"Checking message: {message}");
                 
                 //save a value if no previous record of that id exists
                 if (!filteredMessages.TryGetValue(id, out SetValueMessage current))
@@ -75,6 +78,8 @@ namespace DMP.Networking.Synchronisation.Server
                 filteredMessages[id] = message;
             }
 
+            Console.WriteLine($"unfiltered message count: {messages.Count}");
+            
             return filteredMessages.Values.ToList();
         }
     }

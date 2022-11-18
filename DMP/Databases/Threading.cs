@@ -14,7 +14,7 @@ namespace DMP.Databases
             //enqueue task in value storage if it exists
             if (_values.TryGetValue(id, out ValueStorage.ValueStorage value)) value.Delegate(task);
             //start task if it doesn't exist
-            else task.Start();
+            else {task.Start();}
         }
 
         public void Delegate(string id, Action action) => Delegate(id, new Task(action));
