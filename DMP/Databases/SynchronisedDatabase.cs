@@ -68,7 +68,7 @@ namespace DMP.Databases
                 }
             }));
                 
-            Scheduler.QueueTask(synchronisationTask);
+            synchronisationTask.Start();
         }
         
         /// <summary>

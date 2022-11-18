@@ -67,21 +67,21 @@ namespace Tests
             database.SetValue<int>("1", default);
             
             //wait until callback from set was triggered
-            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
+            TestUtility.AreEqual(0, () => database.QueuedTasksCount);
             Assert.AreEqual(0, database.GetValue<int>("2"));
             
             //set value to 1, not invoking OnInitialized
             database.SetValue<int>("1", 0); //doesn't trigger because its default value
             
             //wait until callback from set was triggered
-            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
+            TestUtility.AreEqual(0, () => database.QueuedTasksCount);
             Assert.AreEqual(0, database.GetValue<int>("2"));
             
             //set value to 1, invoking OnInitialized
             database.SetValue<int>("1", 1); 
             
             //wait until callback from set was triggered
-            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount);
+            TestUtility.AreEqual(0, () => database.QueuedTasksCount);
             TestUtility.AreEqual(2, () => database.GetValue<int>("2"));
         }
 

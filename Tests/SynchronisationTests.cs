@@ -263,7 +263,7 @@ namespace Tests
             //wait for internal tasks to complete
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
-                TestUtility.IsChanging(0, () => database.Scheduler.QueuedTasksCount, "Internal tasks");
+                TestUtility.IsChanging(0, () => database.QueuedTasksCount, "Internal tasks");
             }
             Console.WriteLine($"All adds completed internally after {stopwatch.ElapsedMilliseconds} ms");
 
@@ -401,7 +401,7 @@ namespace Tests
             //wait for internal tasks to complete
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
-                TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), "Internal tasks", 5000);
+                TestUtility.AreEqual(0, (() => database.QueuedTasksCount), "Internal tasks", 5000);
             }
             Console.WriteLine($"All adds completed internally after {stopwatch.ElapsedMilliseconds} ms");
             

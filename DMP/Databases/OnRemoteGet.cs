@@ -20,7 +20,7 @@ namespace DMP.Databases
             
             foreach (var id in remoteModCounts.Keys)
             {
-                Scheduler.QueueTask(id, (() =>
+                Delegate(id, (() =>
                 {
                     uint localModCount = GetModCount(id);
                     uint serverModCount = remoteModCounts[id];

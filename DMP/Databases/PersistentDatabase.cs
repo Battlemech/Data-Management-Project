@@ -109,7 +109,7 @@ namespace DMP.Databases
                     OnOfflineModification(tso.ValueStorageId, tso.Buffer);
                 }
             }));
-            Scheduler.QueueTask(synchronisationTask);
+            synchronisationTask.Start();
         }
     }
 }

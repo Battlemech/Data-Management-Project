@@ -56,7 +56,7 @@ namespace DMP.Databases.ValueStorage
                 serializedBytes = Serialization.Serialize(value);
             }
             
-            Database.OnSet(Id, serializedBytes);
+            Delegate((() => Database.OnSet(Id, serializedBytes)));
         }
 
         public void BlockingSet(SetValueDelegate<T> setValueDelegate)
@@ -68,7 +68,7 @@ namespace DMP.Databases.ValueStorage
                 serializedBytes = Serialization.Serialize(_data);
             }
             
-            Database.OnSet(Id, serializedBytes);
+            Delegate((() => Database.OnSet(Id, serializedBytes)));
         }
 
         public void OnInitialized(Action<T> onInitialized) => Database.OnInitialized(Id, onInitialized);

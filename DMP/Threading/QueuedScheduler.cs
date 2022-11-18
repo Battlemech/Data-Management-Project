@@ -7,7 +7,7 @@ namespace DMP.Threading
 {
     public class QueuedScheduler : Scheduler
     {
-        public int QueuedTasksCount => _queuedTasks.Count;
+        public int QueuedTasksCount => _queuedTasks.Count + (ExecutingTasks ? 1 : 0);
         public bool ExecutingTasks { get; private set; }
         
         private readonly ConcurrentQueue<Task> _queuedTasks = new ConcurrentQueue<Task>();

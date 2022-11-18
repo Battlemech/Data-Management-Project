@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading.Tasks;
+using DMP.Threading;
 using DMP.Utility;
 
 namespace DMP.Databases.ValueStorage
@@ -21,6 +23,10 @@ namespace DMP.Databases.ValueStorage
         public abstract T BlockingGetObject<T>(SafeOperationDelegate<object, T> safeOperation);
 
         public abstract void UnsafeSet(object o);
+
+        public abstract void Delegate(Task task);
+
+        public abstract int GetQueuedTasksCount();
 
         protected internal abstract ValueStorage Copy();
     }

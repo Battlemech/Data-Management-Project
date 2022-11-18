@@ -35,18 +35,13 @@ namespace DMP.Databases
         
         protected internal void OnModify<T>(string id, byte[] serializedBytes, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
         {
-            //process the set if database is synchronised or persistent
-            Task internalTask = new Task((() =>
-            {
-                //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-                //allowing the delegation of callbacks to a task
-                _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
+            //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
+            //allowing the delegation of callbacks to a task
+            _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
                 
-                if(_isSynchronised && Client.IsConnected) OnModifyValueSynchronised(id, serializedBytes, modify, onResultConfirmed);
-                else onResultConfirmed?.Invoke(Serialization.Deserialize<T>(serializedBytes));
-                if(_isPersistent) OnSetPersistent(id, serializedBytes);
-            }));
-            Scheduler.QueueTask(id, internalTask);
+            if(_isSynchronised && Client.IsConnected) OnModifyValueSynchronised(id, serializedBytes, modify, onResultConfirmed);
+            else onResultConfirmed?.Invoke(Serialization.Deserialize<T>(serializedBytes));
+            if(_isPersistent) OnSetPersistent(id, serializedBytes);
         }
 
         private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)

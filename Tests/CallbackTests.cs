@@ -36,7 +36,7 @@ namespace Tests
             
             database.SetValue("string", "42");
             //wait for callbacks to execute
-            TestUtility.AreEqual(0, () => database.Scheduler.QueuedTasksCount, "Callbacks are executed");
+            TestUtility.AreEqual(0, () => database.QueuedTasksCount, "Callbacks are executed");
             
             //make sure string length is still 21
             Assert.AreEqual(lastCallbackSet.Length, database.GetValue<int>("stringLength"));

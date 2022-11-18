@@ -11,8 +11,6 @@ namespace DMP.Databases
     public partial class Database
     {
         public readonly string Id;
-        public readonly IdLockedScheduler Scheduler = new IdLockedScheduler();
-
         private readonly ConcurrentDictionary<string, ValueStorage.ValueStorage> _values = new ConcurrentDictionary<string, ValueStorage.ValueStorage>();
 
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
@@ -81,17 +79,12 @@ namespace DMP.Databases
         
         protected internal void OnSet(string id, byte[] serializedBytes)
         {
-            //process the set if database is synchronised or persistent
-            Task internalTask = new Task((() =>
-            {
-                //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-                //allowing the delegation of callbacks to a task
-                _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
+            //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
+            //allowing the delegation of callbacks to a task
+            _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
                 
-                if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
-                if(_isPersistent) OnSetPersistent(id, serializedBytes);
-            }));
-            Scheduler.QueueTask(id, internalTask);
+            if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
+            if(_isPersistent) OnSetPersistent(id, serializedBytes);
         }
 
         public int InvokeAllCallbacks(string id)

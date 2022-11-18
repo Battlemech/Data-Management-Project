@@ -111,15 +111,13 @@ namespace DMP.Databases
         {
             byte[] serializedBytes = Get<T>(id).InternalSet(modify);
             
-            //process the set if database is synchronised or persistent
-            Task internalTask = new Task((() =>
+            Delegate(id, (() =>
             {
                 //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
                 //allowing the delegation of callbacks to a task
                 _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
                 if(_isPersistent) OnSetPersistent(id, serializedBytes);
             }));
-            Scheduler.QueueTask(id, internalTask);
         }
     }
 }
