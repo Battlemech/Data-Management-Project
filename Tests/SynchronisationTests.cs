@@ -475,7 +475,7 @@ namespace Tests
             }
         }
 
-        [Test]
+        [Test, Repeat(10)]
         public static void TestSimpleConnect()
         {
             string id = nameof(TestSimpleConnect);

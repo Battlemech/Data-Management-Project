@@ -28,6 +28,14 @@ namespace DMP.Databases.ValueStorage
 
         public abstract int GetQueuedTasksCount();
 
+        public abstract int InvokeAllCallbacks();
+        
+        public abstract int InvokeAllCallbacks(byte[] bytes);
+
+        public abstract int GetCallbackCount(string name = "");
+
+        public abstract int RemoveCallbacks(string name = "");
+
         protected internal abstract ValueStorage Copy();
     }
     

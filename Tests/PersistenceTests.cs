@@ -123,8 +123,8 @@ namespace Tests
             database1.SetValue(id, new List<int>(){1, 2});
             database2.SetValue(id, new List<int>(){3});
             
-            Assert.AreEqual(0, database1.QueuedTasksCount);
-            Assert.AreEqual(0, database2.QueuedTasksCount);
+            TestUtility.AreEqual(0, () => database1.QueuedTasksCount);
+            TestUtility.AreEqual(0, () => database2.QueuedTasksCount);
             
             //connect clients
             client1.ConnectAsync();
@@ -222,6 +222,9 @@ namespace Tests
                     value.AccessCount.Modify((currentValue => currentValue + 1));
                     return value;
                 }));
+                
+                //wait for data to be saved
+                TestUtility.AreEqual(0, (() => database.QueuedTasksCount));
 
                 Assert.AreEqual(i + 1, playerData.Get().AccessCount.Get());
                 Console.WriteLine($"Iteration {i} succeeded");

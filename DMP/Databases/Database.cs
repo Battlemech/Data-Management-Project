@@ -79,24 +79,8 @@ namespace DMP.Databases
         
         protected internal void OnSet(string id, byte[] serializedBytes)
         {
-            //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-            //allowing the delegation of callbacks to a task
-            _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
-                
             if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
             if(_isPersistent) OnSetPersistent(id, serializedBytes);
-        }
-
-        public int InvokeAllCallbacks(string id)
-        {
-            if(!_values.ContainsKey(id)) return 0;
-
-            if (!TryGetType(id, out Type type))
-                throw new ArgumentException($"Failed to extract type of {id} while trying to invoke callbacks!");
-            
-            byte[] serializedBytes = _values[id].BlockingGetObject(o => Serialization.Serialize(type, o));
-            
-            return _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
         }
     }
 }

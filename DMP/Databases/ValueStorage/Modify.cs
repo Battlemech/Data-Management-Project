@@ -33,7 +33,11 @@ namespace DMP.Databases.ValueStorage
             }
             
             //delegates internal logic to a thread, increasing performance
-            Delegate(() => Database.OnModify(Id, serializedBytes, modify, onResultConfirmed));
+            Delegate(() =>
+            {
+                InvokeAllCallbacks(serializedBytes);
+                Database.OnModify(Id, serializedBytes, modify, onResultConfirmed);
+            });
         }
         
         public void Modify(ModifyValueDelegate<T> modify, out T result)

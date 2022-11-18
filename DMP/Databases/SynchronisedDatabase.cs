@@ -154,7 +154,7 @@ namespace DMP.Databases
             lock (_confirmedModCount) _confirmedModCount[id] = modCount;
 
             //invoke callbacks
-            _callbackHandler.InvokeAllCallbacks(id, value);
+            InvokeAllCallbacks(id, value);
             
             //save data persistently if necessary
             if(_isPersistent) OnSetPersistent(id, value);
