@@ -1,4 +1,5 @@
 ﻿using DMP.Networking.Messaging;
+using DMP.Utility;
 
 namespace DMP.Networking.Synchronisation.Messages
 {
@@ -23,6 +24,11 @@ namespace DMP.Networking.Synchronisation.Messages
             ValueId = valueId;
             ModCount = modCount;
             Value = value;
+        }
+
+        public override string ToString()
+        {
+            return $"Database={DatabaseId}, ValueId={ValueId}, ModCount={ModCount}, Value={LogWriter.StringifyCollection(Value)}";
         }
     }
 }

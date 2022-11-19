@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DMP.Networking.Messaging.Server;
 using DMP.Networking.Synchronisation.Messages;
+using DMP.Utility;
 
 namespace DMP.Networking.Synchronisation.Server
 {
@@ -41,13 +42,12 @@ namespace DMP.Networking.Synchronisation.Server
                         setValueMessages.AddRange(reply.SetValueMessages);
                     }
 
-                    Console.WriteLine($"Unfiltered replies: {replies.Count}. Replies which are not null: {setValueMessages.Count}");
+                    if(setValueMessages.Count == 0)
+                        LogWriter.LogWarning("All clients timed out when requesting values!");
                     
                     //filter duplicate SetValueMessages and messages with a lower modCount
                     foreach (var message in FilterMessages(setValueMessages))
                     {
-                        Console.WriteLine($"New info: {message}");
-                        
                         //forward them to the newly connected client
                         session.SendMessage(message);
                     }
@@ -62,9 +62,7 @@ namespace DMP.Networking.Synchronisation.Server
             foreach (var message in messages)
             {
                 string id = message.ValueId;
-             
-                Console.WriteLine($"Checking message: {message}");
-                
+
                 //save a value if no previous record of that id exists
                 if (!filteredMessages.TryGetValue(id, out SetValueMessage current))
                 {
@@ -78,8 +76,6 @@ namespace DMP.Networking.Synchronisation.Server
                 filteredMessages[id] = message;
             }
 
-            Console.WriteLine($"unfiltered message count: {messages.Count}");
-            
             return filteredMessages.Values.ToList();
         }
     }

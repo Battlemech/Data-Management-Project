@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DMP.Networking.Messaging.Client
@@ -69,17 +70,22 @@ namespace DMP.Networking.Messaging.Client
                 onReply.Invoke(replyMessage);
             }), callbackId);
 
-            Task.Factory.StartNew((() =>
+            //start background thread instead of task: Starting too many waiting task in TaskPool will cause task
+            //later tasks to not start because Task Pool is still waiting for first tasks to complete (which are waiting)
+            void Response()
             {
-                if(receivedMessage.WaitOne(timeout)) return;
-                
+                if (receivedMessage.WaitOne(timeout)) return;
+
                 //remove the callback
                 RemoveCallbacks<TReply>(callbackId);
-                
+
                 //invoke it with null as value
                 onReply.Invoke(null);
-            }));
-            
+            }
+
+            Thread thread = new Thread(Response) { IsBackground = true };
+            thread.Start();
+
             //send the request
             return SendMessage(requestMessage);
         }

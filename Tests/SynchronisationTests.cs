@@ -56,12 +56,11 @@ namespace Tests
             
             //set clients and enable synchronisation for databases
             Database1.Client = Client1;
-            Database1.IsSynchronised = true;
-            
             Database2.Client = Client2;
-            Database2.IsSynchronised = true;
-            
             Database3.Client = Client3;
+            
+            Database2.IsSynchronised = true;
+            Database1.IsSynchronised = true;
             Database3.IsSynchronised = true;
         }
 
@@ -73,7 +72,10 @@ namespace Tests
             Client1.DisconnectAsync();
             Client2.DisconnectAsync();
             Client3.DisconnectAsync();
-            
+
+            Database1.Client = null;
+            Database2.Client = null;
+            Database3.Client = null;
         }
 
         [Test]
@@ -482,6 +484,8 @@ namespace Tests
             Setup(id);
             
             //disconnect client 1
+            //todo: instead, wait until all requests were answered before disconnecting
+            Thread.Sleep(1000); //wait until hostId of client was synchronised
             Assert.IsTrue(Client1.DisconnectAsync());
             
             //set value
@@ -509,7 +513,11 @@ namespace Tests
             TestUtility.AreEqual((uint) 2, (() => Database1.GetModCount(id)));
             
             //try modifying result as newly connected client
-            Database1.Modify<string>(id, (value) => value + "5");
+            Database1.Modify<string>(id, (value) =>
+            {
+                Console.WriteLine($"Database 1: Updated value to {value}5");
+                return value + "5";
+            });
             
             TestUtility.AreEqual(id+"45", (() => Database1.GetValue<string>(id)));
             TestUtility.AreEqual(id+"45", (() => Database2.GetValue<string>(id)));
@@ -519,6 +527,8 @@ namespace Tests
             Assert.AreEqual(3, Database1.GetModCount(id));
             Assert.AreEqual(3, Database2.GetModCount(id));
             Assert.AreEqual(3, Database3.GetModCount(id));
+            
+            Console.WriteLine("-------Test successful-------");
         }
 
         [Test]
@@ -626,11 +636,10 @@ namespace Tests
                 return hostCount;
             }, "Exactly one host", 5000);
 
-            Assert.IsTrue(Database1.IsHost);
-            Assert.IsFalse(Database2.IsHost);
-            Assert.IsFalse(Database3.IsHost);
-            
             Database1.ClientPersistence = true;
+            Console.WriteLine($"Client 1 host: {Database1.IsHost}");
+            Console.WriteLine($"Client 2 host: {Database2.IsHost}");
+            Console.WriteLine($"Client 3 host: {Database3.IsHost}");
 
             TestUtility.AreEqual(2, () =>
             {

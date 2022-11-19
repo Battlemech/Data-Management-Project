@@ -23,8 +23,6 @@ namespace DMP.Databases
             {
                 Delegate(id, (() =>
                 {
-                    Console.WriteLine($"Starting local lookup for {Id}-{id}");
-                    
                     uint localModCount = GetModCount(id);
                     uint serverModCount = remoteModCounts[id];
                     Type type = null;
@@ -44,14 +42,10 @@ namespace DMP.Databases
                         
                         //other lookups still need to be completed. Wait
                         completedLookups++;
-                        
-                        Console.WriteLine($"Completed {completedLookups}/{requiredLookups} for {Id}-{id}");
-                        
+
                         if(completedLookups != requiredLookups) return;
                     }
 
-                    Console.WriteLine($"Completed local lookup for {Id}-{id}");
-                    
                     //all lookups were completed
                     getDelegate.Invoke(messages);
                 }));    

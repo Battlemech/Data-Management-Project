@@ -44,9 +44,9 @@ namespace DMP.Networking.Messaging.Server
             return success;
         }
 
-        public delegate void OnReply<T>(List<T> replies) where T : ReplyMessage;
+        public delegate void OnReplies<T>(List<T> replies) where T : ReplyMessage;
         
-        public bool SendRequests<TRequest, TReply>(TRequest request, OnReply<TReply> onReply)
+        public bool SendRequests<TRequest, TReply>(TRequest request, OnReplies<TReply> onReplies)
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>
         {
@@ -63,14 +63,14 @@ namespace DMP.Networking.Messaging.Server
                     //wait for all replies to arrive
                     if(replies.Count != sessions.Count) return;
                     
-                    onReply.Invoke(replies);
+                    onReplies.Invoke(replies);
                 });
             }
 
             return success;
         }
 
-        public bool SendRequestsToOthers<TRequest, TReply>(TRequest request, TcpSession excluded, OnReply<TReply> onReply)
+        public bool SendRequestsToOthers<TRequest, TReply>(TRequest request, TcpSession excluded, OnReplies<TReply> onReplies)
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>
         {
@@ -90,7 +90,7 @@ namespace DMP.Networking.Messaging.Server
                     //wait for all replies to arrive
                     if(replies.Count != sessions.Count - 1) return;
                     
-                    onReply.Invoke(replies);
+                    onReplies.Invoke(replies);
                 });
             }
 

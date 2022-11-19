@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP;
@@ -183,6 +184,55 @@ namespace Tests
             
             server.Stop();
             client.DisconnectAsync();
+        }
+
+        [Test]
+        public static void TestRequestReplyAsync()
+        {
+            string localhost = "127.0.0.1";
+            int toTransform = 100;
+            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestRequestReply));
+
+            MessageServer server = new MessageServer(localhost, port);
+            server.Start();
+
+            MessageClient client = new MessageClient(localhost, port);
+            client.ConnectAsync();
+
+            Assert.IsTrue(client.WaitForConnect());
+
+            TestRequest request = new TestRequest() { PleaseTransform = toTransform };
+            
+            //add request callback to server
+            server.AddCallback<TestRequest>(((message, session) =>
+            {
+                //transform int
+                var testReply = new TestReply(message) { Transformed = message.PleaseTransform.ToString() };
+
+                //send reply
+                session.SendMessage(testReply);
+            }));
+
+            List<double> timeInMs = new List<double>();
+            for (int i = 0; i < 3000; i++)
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                ManualResetEvent receivedMessageEvent = new ManualResetEvent(false);
+                
+                client.SendRequest<TestRequest, TestReply>(request, (reply) =>
+                {
+                    receivedMessageEvent.Set();
+                    Assert.AreEqual(toTransform.ToString(), reply.Transformed);
+                });
+
+                Assert.IsTrue(receivedMessageEvent.WaitOne(3000));
+                stopwatch.Stop();
+                
+                //track elapsed time
+                timeInMs.Add(stopwatch.ElapsedMilliseconds);
+            }
+            
+            Console.WriteLine($"Average response time: {timeInMs.Average()}ms");
         }
 
         [Test]

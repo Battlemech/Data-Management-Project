@@ -90,11 +90,13 @@ namespace DMP.Databases.ValueStorage
                 }
                 catch (Exception e)
                 {
-                    if(RemoveOnError) LogWriter.Log($"Removing callback because it caused an exception.\nException: " + e);
-                    else LogWriter.LogException(e);
+                    if (RemoveOnError)
+                        LogWriter.Log($"Removing callback because it caused an exception.\nException: " + e);
+                    else throw;
+                    
                     return false;
                 }
-
+                
                 return true;
             }
         }
