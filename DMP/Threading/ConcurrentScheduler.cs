@@ -9,11 +9,24 @@ namespace DMP.Threading
 {
     public class ConcurrentScheduler : TaskScheduler
     {
-        private static Random _random = new Random();
+        public static ConcurrentScheduler Instance = new ConcurrentScheduler();
         
-        //dictates thread termination if idle
+        private static Random _random = new Random();
+
+        /// <summary>
+        /// Amount of idle threads which won't be terminated automatically
+        /// </summary>
         private readonly int _maxIdleThreads;
+        
+        /// <summary>
+        /// Amount of time an idle helper thread will wait for new tasks before terminating
+        /// </summary>
         private readonly int _idleTimeBeforeTermination;
+        
+        /// <summary>
+        /// Amount of idle helper threads to terminate at the same time
+        /// </summary>
+        private readonly int _terminationCount;
 
         //tracks tasks to be executed
         private readonly ConcurrentQueue<Task> _toExecuteTasks = new ConcurrentQueue<Task>();
@@ -28,10 +41,11 @@ namespace DMP.Threading
         //track active threads
         private int _threadCount = 0;
 
-        public ConcurrentScheduler(int maxIdleThreads = 3, int idleTimeBeforeTermination = 100)
+        public ConcurrentScheduler(int maxIdleThreads = 3, int idleTimeBeforeTermination = 100, int terminationCount = 2)
         {
             _maxIdleThreads = maxIdleThreads;
             _idleTimeBeforeTermination = idleTimeBeforeTermination;
+            _terminationCount = terminationCount;
         }
         
         protected override void QueueTask(Task task)
@@ -89,7 +103,7 @@ namespace DMP.Threading
                     while (!_taskAddedEvent.WaitOne(CalculateWaitTime(threadIndex)))
                     {
                         //if current thread isn't the newest created one: Try to wait again, checking queue position again
-                        if (threadIndex < _threadCount) continue;
+                        if (threadIndex + _terminationCount < _threadCount) continue;
 
                         //thread will be terminating and is no longer idle
                         Interlocked.Decrement(ref _idleThreadCount);
@@ -112,8 +126,8 @@ namespace DMP.Threading
 
         private int CalculateWaitTime(int threadIndex)
         {
-            int queuePosition = _threadCount - threadIndex;
-            int waitTime = (1 + queuePosition) * (_idleTimeBeforeTermination + 10);
+            int queuePosition = Math.Max(0, _threadCount - threadIndex - _terminationCount);
+            int waitTime = (1 + queuePosition/_terminationCount) * (_idleTimeBeforeTermination + 10);
 
             return waitTime;
         }

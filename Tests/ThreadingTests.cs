@@ -23,7 +23,7 @@ namespace Tests
             //track started tasks
             List<Task> waitingTasks = new List<Task>(waitingTasksCount);
 
-            //start tasks which wait, "blocking" other threadpools
+            //start tasks which wait, "blocking" other tasks
             for (int i = 0; i < waitingTasksCount; i++)
             {
                 Task task = new Task((() =>
@@ -58,7 +58,7 @@ namespace Tests
         public static void TestConcurrentSchedulerPerformance()
         {
             const int taskCount = 10000;
-            const int taskTime = 250;
+            const int taskTime = 150;
             
             ConcurrentScheduler scheduler = new ConcurrentScheduler();
             List<Task> tasks = new List<Task>();
