@@ -20,6 +20,8 @@ namespace DMP.Networking.Synchronisation.Server
                 modCount = new Dictionary<string, Dictionary<string, uint>>(_modCount);
             }
 
+            Console.WriteLine($"Server: Starting to send requests at {DateTime.Now}");
+            
             //send a request for each database
             foreach (var kv in modCount)
             {
@@ -32,6 +34,8 @@ namespace DMP.Networking.Synchronisation.Server
                 //replies contain all values which are currently not being modified on the client
                 SendRequestsToOthers<GetValueRequest, GetValueReply>(request, session, replies =>
                 {
+                    Console.WriteLine($"Server: Received all clients replies at {DateTime.Now}");
+                    
                     //get all received replies
                     List<SetValueMessage> setValueMessages = new List<SetValueMessage>();
                     foreach (var reply in replies)
@@ -42,17 +46,23 @@ namespace DMP.Networking.Synchronisation.Server
                         setValueMessages.AddRange(reply.SetValueMessages);
                     }
 
-                    if(setValueMessages.Count == 0)
+                    if (setValueMessages.Count == 0)
+                    {
                         LogWriter.LogWarning("All clients timed out when requesting values!");
+                        return;
+                    }
                     
                     //filter duplicate SetValueMessages and messages with a lower modCount
                     foreach (var message in FilterMessages(setValueMessages))
                     {
+                        Console.WriteLine($"Informing client of {message.GetContent<string>()}");
                         //forward them to the newly connected client
                         session.SendMessage(message);
                     }
-                });   
+                });
             }
+            
+            Console.WriteLine($"Server: Sent requests at {DateTime.Now}");
         }
 
         private List<SetValueMessage> FilterMessages(List<SetValueMessage> messages)

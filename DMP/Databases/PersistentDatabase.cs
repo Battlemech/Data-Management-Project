@@ -67,7 +67,6 @@ namespace DMP.Databases
         private void OnDataFound(List<TrackedSavedObject> savedObjects)
         {
             List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
-            bool syncRequired = !IsSynchronised;
 
             //get list of currently known ids
             List<string> existingIds = _values.Keys.ToList();

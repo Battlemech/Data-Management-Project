@@ -47,8 +47,7 @@ namespace Tests
             Assert.IsTrue(Client1.WaitForConnect());
             Assert.IsTrue(Client2.WaitForConnect());
             Assert.IsTrue(Client3.WaitForConnect());
-            
-            
+
             //setup databases
             Database1 = new Database(Localhost, false, false);
             Database2 = new Database(Localhost, false, false);
@@ -58,9 +57,9 @@ namespace Tests
             Database1.Client = Client1;
             Database2.Client = Client2;
             Database3.Client = Client3;
-            
-            Database2.IsSynchronised = true;
+
             Database1.IsSynchronised = true;
+            Database2.IsSynchronised = true;
             Database3.IsSynchronised = true;
         }
 
@@ -78,7 +77,7 @@ namespace Tests
             Database3.Client = null;
         }
 
-        [Test]
+        [Test, Repeat(10)]
         public static void TestSetup()
         {
             Setup(nameof(TestSetup));
@@ -482,7 +481,7 @@ namespace Tests
         {
             string id = nameof(TestSimpleConnect);
             Setup(id);
-            
+
             //disconnect client 1
             //todo: instead, wait until all requests were answered before disconnecting
             Thread.Sleep(1000); //wait until hostId of client was synchronised
@@ -498,7 +497,7 @@ namespace Tests
                 Console.WriteLine($"Database3: Modifying: {value}. Adding:4");
                 return value + "4";
             });
-            
+
             //wait for value to be synchronised in network
             TestUtility.AreEqual(id+"4", () => Database3.GetValue<string>(id), "Synchronisation before test");
             TestUtility.AreEqual(id+"4", () => Database2.GetValue<string>(id), "Synchronisation before test");
@@ -682,10 +681,13 @@ namespace Tests
             Database1.AddCallback<Guid>("HostId", guid => Console.WriteLine($"Set hostId to: {guid}"));
             
             Thread.Sleep(1000);
-            
-            Assert.IsTrue(Database1.IsHost);
-            Assert.IsFalse(Database2.IsHost);
-            Assert.IsFalse(Database3.IsHost);
+
+            int hostCount = 0;
+            if (Database1.IsHost) hostCount++;
+            if (Database2.IsHost) hostCount++;
+            if (Database3.IsHost) hostCount++;
+
+            Assert.AreEqual(1, hostCount);
         }
 
         [Test]

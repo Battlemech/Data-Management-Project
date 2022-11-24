@@ -18,11 +18,7 @@ namespace DMP.Databases.ValueStorage
 
         public abstract object GetObject();
 
-        public abstract void BlockingGetObject(Action<object> value);
-
-        public abstract T BlockingGetObject<T>(SafeOperationDelegate<object, T> safeOperation);
-
-        public abstract void UnsafeSet(object o);
+        public abstract void UnsafeSet(byte[] bytes);
 
         public abstract void Delegate(Task task);
 
@@ -35,6 +31,8 @@ namespace DMP.Databases.ValueStorage
         public abstract int GetCallbackCount(string name = "");
 
         public abstract int RemoveCallbacks(string name = "");
+
+        public abstract byte[] Serialize();
 
         protected internal abstract ValueStorage Copy();
     }
@@ -51,20 +49,15 @@ namespace DMP.Databases.ValueStorage
             return _data;
         }
 
-        public override void BlockingGetObject(Action<object> action)
+
+        public override void UnsafeSet(byte[] bytes)
         {
-            lock (Id) action.Invoke(_data);
+            lock (Id) _data = Serialization.Deserialize<T>(bytes);
         }
 
-        public override TOut BlockingGetObject<TOut>(SafeOperationDelegate<object, TOut> safeOperation)
+        public override byte[] Serialize()
         {
-            lock (Id) return safeOperation.Invoke(_data);
-        }
-
-        public override void UnsafeSet(object o)
-        {
-            if(o is T data) lock (Id) _data = data;
-            else throw new ArgumentException($"Expected {typeof(T)}, but got: {o?.GetType()}");
+            return BlockingGet((Serialization.Serialize));
         }
 
         protected internal override ValueStorage Copy()

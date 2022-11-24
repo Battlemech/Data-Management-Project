@@ -18,7 +18,7 @@ namespace Tests
         private static readonly Dictionary<string, int> _ports = new Dictionary<string, int>();
         private static int _currentPort = Options.DefaultPort;
         
-        public static void AreEqual<T>(T expected, GetValueDelegate<T> getValueDelegate, string testName = "Test", int timeInMs = 3000, int waitTimeInMs = 10)
+        public static void AreEqual<T>(T expected, GetValueDelegate<T> getValueDelegate, string testName = "Test", int timeInMs = Options.DefaultTimeout, int waitTimeInMs = 10)
         {
             int tryCount = 0;
             Stopwatch stopwatch = Stopwatch.StartNew();

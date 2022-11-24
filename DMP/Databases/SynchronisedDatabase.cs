@@ -7,6 +7,7 @@ using DMP.Networking;
 using DMP.Networking.Synchronisation.Client;
 using DMP.Networking.Synchronisation.Messages;
 using DMP.Objects;
+using DMP.Threading;
 using DMP.Utility;
 
 namespace DMP.Databases
@@ -56,19 +57,17 @@ namespace DMP.Databases
 
             //return if there are no values to synchronise
             if(_values.Count == 0) return;
-
-            Task synchronisationTask = new Task((() =>
+            
+            Delegation.DelegateAction((() =>
             {
                 //return if there are no values to synchronise
                 if (_values.Count == 0) return;
 
                 foreach (var vs in _values.Values)
                 {
-                    vs.BlockingGetObject((o => OnOfflineModification(vs.Id, Serialization.Serialize(vs.GetEnclosedType(), o))));
+                    OnOfflineModification(vs.Id, vs.Serialize());
                 }
             }));
-                
-            synchronisationTask.Start();
         }
         
         /// <summary>
@@ -125,7 +124,7 @@ namespace DMP.Databases
             if (_values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage))
             {
                 //value exists locally. Update it
-                valueStorage.UnsafeSet(Serialization.Deserialize(value, valueStorage.GetEnclosedType()));
+                valueStorage.UnsafeSet(value);
             }
             else
             {
@@ -136,11 +135,11 @@ namespace DMP.Databases
                 if (_values.TryGetValue(id, out valueStorage))
                 {
                     //update newly created value
-                    valueStorage.UnsafeSet(Serialization.Deserialize(value, valueStorage.GetEnclosedType()));
+                    valueStorage.UnsafeSet(value);
                     _serializedData.Remove(id);
                 }
             }
-            
+
             //increase modification count after updating local value
             if (incrementModCount) UpdateModCount(id, modCount);
             

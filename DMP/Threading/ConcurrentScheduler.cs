@@ -9,8 +9,6 @@ namespace DMP.Threading
 {
     public class ConcurrentScheduler : TaskScheduler
     {
-        public static ConcurrentScheduler Instance = new ConcurrentScheduler();
-        
         private static Random _random = new Random();
 
         /// <summary>
@@ -40,8 +38,8 @@ namespace DMP.Threading
         
         //track active threads
         private int _threadCount = 0;
-
-        public ConcurrentScheduler(int maxIdleThreads = 3, int idleTimeBeforeTermination = 100, int terminationCount = 2)
+        
+        public ConcurrentScheduler(int maxIdleThreads = 3, int idleTimeBeforeTermination = 1000, int terminationCount = 2)
         {
             _maxIdleThreads = maxIdleThreads;
             _idleTimeBeforeTermination = idleTimeBeforeTermination;
@@ -61,7 +59,7 @@ namespace DMP.Threading
             }
             else
             {
-                //signal a waiting thread that new work was added
+               //signal a waiting thread that new work was added
                 _taskAddedEvent.Set();
             }
         }

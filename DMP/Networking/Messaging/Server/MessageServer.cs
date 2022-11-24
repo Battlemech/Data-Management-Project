@@ -102,8 +102,6 @@ namespace DMP.Networking.Messaging.Server
             if (session is MessageSession messageSession) OnConnected(messageSession);
             else throw new InvalidCastException($"Expected connected session to be of type MessageSession, " +
                                                $"but is {session?.GetType()}");
-            
-            
         }
 
         protected virtual void OnConnected(MessageSession session)

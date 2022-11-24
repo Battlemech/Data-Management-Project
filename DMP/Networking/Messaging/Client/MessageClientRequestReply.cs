@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP.Threading;
 
 namespace DMP.Networking.Messaging.Client
 {
@@ -72,7 +73,7 @@ namespace DMP.Networking.Messaging.Client
 
             //start background thread instead of task: Starting too many waiting task in TaskPool will cause task
             //later tasks to not start because Task Pool is still waiting for first tasks to complete (which are waiting)
-            void Response()
+            Delegation.EnqueueAction((() =>
             {
                 if (receivedMessage.WaitOne(timeout)) return;
 
@@ -81,10 +82,7 @@ namespace DMP.Networking.Messaging.Client
 
                 //invoke it with null as value
                 onReply.Invoke(null);
-            }
-
-            Thread thread = new Thread(Response) { IsBackground = true };
-            thread.Start();
+            }));
 
             //send the request
             return SendMessage(requestMessage);
