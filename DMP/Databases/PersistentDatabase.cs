@@ -56,8 +56,7 @@ namespace DMP.Databases
             //save its values
             foreach (var kv in _values)
             {
-                ValueStorage.ValueStorage valueStorage = kv.Value;
-                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
+                OnSetPersistent(kv.Key, kv.Value.Serialize());
             }
         }
         

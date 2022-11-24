@@ -65,6 +65,7 @@ namespace DMP.Databases
             //If isHost: change persistence
             AddCallback<bool>(nameof(HostPersistence), value =>
             {
+                Console.WriteLine($"New host persistence: {value}");
                 if(!IsHost) return;
                 IsPersistent = value;
             }, $"SYSTEM/INTERNAL/{nameof(HostPersistence)}", unique:true);
@@ -72,6 +73,7 @@ namespace DMP.Databases
             //if isClient: change persistence
             AddCallback<bool>(nameof(ClientPersistence), value =>
             {
+                Console.WriteLine($"New client persistence: {value}");
                 if(IsHost) return;
                 IsPersistent = value;
             }, $"SYSTEM/INTERNAL/{nameof(ClientPersistence)}", unique:true);

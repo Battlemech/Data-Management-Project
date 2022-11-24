@@ -640,6 +640,10 @@ namespace Tests
             Console.WriteLine($"Client 2 host: {Database2.IsHost}");
             Console.WriteLine($"Client 3 host: {Database3.IsHost}");
 
+            TestUtility.AreEqual(true, (() => Database1.ClientPersistence));
+            TestUtility.AreEqual(true, (() => Database2.ClientPersistence));
+            TestUtility.AreEqual(true, (() => Database3.ClientPersistence));
+            
             TestUtility.AreEqual(2, () =>
             {
                 int persistenceCount = 0;
