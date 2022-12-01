@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using DMP.Databases;
 using DMP.Databases.Utility;
+using DMP.Networking.Synchronisation.Server;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 
@@ -84,6 +85,6 @@ namespace Tests
             TestUtility.AreEqual(0, () => database.QueuedTasksCount);
             TestUtility.AreEqual(2, () => database.GetValue<int>("2"));
         }
-
+        
     }
 }

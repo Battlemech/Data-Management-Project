@@ -31,10 +31,11 @@ namespace DMP.Databases
             //enable host persistence if database was created with attributes synchronised and persistent
             if (isSynchronised && isPersistent) 
             {
+                //once host is is synchronised
                 HostId.OnInitialized((hostId) =>
                 {
                     //if client is host
-                    if (hostId == Client.Id) //todo: test
+                    if (hostId == Client.Id)
                     {
                         HostPersistence.Set(true);
                     }
@@ -52,9 +53,12 @@ namespace DMP.Databases
             {
                 T obj;
                 //try loading the object from not-deserialized data (occurs if type is missing)
-                if (_serializedData.TryGetValue(id, out byte[] serializedData)) //todo: remove instead?
+                if (_serializedData.TryGetValue(id, out byte[] serializedData)) 
                 {
                     obj = Serialization.Deserialize<T>(serializedData);
+                    
+                    //remove serialized data, it is no longer required
+                    _serializedData.Remove(id);
                 }
                 else
                 {
