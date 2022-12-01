@@ -56,7 +56,13 @@ namespace DMP.Databases.ValueStorage
                 serializedBytes = Serialization.Serialize(value);
             }
             
-            Database.OnSet(Id, serializedBytes);
+            //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
+            //allowing the delegation of callbacks to a task
+            Delegate((() =>
+            {
+                InvokeAllCallbacks(serializedBytes);
+                Database.OnSet(Id, serializedBytes);
+            }));
         }
 
         public void BlockingSet(SetValueDelegate<T> setValueDelegate)
@@ -68,7 +74,13 @@ namespace DMP.Databases.ValueStorage
                 serializedBytes = Serialization.Serialize(_data);
             }
             
-            Database.OnSet(Id, serializedBytes);
+            //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
+            //allowing the delegation of callbacks to a task
+            Delegate((() =>
+            {
+                InvokeAllCallbacks(serializedBytes);
+                Database.OnSet(Id, serializedBytes);
+            }));
         }
 
         public void OnInitialized(Action<T> onInitialized) => Database.OnInitialized(Id, onInitialized);

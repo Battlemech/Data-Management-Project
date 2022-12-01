@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DMP.Networking.Messaging.Server;
 using DMP.Networking.Synchronisation.Messages;
+using DMP.Utility;
 
 namespace DMP.Networking.Synchronisation.Server
 {
@@ -31,7 +32,6 @@ namespace DMP.Networking.Synchronisation.Server
                 //replies contain all values which are currently not being modified on the client
                 SendRequestsToOthers<GetValueRequest, GetValueReply>(request, session, replies =>
                 {
-                    
                     //get all received replies
                     List<SetValueMessage> setValueMessages = new List<SetValueMessage>();
                     foreach (var reply in replies)
@@ -42,16 +42,21 @@ namespace DMP.Networking.Synchronisation.Server
                         setValueMessages.AddRange(reply.SetValueMessages);
                     }
 
+                    if (setValueMessages.Count == 0)
+                    {
+                        LogWriter.LogWarning("All clients timed out when requesting values!");
+                        return;
+                    }
+                    
                     //filter duplicate SetValueMessages and messages with a lower modCount
                     foreach (var message in FilterMessages(setValueMessages))
                     {
-                        Console.WriteLine($"New info: {message}");
-                        
                         //forward them to the newly connected client
                         session.SendMessage(message);
                     }
-                });   
+                });
             }
+            
         }
 
         private List<SetValueMessage> FilterMessages(List<SetValueMessage> messages)
@@ -61,7 +66,7 @@ namespace DMP.Networking.Synchronisation.Server
             foreach (var message in messages)
             {
                 string id = message.ValueId;
-                
+
                 //save a value if no previous record of that id exists
                 if (!filteredMessages.TryGetValue(id, out SetValueMessage current))
                 {

@@ -16,7 +16,7 @@ namespace DMP.Databases
             {
                 //value doesn't need to be adjusted
                 if (value == _isPersistent) return;
-                
+
                 //delete database if persistence is no longer required 
                 if (!value)
                 {
@@ -56,18 +56,16 @@ namespace DMP.Databases
             //save its values
             foreach (var kv in _values)
             {
-                ValueStorage.ValueStorage valueStorage = kv.Value;
-                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
+                OnSetPersistent(kv.Key, kv.Value.Serialize());
             }
         }
-        
+
         /// <summary>
         /// Invoked when persistent data was found
         /// </summary>
         private void OnDataFound(List<SavedObject> savedObjects)
         {
             List<SavedObject> toSynchronise = new List<SavedObject>(savedObjects.Count);
-            bool syncRequired = !IsSynchronised;
 
             //get list of currently known ids
             List<string> existingIds = _values.Keys.ToList();
@@ -76,40 +74,36 @@ namespace DMP.Databases
             foreach (var kv in _values)
             {
                 ValueStorage.ValueStorage valueStorage = kv.Value;
-                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
+                OnSetPersistent(kv.Key,
+                    Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
             }
 
             //load all values from database which didn't already exist
             foreach (var tso in savedObjects)
             {
                 string id = tso.ValueId;
-                    
+
                 //Skip if object with loaded id already exists
                 if (existingIds.Contains(id) || _values.ContainsKey(id)) continue;
-                
+
                 //save value to be deserialized later
                 _serializedData[id] = tso.Bytes;
 
                 //skip objects which don't have to be synchronised
-                if(!tso.SyncRequired) continue;
-                    
+                if (!tso.SyncRequired) continue;
+
                 //queue object for synchronisation
                 toSynchronise.Add(tso);
             }
 
             //no need to inform peers if database is not synchronised
-            if(!_isSynchronised || Client == null || !Client.IsConnected) return;
+            if (!_isSynchronised || Client == null || !Client.IsConnected) return;
 
-            //delegate task to increase performance
-            Task synchronisationTask = new Task((() =>
+            //inform peers that data was modified while no connection was established
+            foreach (var tso in toSynchronise)
             {
-                //inform peers that data was modified while no connection was established
-                foreach (var tso in toSynchronise)
-                {
-                    OnOfflineModification(tso.ValueId, tso.Bytes);
-                }
-            }));
-            Scheduler.QueueTask(synchronisationTask);
+                OnOfflineModification(tso.ValueId, tso.Bytes);
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using DMP.Threading;
 using DMP.Utility;
 using Mono.Data.Sqlite;
 
@@ -46,9 +47,9 @@ namespace DMP.Persistence
             if(SavingData) return;
             SavingData = true;
         }
-
+        
         //make sure only one thread is saving data at the same time to avoid waiting for transactions
-        SaveQueuedData();
+        Delegation.EnqueueAction(SaveQueuedData);
     }
 
     private static void SaveQueuedData()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using DMP.Databases.ValueStorage;
 
 namespace DMP.Databases
 {
@@ -16,24 +17,25 @@ namespace DMP.Databases
         /// <typeparam name="T"></typeparam>
         public void OnInitialized<T>(string id, Action<T> onInitialized)
         {
-            Get<T>(id).BlockingGet((value) =>
+            ValueStorage<T> valueStorage = Get<T>(id);
+            
+            valueStorage.BlockingGet((value) =>
             {
-                if(TryInvoke(value, onInitialized)) return;
-                
+                if (TryInvoke(value, onInitialized)) return;
+
                 //get thread safe index increment
                 string callbackName = $"SYSTEM/INTERNAL/{id}-{Interlocked.Increment(ref _onInitializedTracker)}";
                 
                 //invoke action once if value is not null or default
-                AddCallback<T>(id, (obj =>
+                valueStorage.AddCallback((obj =>
                 {
-                    if(!TryInvoke(obj, onInitialized)) return;
-
-                    RemoveCallbacks(id, callbackName);
+                    //remove callback if invocation was successful
+                    if (TryInvoke(obj, onInitialized)) valueStorage.RemoveCallbacks(callbackName);
                 }), callbackName); 
             });
         }
 
-        private bool TryInvoke<T>(T obj, Action<T> onInitialized)
+        private static bool TryInvoke<T>(T obj, Action<T> onInitialized)
         {
             if (IsNullOrDefault(obj)) return false;
             

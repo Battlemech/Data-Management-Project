@@ -11,8 +11,6 @@ namespace DMP.Databases
     public partial class Database
     {
         public readonly string Id;
-        public readonly IdLockedScheduler Scheduler = new IdLockedScheduler();
-
         private readonly ConcurrentDictionary<string, ValueStorage.ValueStorage> _values = new ConcurrentDictionary<string, ValueStorage.ValueStorage>();
 
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
@@ -29,6 +27,19 @@ namespace DMP.Databases
             
             IsSynchronised = isSynchronised;
             IsPersistent = isPersistent;
+            
+            //enable host persistence if database was created with attributes synchronised and persistent
+            if (isSynchronised && isPersistent) 
+            {
+                HostId.OnInitialized((hostId) =>
+                {
+                    //if client is host
+                    if (hostId == Client.Id) //todo: test
+                    {
+                        HostPersistence.Set(true);
+                    }
+                });
+            }
         }
 
         public ValueStorage<T> Get<T>(string id)
@@ -43,11 +54,7 @@ namespace DMP.Databases
                 //try loading the object from not-deserialized data (occurs if type is missing)
                 if (_serializedData.TryGetValue(id, out byte[] serializedData)) //todo: remove instead?
                 {
-                    object loadedObject = Serialization.Deserialize(serializedData, typeof(T));
-
-                    //assign obj
-                    if (loadedObject is T expectedObject) obj = expectedObject;
-                    else throw new ArgumentException($"Loaded object {loadedObject?.GetType()}, but expected {typeof(T)}");
+                    obj = Serialization.Deserialize<T>(serializedData);
                 }
                 else
                 {
@@ -72,7 +79,7 @@ namespace DMP.Databases
             //return valueStorage if it is of expected type
             if (value is ValueStorage<T> expected) return expected;
 
-            throw new ArgumentException($"Saved value has type {value.GetObject()?.GetType()}, not {typeof(T)}");
+            throw new ArgumentException($"Saved value has type {value.GetEnclosedType()}, not {typeof(T)}");
         }
 
         public T GetValue<T>(string id) => Get<T>(id).Get();
@@ -81,29 +88,8 @@ namespace DMP.Databases
         
         protected internal void OnSet(string id, byte[] serializedBytes)
         {
-            //process the set if database is synchronised or persistent
-            Task internalTask = new Task((() =>
-            {
-                //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-                //allowing the delegation of callbacks to a task
-                _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
-                
-                if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
-                if(_isPersistent) OnSetPersistent(id, serializedBytes);
-            }));
-            Scheduler.QueueTask(id, internalTask);
-        }
-
-        public int InvokeAllCallbacks(string id)
-        {
-            if(!_values.ContainsKey(id)) return 0;
-
-            if (!TryGetType(id, out Type type))
-                throw new ArgumentException($"Failed to extract type of {id} while trying to invoke callbacks!");
-            
-            byte[] serializedBytes = _values[id].BlockingGetObject(o => Serialization.Serialize(type, o));
-            
-            return _callbackHandler.InvokeAllCallbacks(id, serializedBytes);
+            if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
+            if(_isPersistent) OnSetPersistent(id, serializedBytes);
         }
     }
 }

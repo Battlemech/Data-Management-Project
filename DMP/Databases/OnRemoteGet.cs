@@ -17,10 +17,11 @@ namespace DMP.Databases
 
             //track amount of completed lookups
             int completedLookups = 0;
+            int requiredLookups = remoteModCounts.Count;
             
             foreach (var id in remoteModCounts.Keys)
             {
-                Scheduler.QueueTask(id, (() =>
+                Delegate(id, (() =>
                 {
                     uint localModCount = GetModCount(id);
                     uint serverModCount = remoteModCounts[id];
@@ -41,8 +42,8 @@ namespace DMP.Databases
                         
                         //other lookups still need to be completed. Wait
                         completedLookups++;
-                        
-                        if(completedLookups != values.Count) return;
+
+                        if(completedLookups != requiredLookups) return;
                     }
 
                     //all lookups were completed
