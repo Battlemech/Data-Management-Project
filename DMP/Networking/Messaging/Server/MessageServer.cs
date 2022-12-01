@@ -74,11 +74,17 @@ namespace DMP.Networking.Messaging.Server
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>
         {
-            //todo: invoke logic even if no other session is connected
             bool success = true;
             List<MessageSession> sessions = new List<MessageSession>(Sessions.Values.Cast<MessageSession>());
             List<TReply> replies = new List<TReply>(sessions.Count);
 
+            //no sessions connected. Instantly invoke onReplies
+            if (sessions.Count == 0)
+            {
+                onReplies.Invoke(replies);
+                return true;
+            }
+            
             foreach (var session in sessions)
             {
                 if(session == excluded) continue;

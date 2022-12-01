@@ -100,14 +100,11 @@ namespace DMP.Callbacks
                 callbacks = new List<Callback>(callbacks);
             }
 
-            //deserialize object by retrieving type
-            object data = Serialization.Deserialize(serializedBytes, callbacks[0].GetCallbackType());
-
             //invoke callbacks
             foreach (var callback in callbacks)
             {
                 //if callback caused an exception and is supposed to be removed:
-                if (!callback.InvokeCallback(data) && callback.RemoveOnError)
+                if (!callback.InvokeCallback(serializedBytes) && callback.RemoveOnError)
                 {
                     //remove the callback
                     lock (_callbacks)
@@ -175,23 +172,6 @@ namespace DMP.Callbacks
                 return !_callbacks.TryGetValue(key, out List<Callback> callbacks) ? 0 : callbacks.Count(callback => callback.Name == name);
             }
         }
-        
-        public bool TryGetType(TKey key, out Type type)
-        {
-            lock (_callbacks)
-            {
-                bool success = _callbacks.TryGetValue(key, out var callbacks);
-
-                if (!success || callbacks.Count == 0)
-                {
-                    type = null;
-                    return false;
-                }
-
-                type = callbacks[0].GetCallbackType();
-                return true;
-            }
-        }
     }
     
     public abstract class Callback
@@ -205,8 +185,7 @@ namespace DMP.Callbacks
             RemoveOnError = removeOnError;
         }
 
-        public abstract bool InvokeCallback(object o);
-        public abstract Type GetCallbackType();
+        public abstract bool InvokeCallback(byte[] bytes);
     }
 
     public class Callback<T> : Callback
@@ -234,25 +213,10 @@ namespace DMP.Callbacks
             return true;
         }
         
-        public override bool InvokeCallback(object o)
+        public override bool InvokeCallback(byte[] bytes)
         {
-            switch (o)
-            {
-                //check type
-                case T data:
-                    //invoke callback
-                    return InvokeCallback(data);
-                case null:
-                    //invoke callback
-                    return InvokeCallback(default);
-                default:
-                    throw new ArgumentException($"Expected {typeof(T)}, but got {o?.GetType()}");
-            }
+            return InvokeCallback(Serialization.Deserialize<T>(bytes));
         }
 
-        public override Type GetCallbackType()
-        {
-            return typeof(T);
-        }
     }
 }
