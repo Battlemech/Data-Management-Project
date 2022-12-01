@@ -30,7 +30,7 @@ namespace DMP.Databases
                 valueStorage.AddCallback((obj =>
                 {
                     //remove callback if invocation was successful
-                    if (TryInvoke(obj, onInitialized)) RemoveCallbacks(id, callbackName);
+                    if (TryInvoke(obj, onInitialized)) valueStorage.RemoveCallbacks(callbackName);
                 }), callbackName); 
             });
         }
