@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Threading.Tasks;
 using Dapper;
+using DMP.Threading;
 using DMP.Utility;
 
 namespace DMP.Persistence
@@ -179,7 +180,7 @@ namespace DMP.Persistence
                 SavingData = true;
             }
             
-            Task.Run(SaveQueuedData);
+            Delegation.EnqueueAction(SaveQueuedData);
         }
 
         private static void SaveQueuedData()

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using DMP.Utility;
 
 namespace DMP.Databases.ValueStorage
@@ -31,7 +32,12 @@ namespace DMP.Databases.ValueStorage
                 serializedBytes = Serialization.Serialize(_data);
             }
             
-            Database.OnModify(Id, serializedBytes, modify, onResultConfirmed);
+            //delegates internal logic to a thread, increasing performance
+            Delegate(() =>
+            {
+                InvokeAllCallbacks(serializedBytes);
+                Database.OnModify(Id, serializedBytes, modify, onResultConfirmed);
+            });
         }
         
         public void Modify(ModifyValueDelegate<T> modify, out T result)

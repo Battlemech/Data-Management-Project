@@ -52,7 +52,6 @@ namespace DMP.Databases
             _confirmedModCount.Clear();
             _confirmedModCount.Clear();
             _onInitializedTracker = 0;
-            _callbackHandler.RemoveAllCallbacks();
         }
     }
 }

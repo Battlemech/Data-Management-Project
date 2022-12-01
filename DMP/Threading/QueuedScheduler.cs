@@ -7,7 +7,7 @@ namespace DMP.Threading
 {
     public class QueuedScheduler : Scheduler
     {
-        public int QueuedTasksCount => _queuedTasks.Count;
+        public int QueuedTasksCount => _queuedTasks.Count + (ExecutingTasks ? 1 : 0);
         public bool ExecutingTasks { get; private set; }
         
         private readonly ConcurrentQueue<Task> _queuedTasks = new ConcurrentQueue<Task>();
@@ -39,30 +39,32 @@ namespace DMP.Threading
 
         private void DelegateTasksToThreadPool()
         {
-            Task.Run(Execute);
+            Delegation.DelegateAction(Execute);
         }
-        
+
         private void Execute()
         {
-            //execute queued tasks
-            while (_queuedTasks.TryDequeue(out Task task))
+            while (true)
             {
-                TryExecuteTask(task);
-            }
-
-            //try to stop executing tasks
-            lock (_queuedTasks)
-            {
-                //if no tasks are queued: stop executing
-                if (_queuedTasks.IsEmpty)
+                //execute queued tasks
+                while (_queuedTasks.TryDequeue(out Task task))
                 {
-                    ExecutingTasks = false;
-                    return;
+                    TryExecuteTask(task);
                 }
+
+                //try to stop executing tasks
+                lock (_queuedTasks)
+                {
+                    //if no tasks are queued: stop executing
+                    if (_queuedTasks.IsEmpty)
+                    {
+                        ExecutingTasks = false;
+                        return;
+                    }
+                }
+
+                //continue executing queued tasks
             }
-            
-            //continue executing queued tasks
-            Execute();
         }
     }
 }

@@ -225,8 +225,9 @@ namespace DMP.Callbacks
             }
             catch (Exception e)
             {
-                if(RemoveOnError) LogWriter.Log($"Removing callback {Name} because it caused an exception.\nException: " + e);
-                else LogWriter.LogException(e);
+                if (RemoveOnError)
+                    LogWriter.Log($"Removing callback {Name} because it caused an exception.\nException: " + e);
+                else throw;
                 return false;
             }
 

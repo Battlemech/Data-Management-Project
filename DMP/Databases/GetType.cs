@@ -16,12 +16,9 @@ namespace DMP.Databases
                 type = valueStorage.GetEnclosedType();
                 return true;
             }
-            
-            //try retrieving type from failed get requests
-            if (_failedGets.TryGetValue(id, out type)) return true;
 
-            //try retrieving type from callbacks
-            return _callbackHandler.TryGetType(id, out type);
+            //try retrieving type from failed get requests
+            return _failedGets.TryGetValue(id, out type);
         }
 
         private bool TryGetType(string id)

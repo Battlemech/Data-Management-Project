@@ -1,24 +1,15 @@
 ﻿using System;
+using DMP.Databases.ValueStorage;
 using DMP.Networking.Synchronisation.Client;
 
 namespace DMP.Databases
 {
     public partial class Database
     {
-        public Guid HostId => GetValue<Guid>(nameof(HostId));
-        public bool IsHost => Client.Id == HostId;
-
-        public bool HostPersistence
-        {
-            get => GetValue<bool>(nameof(HostPersistence));
-            set => SetValue(nameof(HostPersistence), value);
-        }
-
-        public bool ClientPersistence
-        {
-            get => GetValue<bool>(nameof(ClientPersistence));
-            set => SetValue(nameof(ClientPersistence), value);
-        }
+        public bool IsHost => HostId.BlockingGet((hostId => hostId == Client.Id));
+        public ValueStorage<Guid> HostId => Get<Guid>(nameof(HostId));
+        public ValueStorage<bool> HostPersistence => Get<bool>(nameof(HostPersistence));
+        public ValueStorage<bool> ClientPersistence => Get<bool>(nameof(ClientPersistence));
 
         public SynchronisedClient Client
         {
@@ -39,22 +30,10 @@ namespace DMP.Databases
         private void ConfigureSynchronisedPersistence()
         {
             //set hostId to current database if no other client claimed host-privileges
-            if (HostId == default)
+            if (HostId.BlockingGet((hostId => hostId == default)))
             {
-                SafeModify<Guid>(nameof(HostId), value =>
-                {   
-                    //set host id to this client if it is still the default one
-                    Guid hostId = (value == default) ? Client.Id : value;
-                    
-                    //if IsHost: Configure global HostPersistence and ClientPersistence
-                    if (hostId == Client.Id)
-                    {
-                        HostPersistence = IsPersistent;
-                        ClientPersistence = IsPersistent && Options.DefaultClientPersistence;
-                    }
-                    
-                    return hostId;
-                });   
+                //set host id to this client if it is still the default one
+                SafeModify<Guid>(nameof(HostId), value => value == default ? Client.Id : value);   
             }
 
             /*
@@ -63,24 +42,34 @@ namespace DMP.Databases
              */
             
             //If isHost: change persistence
-            AddCallback<bool>(nameof(HostPersistence), value =>
+            HostPersistence.AddCallback((value =>
             {
-                if(!IsHost) return;
-                IsPersistent = value;
-            }, $"SYSTEM/INTERNAL/{nameof(HostPersistence)}", unique:true);
-
-            //if isClient: change persistence
-            AddCallback<bool>(nameof(ClientPersistence), value =>
-            {
-                if(IsHost) return;
-                IsPersistent = value;
-            }, $"SYSTEM/INTERNAL/{nameof(ClientPersistence)}", unique:true);
+                //if host id was initialised and local client is host
+                if (HostId.BlockingGet((hostId) => hostId != default && hostId == Client.Id))
+                {
+                    IsPersistent = value;
+                }
+            }), $"SYSTEM/INTERNAL/{nameof(HostPersistence)}", unique:true);
             
-            //change persistence when host changes
-            AddCallback<Guid>(nameof(HostId), (value =>
+            //if isClient: change persistence
+            ClientPersistence.AddCallback((value =>
             {
-                //invoke callback
-                InvokeAllCallbacks(value == Client.Id ? nameof(HostPersistence) : nameof(ClientPersistence));
+                
+                //if host id was initialised and local client is not host
+                if (HostId.BlockingGet((hostId) => hostId != default && hostId != Client.Id))
+                {
+                    IsPersistent = value;
+                }
+            }), $"SYSTEM/INTERNAL/{nameof(ClientPersistence)}", unique:true);
+
+            //update persistence when host changes
+            AddCallback<Guid>(nameof(HostId), (hostId =>
+            {
+                //host id wasn't initialised yet
+                if (hostId == default) return;
+
+                HostPersistence.InvokeAllCallbacks();
+                ClientPersistence.InvokeAllCallbacks();
             }), $"SYSTEM/INTERNAL/{nameof(HostId)}", true, unique:true);
         }
     }

@@ -16,7 +16,7 @@ namespace DMP.Databases
             {
                 //value doesn't need to be adjusted
                 if (value == _isPersistent) return;
-                
+
                 //delete database if persistence is no longer required 
                 if (!value)
                 {
@@ -56,8 +56,7 @@ namespace DMP.Databases
             //save its values
             foreach (var kv in _values)
             {
-                ValueStorage.ValueStorage valueStorage = kv.Value;
-                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
+                OnSetPersistent(kv.Key, kv.Value.Serialize());
             }
         }
         
@@ -67,7 +66,6 @@ namespace DMP.Databases
         private void OnDataFound(List<TrackedSavedObject> savedObjects)
         {
             List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
-            bool syncRequired = !IsSynchronised;
 
             //get list of currently known ids
             List<string> existingIds = _values.Keys.ToList();
@@ -100,16 +98,11 @@ namespace DMP.Databases
             //no need to inform peers if database is not synchronised
             if(!_isSynchronised || Client == null || !Client.IsConnected) return;
 
-            //delegate task to increase performance
-            Task synchronisationTask = new Task((() =>
+            //inform peers that data was modified while no connection was established
+            foreach (var tso in toSynchronise)
             {
-                //inform peers that data was modified while no connection was established
-                foreach (var tso in toSynchronise)
-                {
-                    OnOfflineModification(tso.ValueStorageId, tso.Buffer);
-                }
-            }));
-            Scheduler.QueueTask(synchronisationTask);
+                OnOfflineModification(tso.ValueStorageId, tso.Buffer);
+            }
         }
     }
 }

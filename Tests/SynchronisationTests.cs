@@ -47,8 +47,7 @@ namespace Tests
             Assert.IsTrue(Client1.WaitForConnect());
             Assert.IsTrue(Client2.WaitForConnect());
             Assert.IsTrue(Client3.WaitForConnect());
-            
-            
+
             //setup databases
             Database1 = new Database(Localhost, false, false);
             Database2 = new Database(Localhost, false, false);
@@ -56,12 +55,11 @@ namespace Tests
             
             //set clients and enable synchronisation for databases
             Database1.Client = Client1;
-            Database1.IsSynchronised = true;
-            
             Database2.Client = Client2;
-            Database2.IsSynchronised = true;
-            
             Database3.Client = Client3;
+
+            Database1.IsSynchronised = true;
+            Database2.IsSynchronised = true;
             Database3.IsSynchronised = true;
         }
 
@@ -73,10 +71,13 @@ namespace Tests
             Client1.DisconnectAsync();
             Client2.DisconnectAsync();
             Client3.DisconnectAsync();
-            
+
+            Database1.Client = null;
+            Database2.Client = null;
+            Database3.Client = null;
         }
 
-        [Test]
+        [Test, Repeat(10)]
         public static void TestSetup()
         {
             Setup(nameof(TestSetup));
@@ -263,7 +264,7 @@ namespace Tests
             //wait for internal tasks to complete
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
-                TestUtility.IsChanging(0, () => database.Scheduler.QueuedTasksCount, "Internal tasks");
+                TestUtility.IsChanging(0, () => database.QueuedTasksCount, "Internal tasks");
             }
             Console.WriteLine($"All adds completed internally after {stopwatch.ElapsedMilliseconds} ms");
 
@@ -401,7 +402,7 @@ namespace Tests
             //wait for internal tasks to complete
             foreach (var database in new Database[]{Database1, Database2, Database3})
             {
-                TestUtility.AreEqual(0, (() => database.Scheduler.QueuedTasksCount), "Internal tasks", 5000);
+                TestUtility.AreEqual(0, (() => database.QueuedTasksCount), "Internal tasks", 5000);
             }
             Console.WriteLine($"All adds completed internally after {stopwatch.ElapsedMilliseconds} ms");
             
@@ -475,13 +476,15 @@ namespace Tests
             }
         }
 
-        [Test]
+        [Test, Repeat(10)]
         public static void TestSimpleConnect()
         {
             string id = nameof(TestSimpleConnect);
             Setup(id);
-            
+
             //disconnect client 1
+            //todo: instead, wait until all requests were answered before disconnecting
+            Thread.Sleep(1000); //wait until hostId of client was synchronised
             Assert.IsTrue(Client1.DisconnectAsync());
             
             //set value
@@ -494,7 +497,7 @@ namespace Tests
                 Console.WriteLine($"Database3: Modifying: {value}. Adding:4");
                 return value + "4";
             });
-            
+
             //wait for value to be synchronised in network
             TestUtility.AreEqual(id+"4", () => Database3.GetValue<string>(id), "Synchronisation before test");
             TestUtility.AreEqual(id+"4", () => Database2.GetValue<string>(id), "Synchronisation before test");
@@ -509,8 +512,13 @@ namespace Tests
             TestUtility.AreEqual((uint) 2, (() => Database1.GetModCount(id)));
             
             //try modifying result as newly connected client
-            Database1.Modify<string>(id, (value) => value + "5");
+            Database1.Modify<string>(id, (value) =>
+            {
+                Console.WriteLine($"Database 1: Updated value to {value}5");
+                return value + "5";
+            });
             
+            TestUtility.AreEqual(id+"45", (() => Database1.GetValue<string>(id)));
             TestUtility.AreEqual(id+"45", (() => Database2.GetValue<string>(id)));
             TestUtility.AreEqual(id+"45", (() => Database3.GetValue<string>(id)));
             
@@ -518,6 +526,8 @@ namespace Tests
             Assert.AreEqual(3, Database1.GetModCount(id));
             Assert.AreEqual(3, Database2.GetModCount(id));
             Assert.AreEqual(3, Database3.GetModCount(id));
+            
+            Console.WriteLine("-------Test successful-------");
         }
 
         [Test]
@@ -625,11 +635,14 @@ namespace Tests
                 return hostCount;
             }, "Exactly one host", 5000);
 
-            Assert.IsTrue(Database1.IsHost);
-            Assert.IsFalse(Database2.IsHost);
-            Assert.IsFalse(Database3.IsHost);
-            
-            Database1.ClientPersistence = true;
+            Database1.ClientPersistence.Set(true);
+            Console.WriteLine($"Client 1 host: {Database1.IsHost}");
+            Console.WriteLine($"Client 2 host: {Database2.IsHost}");
+            Console.WriteLine($"Client 3 host: {Database3.IsHost}");
+
+            TestUtility.AreEqual(true, (() => Database1.ClientPersistence), "Client Persistence synchronised");
+            TestUtility.AreEqual(true, (() => Database2.ClientPersistence), "Client Persistence synchronised");
+            TestUtility.AreEqual(true, (() => Database3.ClientPersistence), "Client Persistence synchronised");
 
             TestUtility.AreEqual(2, () =>
             {
@@ -638,9 +651,9 @@ namespace Tests
                 if (Database2.IsPersistent) persistenceCount++;
                 if (Database3.IsPersistent) persistenceCount++;
                 return persistenceCount;
-            });
+            }, "All clients enabled persistence");
 
-            Database1.HostPersistence = true;
+            Database1.HostPersistence.Set(true);
             
             TestUtility.AreEqual(3, () =>
             {
@@ -649,10 +662,10 @@ namespace Tests
                 if (Database2.IsPersistent) persistenceCount++;
                 if (Database3.IsPersistent) persistenceCount++;
                 return persistenceCount;
-            });
+            }, "Client and host enabled persistence");
 
-            Database1.HostPersistence = false;
-            Database1.ClientPersistence = false;
+            Database1.HostPersistence.Set(false);
+            Database1.ClientPersistence.Set(false);
             
             TestUtility.AreEqual(0, () =>
             {
@@ -661,7 +674,39 @@ namespace Tests
                 if (Database2.IsPersistent) persistenceCount++;
                 if (Database3.IsPersistent) persistenceCount++;
                 return persistenceCount;
-            });
+            }, "Persistence was disabled globally");
+        }
+
+        [Test]
+        public static void TestClientPersistence()
+        {
+            Setup(nameof(TestClientPersistence));
+            
+            Console.WriteLine("User: Setting client persistence on Database1 to true");
+            Database1.ClientPersistence.Set(true);
+            
+            Thread.Sleep(3000);
+            
+            //default persistence is false. Database will either be host or persistence
+            Assert.IsTrue(Database1.IsHost || Database1.IsPersistent);
+            Assert.IsTrue(Database2.IsHost || Database2.IsPersistent);
+            Assert.IsTrue(Database3.IsHost || Database3.IsPersistent);
+        }
+
+        [Test]
+        public static void TestOnInitialized()
+        {
+            Setup(nameof(TestOnInitialized));
+
+            int invocationCount = 0;
+            Database1.HostId.OnInitialized((guid =>
+            {
+                invocationCount++;
+            }));
+            
+            Thread.Sleep(3000);
+            
+            Assert.AreEqual(1, invocationCount, "OnInitialized invoked exactly once");
         }
 
         [Test]
@@ -672,10 +717,13 @@ namespace Tests
             Database1.AddCallback<Guid>("HostId", guid => Console.WriteLine($"Set hostId to: {guid}"));
             
             Thread.Sleep(1000);
-            
-            Assert.IsTrue(Database1.IsHost);
-            Assert.IsFalse(Database2.IsHost);
-            Assert.IsFalse(Database3.IsHost);
+
+            int hostCount = 0;
+            if (Database1.IsHost) hostCount++;
+            if (Database2.IsHost) hostCount++;
+            if (Database3.IsHost) hostCount++;
+
+            Assert.AreEqual(1, hostCount);
         }
 
         [Test]

@@ -1,6 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DMP.Networking.Messaging.Client;
+using DMP.Threading;
+using DMP.Utility;
 
 namespace DMP.Networking.Messaging.Server
 {
@@ -59,7 +61,7 @@ namespace DMP.Networking.Messaging.Server
 
                 //stop waiting task from invoking the callback
                 receivedMessage.Set();
-
+                
                 //remove callback
                 RemoveCallbacks<TReply>(callbackId);
                 
@@ -67,14 +69,15 @@ namespace DMP.Networking.Messaging.Server
                 onReply.Invoke(replyMessage);
             }), callbackId);
 
-            //make sure the message was received
-            Task.Factory.StartNew((() =>
+            //start background thread instead of task: Starting too many waiting task in TaskPool will cause task
+            //later tasks to not start because Task Pool is still waiting for first tasks to complete (which are waiting)
+            Delegation.EnqueueAction((() =>
             {
-                if(receivedMessage.WaitOne(timeout)) return;
-                
+                if (receivedMessage.WaitOne(timeout)) return;
+
                 //remove the callback
                 RemoveCallbacks<TReply>(callbackId);
-                
+
                 //invoke it with null as value
                 onReply.Invoke(null);
             }));
