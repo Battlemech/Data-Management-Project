@@ -17,6 +17,8 @@ namespace DMP.Databases
                 //value doesn't need to be adjusted
                 if (value == _isPersistent) return;
                 
+                Console.WriteLine($"{this} persistent={value}. IsHost={IsHost}");
+                
                 //delete database if persistence is no longer required 
                 if (!value)
                 {
@@ -98,16 +100,11 @@ namespace DMP.Databases
             //no need to inform peers if database is not synchronised
             if(!_isSynchronised || Client == null || !Client.IsConnected) return;
 
-            //delegate task to increase performance
-            Task synchronisationTask = new Task((() =>
+            //inform peers that data was modified while no connection was established
+            foreach (var tso in toSynchronise)
             {
-                //inform peers that data was modified while no connection was established
-                foreach (var tso in toSynchronise)
-                {
-                    OnOfflineModification(tso.ValueStorageId, tso.Buffer);
-                }
-            }));
-            synchronisationTask.Start();
+                OnOfflineModification(tso.ValueStorageId, tso.Buffer);
+            }
         }
     }
 }

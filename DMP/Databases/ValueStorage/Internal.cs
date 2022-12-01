@@ -57,7 +57,7 @@ namespace DMP.Databases.ValueStorage
 
         public override byte[] Serialize()
         {
-            return BlockingGet((Serialization.Serialize));
+            return BlockingGet(Serialization.Serialize);
         }
 
         protected internal override ValueStorage Copy()

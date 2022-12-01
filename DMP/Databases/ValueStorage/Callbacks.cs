@@ -61,7 +61,7 @@ namespace DMP.Databases.ValueStorage
             
             foreach (var callbacks in _callbacks.Values)
             {
-                //copy list to allow removing during iteration?
+                //copy list to allow removing during iteration
                 foreach (var callback in new List<Callback>(callbacks))
                 {
                     if (!callback.Invoke(value)) callbacks.Remove(callback);

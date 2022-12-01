@@ -27,6 +27,19 @@ namespace DMP.Databases
             
             IsSynchronised = isSynchronised;
             IsPersistent = isPersistent;
+            
+            //enable host persistence if database was created with attributes synchronised and persistent
+            if (isSynchronised && isPersistent) 
+            {
+                HostId.OnInitialized((hostId) =>
+                {
+                    //if client is host
+                    if (hostId == Client.Id) //todo: test
+                    {
+                        HostPersistence.Set(true);
+                    }
+                });
+            }
         }
 
         public ValueStorage<T> Get<T>(string id)
@@ -41,11 +54,7 @@ namespace DMP.Databases
                 //try loading the object from not-deserialized data (occurs if type is missing)
                 if (_serializedData.TryGetValue(id, out byte[] serializedData)) //todo: remove instead?
                 {
-                    object loadedObject = Serialization.Deserialize(serializedData, typeof(T));
-
-                    //assign obj
-                    if (loadedObject is T expectedObject) obj = expectedObject;
-                    else throw new ArgumentException($"Loaded object {loadedObject?.GetType()}, but expected {typeof(T)}");
+                    obj = Serialization.Deserialize<T>(serializedData);
                 }
                 else
                 {
@@ -70,7 +79,7 @@ namespace DMP.Databases
             //return valueStorage if it is of expected type
             if (value is ValueStorage<T> expected) return expected;
 
-            throw new ArgumentException($"Saved value has type {value.GetObject()?.GetType()}, not {typeof(T)}");
+            throw new ArgumentException($"Saved value has type {value.GetEnclosedType()}, not {typeof(T)}");
         }
 
         public T GetValue<T>(string id) => Get<T>(id).Get();

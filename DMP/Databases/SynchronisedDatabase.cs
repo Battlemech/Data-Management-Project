@@ -152,6 +152,9 @@ namespace DMP.Databases
             //track remotely confirmed mod count. Increment after byte value was saved
             lock (_confirmedModCount) _confirmedModCount[id] = modCount;
 
+            //todo: global modification idea: First invoke callbacks with new value, then update local value
+            //     -> callbacks will be able to access local value (which might be old value, or overwritten by new set process)
+            
             //invoke callbacks
             InvokeAllCallbacks(id, value);
             

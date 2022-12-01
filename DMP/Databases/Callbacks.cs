@@ -25,7 +25,7 @@ namespace DMP.Databases
         public int RemoveCallbacks(string id, string name = "")
         {
             return _values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage)
-                ? valueStorage.RemoveCallbacks()
+                ? valueStorage.RemoveCallbacks(name)
                 : 0;
         }
         
@@ -45,7 +45,9 @@ namespace DMP.Databases
 
         public int GetCallbackCount(string id)
         {
-            return _values.Values.Sum(vs => vs.GetCallbackCount());
+            return _values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage)
+                ? valueStorage.GetCallbackCount()
+                : 0;
         }
     }
 }

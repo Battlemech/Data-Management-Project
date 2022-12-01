@@ -20,16 +20,8 @@ namespace DMP.Objects
         }
         public bool IsSynchronised => GetDatabase().IsSynchronised;
 
-        public bool ClientPersistence
-        {
-            get => GetDatabase().ClientPersistence;
-            set => GetDatabase().ClientPersistence = value;
-        }
-        public bool HostPersistence
-        {
-            get => GetDatabase().HostPersistence;
-            set => GetDatabase().HostPersistence = value;
-        }
+        public ValueStorage<bool> ClientPersistence => GetDatabase().ClientPersistence;
+        public ValueStorage<bool> HostPersistence => GetDatabase().HostPersistence;
 
         //value is ignored during serialization (See Options.cs)
         private Database _database = null;

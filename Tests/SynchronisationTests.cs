@@ -635,15 +635,15 @@ namespace Tests
                 return hostCount;
             }, "Exactly one host", 5000);
 
-            Database1.ClientPersistence = true;
+            Database1.ClientPersistence.Set(true);
             Console.WriteLine($"Client 1 host: {Database1.IsHost}");
             Console.WriteLine($"Client 2 host: {Database2.IsHost}");
             Console.WriteLine($"Client 3 host: {Database3.IsHost}");
 
-            TestUtility.AreEqual(true, (() => Database1.ClientPersistence));
-            TestUtility.AreEqual(true, (() => Database2.ClientPersistence));
-            TestUtility.AreEqual(true, (() => Database3.ClientPersistence));
-            
+            TestUtility.AreEqual(true, (() => Database1.ClientPersistence), "Client Persistence synchronised");
+            TestUtility.AreEqual(true, (() => Database2.ClientPersistence), "Client Persistence synchronised");
+            TestUtility.AreEqual(true, (() => Database3.ClientPersistence), "Client Persistence synchronised");
+
             TestUtility.AreEqual(2, () =>
             {
                 int persistenceCount = 0;
@@ -651,9 +651,9 @@ namespace Tests
                 if (Database2.IsPersistent) persistenceCount++;
                 if (Database3.IsPersistent) persistenceCount++;
                 return persistenceCount;
-            });
+            }, "All clients enabled persistence");
 
-            Database1.HostPersistence = true;
+            Database1.HostPersistence.Set(true);
             
             TestUtility.AreEqual(3, () =>
             {
@@ -662,10 +662,10 @@ namespace Tests
                 if (Database2.IsPersistent) persistenceCount++;
                 if (Database3.IsPersistent) persistenceCount++;
                 return persistenceCount;
-            });
+            }, "Client and host enabled persistence");
 
-            Database1.HostPersistence = false;
-            Database1.ClientPersistence = false;
+            Database1.HostPersistence.Set(false);
+            Database1.ClientPersistence.Set(false);
             
             TestUtility.AreEqual(0, () =>
             {
@@ -674,7 +674,39 @@ namespace Tests
                 if (Database2.IsPersistent) persistenceCount++;
                 if (Database3.IsPersistent) persistenceCount++;
                 return persistenceCount;
-            });
+            }, "Persistence was disabled globally");
+        }
+
+        [Test]
+        public static void TestClientPersistence()
+        {
+            Setup(nameof(TestClientPersistence));
+            
+            Console.WriteLine("User: Setting client persistence on Database1 to true");
+            Database1.ClientPersistence.Set(true);
+            
+            Thread.Sleep(3000);
+            
+            //default persistence is false. Database will either be host or persistence
+            Assert.IsTrue(Database1.IsHost || Database1.IsPersistent);
+            Assert.IsTrue(Database2.IsHost || Database2.IsPersistent);
+            Assert.IsTrue(Database3.IsHost || Database3.IsPersistent);
+        }
+
+        [Test]
+        public static void TestOnInitialized()
+        {
+            Setup(nameof(TestOnInitialized));
+
+            int invocationCount = 0;
+            Database1.HostId.OnInitialized((guid =>
+            {
+                invocationCount++;
+            }));
+            
+            Thread.Sleep(3000);
+            
+            Assert.AreEqual(1, invocationCount, "OnInitialized invoked exactly once");
         }
 
         [Test]

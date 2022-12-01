@@ -18,22 +18,21 @@ namespace DMP.Databases
         {
             Get<T>(id).BlockingGet((value) =>
             {
-                if(TryInvoke(value, onInitialized)) return;
-                
+                if (TryInvoke(value, onInitialized)) return;
+
                 //get thread safe index increment
                 string callbackName = $"SYSTEM/INTERNAL/{id}-{Interlocked.Increment(ref _onInitializedTracker)}";
                 
                 //invoke action once if value is not null or default
                 AddCallback<T>(id, (obj =>
                 {
-                    if(!TryInvoke(obj, onInitialized)) return;
-
-                    RemoveCallbacks(id, callbackName);
+                    //remove callback if invocation was successful
+                    if (TryInvoke(obj, onInitialized)) RemoveCallbacks(id, callbackName);
                 }), callbackName); 
             });
         }
 
-        private bool TryInvoke<T>(T obj, Action<T> onInitialized)
+        private static bool TryInvoke<T>(T obj, Action<T> onInitialized)
         {
             if (IsNullOrDefault(obj)) return false;
             
