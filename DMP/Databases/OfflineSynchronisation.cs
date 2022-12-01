@@ -13,8 +13,6 @@ namespace DMP.Databases
             //prevent modification of hostId if offline
             if(id == nameof(HostId)) return;
 
-            int invocationCount = 0;
-            
             //wait for hostId to be synchronised in network
             OnInitialized<Guid>(nameof(HostId), (guid =>
             {

@@ -16,9 +16,7 @@ namespace DMP.Databases
             {
                 //value doesn't need to be adjusted
                 if (value == _isPersistent) return;
-                
-                Console.WriteLine($"{this} persistent={value}. IsHost={IsHost}");
-                
+
                 //delete database if persistence is no longer required 
                 if (!value)
                 {
