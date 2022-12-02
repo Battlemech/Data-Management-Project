@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using DMP.Databases;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
 
@@ -7,6 +9,13 @@ namespace DMP.Utility
 {
     public static class Serialization
     {
+        /// <summary>
+        /// Array of types which will be ignored during serialization of objects.
+        /// Configure this before you access Utility/Serialization.cs for the first time.
+        /// Changes to IgnoredTypes after the initialization will not have any effect
+        /// </summary>
+        public static readonly List<Type> IgnoredTypes = new List<Type>() { typeof(Database) };
+        
         private static readonly Serializer Serializer = new Serializer(new AllFieldsExtractor(), options : GroBufOptions.WriteEmptyObjects, customSerializerCollection: new IgnoreObjectSerializerCollection());
 
         /// <summary>
@@ -50,7 +59,7 @@ namespace DMP.Utility
 
         public IgnoreObjectSerializerCollection()
         {
-            _ignoredTypes = Options.IgnoredTypes.ToArray();
+            _ignoredTypes = Serialization.IgnoredTypes.ToArray();
         }
         
         public IGroBufCustomSerializer Get(Type declaredType, Func<Type, IGroBufCustomSerializer> factory, IGroBufCustomSerializer baseSerializer)
