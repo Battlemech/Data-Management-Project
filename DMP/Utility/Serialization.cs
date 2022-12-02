@@ -55,17 +55,11 @@ namespace DMP.Utility
     public class IgnoreObjectSerializerCollection : IGroBufCustomSerializerCollection
     {
         private readonly IgnoreObjectSerializer _ignoreObjectSerializer = new IgnoreObjectSerializer();
-        private readonly Type[] _ignoredTypes;
 
-        public IgnoreObjectSerializerCollection()
-        {
-            _ignoredTypes = Serialization.IgnoredTypes.ToArray();
-        }
-        
         public IGroBufCustomSerializer Get(Type declaredType, Func<Type, IGroBufCustomSerializer> factory, IGroBufCustomSerializer baseSerializer)
         {
             //if declared type can be assigned to the type to ignore: Don't serialize it
-            foreach (var ignoredType in _ignoredTypes)
+            foreach (var ignoredType in Serialization.IgnoredTypes)
             {
                 if (ignoredType.IsAssignableFrom(declaredType)) return _ignoreObjectSerializer;
             }
