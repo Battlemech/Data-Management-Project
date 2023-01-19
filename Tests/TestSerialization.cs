@@ -206,7 +206,7 @@ namespace Tests
         public static void TestIgnoredTypes()
         {
             //ignore strings
-            Options.IgnoredTypes.Add(typeof(string));
+            Serialization.IgnoredTypes.Add(typeof(string));
             
             //make sure strings are ignored
             Assert.IsNull(Serialization.Deserialize<string>(Serialization.Serialize("Test")));
