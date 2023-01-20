@@ -99,10 +99,10 @@ namespace DMP.Persistence
             return true;
         }
 
-        public static bool TryLoadDatabase(string databaseId, out List<TrackedSavedObject> serializedObjects)
+        public static bool TryLoadDatabase(string databaseId, out List<DeSerializedObject> serializedObjects)
         {
             //init return lists
-            serializedObjects = new List<TrackedSavedObject>();
+            serializedObjects = new List<DeSerializedObject>();
             using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
             connection.Open();
             
@@ -111,7 +111,7 @@ namespace DMP.Persistence
                 //todo: fix for 1000000 addCount in LoadDatabase, "database is locked" SQLite Exception
                 //https://stackoverflow.com/questions/17592671/sqlite-database-locked-exception
                 
-                serializedObjects = connection.Query<TrackedSavedObject>($"select id as ValueStorageId, bytes as Buffer, syncRequired as SyncRequired from '{databaseId}'").AsList();
+                serializedObjects = connection.Query<DeSerializedObject>($"select id as ValueStorageId, bytes as Buffer, syncRequired as SyncRequired from '{databaseId}'").AsList();
             }
             catch (SQLiteException e)
             {
@@ -124,43 +124,6 @@ namespace DMP.Persistence
             return true;
         }
 
-        public static bool TryLoadDatabase(string databaseId, out List<DeSerializedObject> savedObjects)
-        {
-            //init return list
-            savedObjects = new List<DeSerializedObject>();
-
-            //open connection
-            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
-            connection.Open();
-            
-            try
-            {
-                var serializedObjects = connection.Query<SavedObject>($"select id as ValueStorageId, bytes as Buffer from '{databaseId}'").AsList();
-
-                foreach (var serializedObject in serializedObjects)
-                {
-                    savedObjects.Add(new DeSerializedObject(serializedObject.ValueStorageId, Serialization.Deserialize<object>(serializedObject.Buffer)));
-                }
-            }
-            catch (SQLiteException e)
-            {
-                //make sure it was the right exception: database didn't exist
-                if (!e.Message.Contains($"no such table: {databaseId}")) throw;
-                    
-                return false;
-            }
-
-            return true;
-        }
-
-        public static bool SyncRequired(string databaseId, string valueId)
-        {
-            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
-            
-            //load data
-            return connection.QueryFirst<bool>($"select syncRequired from '{databaseId}' where id='{valueId}'");
-        }
-        
         #endregion
 
         #region Save Data

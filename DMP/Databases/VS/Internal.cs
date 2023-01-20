@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Threading.Tasks;
-using DMP.Threading;
 using DMP.Utility;
 
-namespace DMP.Databases.ValueStorage
+namespace DMP.Databases.VS
 {
     public abstract class ValueStorage
     {
@@ -14,16 +12,16 @@ namespace DMP.Databases.ValueStorage
             Id = id;
         }
         
+        //Serialization
+        
         public abstract Type GetEnclosedType();
+        
+        public abstract byte[] Serialize();
 
-        public abstract object GetObject();
-
-        public abstract void UnsafeSet(byte[] bytes);
-
-        public abstract void Delegate(Task task);
-
-        public abstract int GetQueuedTasksCount();
-
+        protected internal abstract ValueStorage Copy();
+        
+        //Callbacks
+        
         public abstract int InvokeAllCallbacks();
         
         public abstract int InvokeAllCallbacks(byte[] bytes);
@@ -31,10 +29,10 @@ namespace DMP.Databases.ValueStorage
         public abstract int GetCallbackCount(string name = "");
 
         public abstract int RemoveCallbacks(string name = "");
+        
+        //Setters
 
-        public abstract byte[] Serialize();
-
-        protected internal abstract ValueStorage Copy();
+        protected internal abstract void InternalSet(byte[] bytes);
     }
     
     public partial class ValueStorage<T>
@@ -42,17 +40,6 @@ namespace DMP.Databases.ValueStorage
         public override Type GetEnclosedType()
         {
             return typeof(T);
-        }
-
-        public override object GetObject()
-        {
-            return _data;
-        }
-
-
-        public override void UnsafeSet(byte[] bytes)
-        {
-            lock (Id) _data = Serialization.Deserialize<T>(bytes);
         }
 
         public override byte[] Serialize()
@@ -63,15 +50,6 @@ namespace DMP.Databases.ValueStorage
         protected internal override ValueStorage Copy()
         {
             return BlockingGet((obj => new ValueStorage<T>(null, Id, obj)));
-        }
-
-        protected internal byte[] InternalSet(ModifyValueDelegate<T> modify)
-        {
-            lock (Id)
-            {
-                _data = modify.Invoke(_data);
-                return Serialization.Serialize(_data);
-            }
         }
 
         public static implicit operator T(ValueStorage<T> valueStorage) => valueStorage.Get();

@@ -24,28 +24,28 @@ namespace DMP.Databases
 
         public int RemoveCallbacks(string id, string name = "")
         {
-            return _values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage)
+            return _values.TryGetValue(id, out VS.ValueStorage valueStorage)
                 ? valueStorage.RemoveCallbacks(name)
                 : 0;
         }
         
         public int InvokeAllCallbacks(string id)
         {
-            return _values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage)
+            return _values.TryGetValue(id, out VS.ValueStorage valueStorage)
                 ? valueStorage.InvokeAllCallbacks()
                 : 0;
         }
         
         public int InvokeAllCallbacks(string id, byte[] serializedBytes)
         {
-            return _values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage)
+            return _values.TryGetValue(id, out VS.ValueStorage valueStorage)
                 ? valueStorage.InvokeAllCallbacks(serializedBytes)
                 : 0;
         }
 
         public int GetCallbackCount(string id)
         {
-            return _values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage)
+            return _values.TryGetValue(id, out VS.ValueStorage valueStorage)
                 ? valueStorage.GetCallbackCount()
                 : 0;
         }

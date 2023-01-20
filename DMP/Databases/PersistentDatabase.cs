@@ -1,107 +1,85 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using DMP.Databases.VS;
 using DMP.Persistence;
-using DMP.Utility;
 
 namespace DMP.Databases
 {
     public partial class Database
     {
+        private readonly Dictionary<string, byte[]> _serializedData =
+            new Dictionary<string, byte[]>();
+
         public bool IsPersistent
         {
             get => _isPersistent;
             set
             {
-                //value doesn't need to be adjusted
+                //no need to change value
                 if (value == _isPersistent) return;
-
-                //delete database if persistence is no longer required 
-                if (!value)
-                {
-                    //update value
-                    _isPersistent = false;
-                    
-                    PersistentData.DeleteDatabase(Id);
-                    return;
-                }
-
-                //see if database exists
-                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSavedObject> savedObjects);
-
-                if (!databaseExists) OnNoData();
-                else OnDataFound(savedObjects);
-
-                //set persistence to true as last operation because the required backend infrastructure just finished building
-                _isPersistent = true;
+                
+                _isPersistent = value;
+                
+                if (value) OnPersistenceEnable();
+                else OnPersistenceDisable();
             }
         }
-
         private bool _isPersistent;
 
-        private void OnSetPersistent(string id, byte[] value)
+        private void OnPersistenceEnable()
         {
-            PersistentData.Save(Id, id, value, !_isSynchronised);
-        }
-        
-        /// <summary>
-        /// Invoked when no persistent data was found
-        /// </summary>
-        private void OnNoData()
-        {
-            //create database persistently
+            //Create database if necessary
             PersistentData.CreateDatabase(Id);
+            
+            //no data to load
+            if(!PersistentData.TryLoadDatabase(Id, out List<DeSerializedObject> serializedObjects)) return;
 
-            //save its values
-            foreach (var kv in _values)
+            Console.WriteLine($"Loaded old data. Count: {serializedObjects.Count}");
+            
+            lock (_serializedData)
             {
-                OnSetPersistent(kv.Key, kv.Value.Serialize());
+                foreach (var serializedObject in serializedObjects)
+                {
+                    //update value if it exists
+                    if (_values.TryGetValue(serializedObject.ValueStorageId, out ValueStorage valueStorage))
+                    {
+                        valueStorage.InternalSet(serializedObject.Buffer);
+                    }
+                    else
+                    {
+                        //wait for data to be accessed
+                        _serializedData[serializedObject.ValueStorageId] = serializedObject.Buffer;    
+                    }
+
+                    if (serializedObject.SyncRequired)
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
             }
         }
-        
-        /// <summary>
-        /// Invoked when persistent data was found
-        /// </summary>
-        private void OnDataFound(List<TrackedSavedObject> savedObjects)
+
+        private void OnPersistenceDisable()
         {
-            List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
+            //delete persistent data
+            PersistentData.DeleteDatabase(Id);
+        }
 
-            //get list of currently known ids
-            List<string> existingIds = _values.Keys.ToList();
+        /// <summary>
+        /// Saves values persistently
+        /// </summary>
+        public void Save()
+        {
+            if(!_isPersistent) return;
 
-            //save all current values persistently
-            foreach (var kv in _values)
+            lock (_values)
             {
-                ValueStorage.ValueStorage valueStorage = kv.Value;
-                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
-            }
-
-            //load all values from database which didn't already exist
-            foreach (var tso in savedObjects)
-            {
-                string id = tso.ValueStorageId;
-                    
-                //Skip if object with loaded id already exists
-                if (existingIds.Contains(id) || _values.ContainsKey(id)) continue;
-
-                //save value to be deserialized later
-                _serializedData[id] = tso.Buffer;
-
-                //skip objects which don't have to be synchronised
-                if(!tso.SyncRequired) continue;
-                    
-                //queue object for synchronisation
-                toSynchronise.Add(tso);
-            }
-
-            //no need to inform peers if database is not synchronised
-            if(!_isSynchronised || Client == null || !Client.IsConnected) return;
-
-            //inform peers that data was modified while no connection was established
-            foreach (var tso in toSynchronise)
-            {
-                OnOfflineModification(tso.ValueStorageId, tso.Buffer);
+                foreach (ValueStorage valueStorage in _values.Values)
+                {
+                    //todo: set sync required
+                    PersistentData.Save(Id, valueStorage.Id, valueStorage.Serialize(), false);
+                }
             }
         }
     }

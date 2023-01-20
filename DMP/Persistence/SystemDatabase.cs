@@ -12,10 +12,10 @@ namespace DMP.Persistence
         {
             get
             {
+                throw new NotImplementedException();
                 //create new guid if necessary
-                Database.Modify("Guid", value => (value == default) ? Guid.NewGuid() : value, out Guid result);
+                //Database.Modify("Guid", value => (value == default) ? Guid.NewGuid() : value, out Guid result);
                 //return result
-                return result;    
             }
         }
 

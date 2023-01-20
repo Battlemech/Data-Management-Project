@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DMP.Utility;
 
-namespace DMP.Databases.ValueStorage
+namespace DMP.Databases.VS
 {
     public partial class ValueStorage<T>
     {

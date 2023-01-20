@@ -1,12 +1,12 @@
 ﻿using System;
 using DMP.Utility;
 
-namespace DMP.Databases.ValueStorage
+namespace DMP.Databases.VS
 {
     public delegate TOut SafeOperationDelegate<T, TOut>(T current);
     public delegate T SetValueDelegate<out T>();
     
-    public partial class ValueStorage<T> : ValueStorage
+    public partial class ValueStorage<T> : VS.ValueStorage
     {
         public readonly Database Database;
 
@@ -55,16 +55,15 @@ namespace DMP.Databases.ValueStorage
                 _data = value;
                 serializedBytes = Serialization.Serialize(value);
             }
-            
-            //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-            //allowing the delegation of callbacks to a task
-            Delegate((() =>
-            {
-                InvokeAllCallbacks(serializedBytes);
-                Database.OnSet(Id, serializedBytes);
-            }));
+
+            //throw new NotImplementedException();
         }
 
+        protected internal override void InternalSet(byte[] bytes)
+        {
+            Set(Serialization.Deserialize<T>(bytes));
+        }
+        
         public void BlockingSet(SetValueDelegate<T> setValueDelegate)
         {
             byte[] serializedBytes;
@@ -74,15 +73,8 @@ namespace DMP.Databases.ValueStorage
                 serializedBytes = Serialization.Serialize(_data);
             }
             
-            //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-            //allowing the delegation of callbacks to a task
-            Delegate((() =>
-            {
-                InvokeAllCallbacks(serializedBytes);
-                Database.OnSet(Id, serializedBytes);
-            }));
+            throw new NotImplementedException();
         }
-
-        public void OnInitialized(Action<T> onInitialized) => Database.OnInitialized(Id, onInitialized);
+        
     }
 }

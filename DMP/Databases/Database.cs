@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
-using DMP.Databases.ValueStorage;
-using DMP.Objects;
-using DMP.Threading;
+using System.Collections.Generic;
+using System.Net.Mime;
+using DMP.Databases.VS;
 using DMP.Utility;
 
 namespace DMP.Databases
@@ -11,89 +10,42 @@ namespace DMP.Databases
     public partial class Database
     {
         public readonly string Id;
-        private readonly ConcurrentDictionary<string, ValueStorage.ValueStorage> _values = new ConcurrentDictionary<string, ValueStorage.ValueStorage>();
+        private readonly Dictionary<string, ValueStorage> _values = new Dictionary<string, ValueStorage>();
 
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
         {
             Id = id;
-
-            /*
-             * Setting these properties will enable/disable synchronisation and persistence.
-             * Potentially enabling synchronisation first allows send serialized data(bytes) directly,
-             * avoiding additional (de)serialization.
-             *
-             * Performance is barely affected since synchronisation is delegated to Tasks
-             */
-            
-            IsSynchronised = isSynchronised;
             IsPersistent = isPersistent;
-            
-            //enable host persistence if database was created with attributes synchronised and persistent
-            if (isSynchronised && isPersistent) 
-            {
-                //once host is is synchronised
-                HostId.OnInitialized((hostId) =>
-                {
-                    //if client is host
-                    if (hostId == Client.Id)
-                    {
-                        HostPersistence.Set(true);
-                    }
-                });
-            }
         }
 
         public ValueStorage<T> Get<T>(string id)
         {
-            //try retrieving the value
-            bool success = _values.TryGetValue(id, out ValueStorage.ValueStorage value);
-
-            //if it wasn't found: Add default value
-            if (!success)
+            lock (_values)
             {
-                T obj;
-                //try loading the object from not-deserialized data (occurs if type is missing)
-                if (_serializedData.TryGetValue(id, out byte[] serializedData)) 
+                //retrieve valueStorage
+                if (_values.TryGetValue(id, out ValueStorage valueStorage))
                 {
-                    obj = Serialization.Deserialize<T>(serializedData);
-                    
-                    //remove serialized data, it is no longer required
-                    _serializedData.Remove(id);
-                }
-                else
-                {
-                    obj = default;
-                        
-                    //if it won't be possible to extract the type later
-                    if (obj == null)
-                    {
-                        //keep track of failed get attempts to allow synchronisedDatabase to create objects of requested types
-                        _failedGets[id] = typeof(T);
-                    }
-                }
+                    //return valueStorage if it is of expected type
+                    if (valueStorage is ValueStorage<T> expected) return expected;
 
-                ValueStorage<T> valueStorage = new ValueStorage<T>(this, id, obj);
-
-                //if adding valueStorage object failed: other thread must have added it in the meantime. Try getting it again
-                if (!_values.TryAdd(id, valueStorage)) return Get<T>(id);
+                    throw new ArgumentException($"Saved value has type {valueStorage.GetEnclosedType()}, not {typeof(T)}");
+                }
                 
-                return valueStorage;
+                //try loading persistent value
+                T obj;
+                lock (_serializedData)
+                {
+                    obj = (_serializedData.TryGetValue(id, out byte[] bytes))
+                        ? Serialization.Deserialize<T>(bytes)
+                        : default;
+                }
+                
+                //create valueStorage
+                ValueStorage<T> newVs = new ValueStorage<T>(this, id, obj);
+                
+                _values.Add(id, newVs);
+                return newVs;
             }
-
-            //return valueStorage if it is of expected type
-            if (value is ValueStorage<T> expected) return expected;
-
-            throw new ArgumentException($"Saved value has type {value.GetEnclosedType()}, not {typeof(T)}");
-        }
-
-        public T GetValue<T>(string id) => Get<T>(id).Get();
-
-        public void SetValue<T>(string id, T value) => Get<T>(id).Set(value);
-        
-        protected internal void OnSet(string id, byte[] serializedBytes)
-        {
-            if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
-            if(_isPersistent) OnSetPersistent(id, serializedBytes);
         }
     }
 }
