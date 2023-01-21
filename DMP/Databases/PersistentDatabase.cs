@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DMP.Databases.VS;
 using DMP.Persistence;
@@ -75,6 +74,7 @@ namespace DMP.Databases
 
             lock (_values)
             {
+               
                 foreach (ValueStorage valueStorage in _values.Values)
                 {
                     //todo: set sync required
