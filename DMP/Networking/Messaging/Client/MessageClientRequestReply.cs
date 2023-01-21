@@ -72,7 +72,7 @@ namespace DMP.Networking.Messaging.Client
 
             //start background thread instead of task: Starting too many waiting task in TaskPool will cause task
             //later tasks to not start because Task Pool is still waiting for first tasks to complete (which are waiting)
-            Delegation.EnqueueAction((() =>
+            QueuedScheduler.EnqueueAction((() =>
             {
                 if (receivedMessage.WaitOne(timeout)) return;
 

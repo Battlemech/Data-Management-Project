@@ -1,5 +1,6 @@
 ﻿using System;
 using DMP.Databases;
+using DMP.Databases.VS;
 
 namespace DMP.Persistence
 {
@@ -8,15 +9,23 @@ namespace DMP.Persistence
         private const string Id = "SYSTEM/INTERNAL/";
         private static readonly Database Database = new Database(Id, isPersistent: true);
 
-        public static Guid Guid
+        private static ValueStorage<Guid> _guid => Database.Get<Guid>(nameof(_guid));
+
+        public static Guid GetGuid()
         {
-            get
-            {
-                throw new NotImplementedException();
-                //create new guid if necessary
-                //Database.Modify("Guid", value => (value == default) ? Guid.NewGuid() : value, out Guid result);
-                //return result
-            }
+            Guid guid = _guid.Get();
+
+            //guid was saved persistently
+            if (guid != default) return guid;
+            
+            //generate new guid
+            guid = new Guid();
+            
+            //save it
+            _guid.Set(guid);
+            Database.Save();
+
+            return guid;
         }
 
         public static void DeleteData() => PersistentData.DeleteDatabase(Id);

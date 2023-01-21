@@ -43,7 +43,7 @@ namespace DMP.Submodules.NetCoreServer
         /// <param name="port">Server port</param>
         private TcpClient(EndPoint endpoint, string address, int port)
         {
-            Id = SystemDatabase.Guid;
+            Id = SystemDatabase.GetGuid();
             Address = address;
             Port = port;
             Endpoint = endpoint;

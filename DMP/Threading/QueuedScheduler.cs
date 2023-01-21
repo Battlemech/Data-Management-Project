@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Scheduler = System.Threading.Tasks.TaskScheduler;
@@ -7,6 +8,10 @@ namespace DMP.Threading
 {
     public class QueuedScheduler : Scheduler
     {
+        public static readonly QueuedScheduler Instance = new QueuedScheduler();
+        public static void EnqueueTask(Task task) => task.Start(Instance);
+        public static void EnqueueAction(Action action) => EnqueueTask(new Task(action));
+        
         public int QueuedTasksCount => _queuedTasks.Count + (ExecutingTasks ? 1 : 0);
         public bool ExecutingTasks { get; private set; }
         
@@ -27,19 +32,15 @@ namespace DMP.Threading
                 if(ExecutingTasks) return;
                 ExecutingTasks = true;
             }
-            
-            DelegateTasksToThreadPool();
+
+            //delegate task to thread pool
+            Task.Run(Execute);
         }
 
         protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
         {
             //executing tasks in line is too inefficient: It is disabled
             return false;
-        }
-
-        private void DelegateTasksToThreadPool()
-        {
-            Delegation.DelegateAction(Execute);
         }
 
         private void Execute()

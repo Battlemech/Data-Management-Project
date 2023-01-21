@@ -143,7 +143,7 @@ namespace DMP.Persistence
                 SavingData = true;
             }
             
-            Delegation.EnqueueAction(SaveQueuedData);
+            QueuedScheduler.EnqueueAction(SaveQueuedData);
         }
 
         private static void SaveQueuedData()

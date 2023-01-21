@@ -12,83 +12,117 @@ namespace Tests
     public static class ThreadingTests
     {
         [Test]
-        public static void TestConcurrentScheduler()
+        public static void TestQueuedScheduler()
         {
-            int waitingTasksCount = 10000;
-            int waitTime = 3000;
+            int taskCount = 100000;
+            List<Task> tasks = new List<Task>();
+            QueuedScheduler scheduler = new QueuedScheduler();
 
-            ConcurrentScheduler scheduler = new ConcurrentScheduler();
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            int lastAdd = -1;
 
-            //track started tasks
-            List<Task> waitingTasks = new List<Task>(waitingTasksCount);
-
-            //start tasks which wait, "blocking" other tasks
-            for (int i = 0; i < waitingTasksCount; i++)
+            //start tasks
+            for (int i = 0; i < taskCount; i++)
             {
+                var i1 = i;
                 Task task = new Task((() =>
                 {
-                    Thread.Sleep(waitTime);
+                    Console.WriteLine($"Executing task {i1}");
+
+                    //make sure tasks are added in right order
+                    lock (tasks)
+                    {
+                        Assert.AreEqual(lastAdd + 1, i1);
+                        lastAdd = i1;
+                    }
                 }));
+                
+                tasks.Add(task);
                 task.Start(scheduler);
-                waitingTasks.Add(task);
             }
             
-            Console.WriteLine($"Started all waiting tasks after {stopwatch.ElapsedMilliseconds}ms");
-
-            //append a task which is supposed to execute immediately
-            Task executeNowTask = new Task((() =>
-            {
-                Console.WriteLine($"Executed task without delay after {stopwatch.ElapsedMilliseconds}ms");
-            }));
-            executeNowTask.Start(scheduler);
-            
-            //wait for waiting tasks to complete
-            Assert.IsTrue(Task.WaitAll(waitingTasks.ToArray(), waitTime + 3000));
-            Console.WriteLine($"All waiting tasks completed after {stopwatch.ElapsedMilliseconds}ms");
-
-            for (int i = 0; i < 10; i++)
-            {
-                Thread.Sleep(100);
-                Console.WriteLine($"Idle threads: {scheduler.IdleThreadCount}");
-            }
+            //wait for them
+            Task.WaitAll(tasks.ToArray());
         }
 
         [Test]
-        public static void TestConcurrentSchedulerPerformance()
+        public static void TestManyQueuedSchedulers()
         {
-            const int taskCount = 10000;
-            const int taskTime = 150;
-            
-            ConcurrentScheduler scheduler = new ConcurrentScheduler();
-            List<Task> tasks = new List<Task>();
-            List<double> taskStartTime = new List<double>();
+            int schedulerCount = 100;
+            int taskCount = 10;
+            int waitTime = 100;
 
-            //init tasks
-            for (int i = 0; i < taskCount; i++)
+            //track when tasks are done executing
+            Stopwatch stopwatch = new Stopwatch();
+            long firstEnd = long.MaxValue;
+            long lastEnd = long.MinValue;
+            
+            //signal tasks when to start
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            
+            //save created schedulers
+            Dictionary<int, QueuedScheduler> schedulers = new Dictionary<int, QueuedScheduler>();
+            
+            //create tasks for each scheduler
+            Dictionary<int, List<Task>> taskDistribution = new Dictionary<int, List<Task>>();
+            for (int i = 0; i < schedulerCount; i++)
             {
-                Task task = new Task((() =>
+                //create scheduler
+                schedulers[i] = new QueuedScheduler();
+                
+                List<Task> tasks = new List<Task>();
+                for (int j = 0; j < taskCount; j++)
                 {
-                    Thread.Sleep(taskTime);
-                }));
-                tasks.Add(task);
+                    //save values for print
+                    var i1 = i;
+                    var j1 = j;
+                    tasks.Add(new Task((() =>
+                    {
+                        //wait for tasks to start
+                        resetEvent.WaitOne();
+                        
+                        Console.WriteLine($"Scheduler {i1} is executing task {j1}");
+                        
+                        Thread.Sleep(waitTime);
+                        
+                        long elapsedTime = stopwatch.ElapsedMilliseconds;
+
+                        lock (taskDistribution)
+                        {
+                            if (firstEnd > elapsedTime) firstEnd = elapsedTime;
+                            if (lastEnd < elapsedTime) lastEnd = elapsedTime;
+                        }
+                    })));
+                }
+
+                taskDistribution[i] = tasks;
             }
             
+
             //start tasks
-            Stopwatch taskStartTimer = new Stopwatch();
-            foreach (var task in tasks)
+            foreach (var kv in taskDistribution)
             {
-                taskStartTimer.Restart();
-                task.Start(scheduler);
-                taskStartTimer.Stop();
-                taskStartTime.Add(taskStartTimer.ElapsedMilliseconds);
+                QueuedScheduler scheduler = schedulers[kv.Key];
+                
+                foreach (var task in kv.Value)
+                {
+                    task.Start(scheduler);    
+                }
             }
             
-            //wait until tasks are done
-            Task.WaitAll(tasks.ToArray());
+            //start tracking time
+            stopwatch.Start();
+
+            //signal first tasks to start executing
+            resetEvent.Set();
             
-            Console.WriteLine($"Idle threads: {scheduler.IdleThreadCount}. Threads/Task: {(float) scheduler.IdleThreadCount/ (float)taskCount}");
-            Console.WriteLine($"Average task starting time: {taskStartTime.Average()}ms");
+            //wait for all tasks to finish
+            foreach (var tasks in taskDistribution.Values)
+            {
+                Task.WaitAll(tasks.ToArray());
+            }
+            
+            //print test results
+            Console.WriteLine($"Earliest done: {firstEnd} ms. Latest done: {lastEnd} ms. Variance: {lastEnd - firstEnd} ms");
         }
     }
 }
