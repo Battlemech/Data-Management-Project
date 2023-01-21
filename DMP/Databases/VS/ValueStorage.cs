@@ -75,6 +75,5 @@ namespace DMP.Databases.VS
             
             throw new NotImplementedException();
         }
-        
     }
 }
