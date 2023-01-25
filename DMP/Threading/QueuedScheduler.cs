@@ -9,8 +9,8 @@ namespace DMP.Threading
     public class QueuedScheduler : Scheduler
     {
         public static readonly QueuedScheduler Instance = new QueuedScheduler();
-        public static void EnqueueTask(Task task) => task.Start(Instance);
-        public static void EnqueueAction(Action action) => EnqueueTask(new Task(action));
+        public static void EnqueueTask(Task task) => Instance.Enqueue(task);
+        public static void EnqueueAction(Action action) => Instance.Enqueue(action);
         
         public int QueuedTasksCount => _queuedTasks.Count + (ExecutingTasks ? 1 : 0);
         public bool ExecutingTasks { get; private set; }
@@ -67,5 +67,8 @@ namespace DMP.Threading
                 //continue executing queued tasks
             }
         }
+        
+        public void Enqueue(Task task) => task.Start(this);
+        public void Enqueue(Action action) => EnqueueTask(new Task(action));
     }
 }

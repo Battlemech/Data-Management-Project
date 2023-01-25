@@ -4,6 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using DMP;
+using DMP.Databases;
+using DMP.Networking.Synchronisation.Client;
+using DMP.Networking.Synchronisation.Server;
 using DMP.Utility;
 using NUnit.Framework;
 
@@ -15,7 +18,7 @@ namespace Tests
         public delegate T GetValueDelegate<T>();
 
         //port tracking
-        private static readonly Dictionary<string, int> _ports = new Dictionary<string, int>();
+        private static readonly Dictionary<string, int> Ports = new Dictionary<string, int>();
         private static int _currentPort = Options.DefaultPort;
         
         public static void AreEqual<T>(T expected, GetValueDelegate<T> getValueDelegate, string testName = "Test", int timeInMs = Options.DefaultTimeout * 2, int waitTimeInMs = 10)
@@ -115,16 +118,48 @@ namespace Tests
             string id = className + testName;
             
             //try get port
-            if (_ports.TryGetValue(id, out int port)) return port;
+            if (Ports.TryGetValue(id, out int port)) return port;
 
             //add new port
             port = _currentPort;
-            _ports.Add(id, port);
+            Ports.Add(id, port);
 
             //increase currently used port
             _currentPort++;
             
             return port;
+        }
+
+        public static List<SynchronisedClient> ConnectClients(out SynchronisedServer server, out List<Database> databases, int clientCount = 3)
+        {
+            int port = _currentPort++;
+
+            //start server
+            server = new SynchronisedServer("127.0.0.1", port);
+            server.Start();
+            
+            //start clients, setup databases
+            List<SynchronisedClient> clients = new List<SynchronisedClient>();
+            databases = new List<Database>();
+            
+            for (int i = 0; i < clientCount; i++)
+            {
+                //create client
+                SynchronisedClient client = new SynchronisedClient("127.0.0.1", port);
+                clients.Add(client);
+
+                //link client and database
+                Database database = new Database("Synchronised");
+                database.SetClient(client);
+                database.IsSynchronised = true;
+                databases.Add(database);
+                
+                //connect client
+                client.ConnectAsync();
+                client.WaitForConnect();
+            }
+
+            return clients;
         }
     }
 }

@@ -38,6 +38,7 @@ namespace DMP.Networking.Messaging.Server
             foreach (var tcpSession in Sessions.Values)
             {
                 if (tcpSession == session) continue;
+                
                 success = success && tcpSession.SendAsync(bytes);
             }
 

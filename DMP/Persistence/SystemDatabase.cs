@@ -15,16 +15,14 @@ namespace DMP.Persistence
         {
             Guid guid = _guid.Get();
 
-            Console.WriteLine($"Guid: {guid}");
-            
             //guid was saved persistently
             if (guid != default) return guid;
             
             //generate new guid
             guid = Guid.NewGuid();
             
-            Console.WriteLine($"New Guid: {guid}");
-            
+            //todo: guid isn't persistently saved. Fix
+
             //save it
             _guid.Set(guid);
             Database.Save();

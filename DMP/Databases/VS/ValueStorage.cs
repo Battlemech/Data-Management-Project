@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using DMP.Networking.Synchronisation.Messages;
 using DMP.Utility;
 
 namespace DMP.Databases.VS
@@ -50,30 +52,39 @@ namespace DMP.Databases.VS
         public void Set(T value)
         {
             byte[] serializedBytes;
+            uint modCount;
+            
             lock (Id)
             {
                 _data = value;
                 serializedBytes = Serialization.Serialize(value);
             }
 
-            //throw new NotImplementedException();
+            //delegate callbacks and onSet logic
+            Scheduler.Enqueue((() =>
+            {
+                InvokeAllCallbacks(serializedBytes);
+                Database.OnLocalSet(Id, serializedBytes);
+            }));
         }
 
-        protected internal override void InternalSet(byte[] bytes)
-        {
-            Set(Serialization.Deserialize<T>(bytes));
-        }
-        
         public void BlockingSet(SetValueDelegate<T> setValueDelegate)
         {
             byte[] serializedBytes;
+            uint modCount;
+            
             lock (Id)
             {
                 _data = setValueDelegate.Invoke();
                 serializedBytes = Serialization.Serialize(_data);
             }
             
-            throw new NotImplementedException();
+            //delegate callbacks and onSet logic
+            Scheduler.Enqueue((() =>
+            {
+                InvokeAllCallbacks(serializedBytes);
+                Database.OnLocalSet(Id, serializedBytes, setValueDelegate);
+            }));
         }
     }
 }

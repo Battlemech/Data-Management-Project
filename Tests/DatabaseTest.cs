@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using DMP.Databases;
+using DMP.Databases.VS;
 using DMP.Persistence;
 using NUnit.Framework;
 

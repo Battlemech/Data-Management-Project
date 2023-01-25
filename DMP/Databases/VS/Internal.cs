@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using DMP.Networking.Synchronisation.Messages;
+using DMP.Threading;
 using DMP.Utility;
 
 namespace DMP.Databases.VS
@@ -6,6 +10,7 @@ namespace DMP.Databases.VS
     public abstract class ValueStorage
     {
         public readonly string Id;
+        public readonly QueuedScheduler Scheduler = new QueuedScheduler();
 
         public ValueStorage(string id)
         {
@@ -18,8 +23,6 @@ namespace DMP.Databases.VS
         
         public abstract byte[] Serialize();
 
-        protected internal abstract ValueStorage Copy();
-        
         //Callbacks
         
         public abstract int InvokeAllCallbacks();
@@ -47,9 +50,9 @@ namespace DMP.Databases.VS
             return BlockingGet(Serialization.Serialize);
         }
 
-        protected internal override ValueStorage Copy()
+        protected internal override void InternalSet(byte[] bytes)
         {
-            return BlockingGet((obj => new ValueStorage<T>(null, Id, obj)));
+            Set(Serialization.Deserialize<T>(bytes));
         }
 
         public static implicit operator T(ValueStorage<T> valueStorage) => valueStorage.Get();

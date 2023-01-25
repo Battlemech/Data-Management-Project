@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.Mime;
 using DMP.Databases.VS;
 using DMP.Utility;
 
@@ -16,6 +14,7 @@ namespace DMP.Databases
         {
             Id = id;
             IsPersistent = isPersistent;
+            IsSynchronised = isSynchronised;
         }
 
         public ValueStorage<T> Get<T>(string id)
@@ -30,21 +29,29 @@ namespace DMP.Databases
 
                     throw new ArgumentException($"Saved value has type {valueStorage.GetEnclosedType()}, not {typeof(T)}");
                 }
-                
+
                 //try loading persistent value
-                T obj;
                 lock (_serializedData)
                 {
-                    obj = (_serializedData.TryGetValue(id, out byte[] bytes))
-                        ? Serialization.Deserialize<T>(bytes)
-                        : default;
+                    T obj;
+                    if (_serializedData.TryGetValue(id, out byte[] bytes))
+                    {
+                        obj = Serialization.Deserialize<T>(bytes);
+                        Console.WriteLine($"{this}Loaded object from serialization: {id}={obj}");
+                    }
+                    else
+                    {
+                        obj = default;
+                        Console.WriteLine($"{this}Created valueStorage with default value: {id}={obj}");
+                    }
+                    
+                    //create valueStorage
+                    ValueStorage<T> newVs = new ValueStorage<T>(this, id, obj);
+                
+                    _values.Add(id, newVs);
+                    return newVs;
                 }
                 
-                //create valueStorage
-                ValueStorage<T> newVs = new ValueStorage<T>(this, id, obj);
-                
-                _values.Add(id, newVs);
-                return newVs;
             }
         }
     }
