@@ -8,6 +8,11 @@ namespace DMP.Networking.Synchronisation.Messages
         public string ValueId;
         public byte[] Value;
         public uint ModificationCount;
+
+        public override string ToString()
+        {
+            return $"(DB={DatabaseId}, VId={ValueId}, modCount={ModificationCount})";
+        }
     }
 
     public class SetValueReply : ReplyMessage

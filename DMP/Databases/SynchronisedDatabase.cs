@@ -55,7 +55,7 @@ namespace DMP.Databases
                 //request was successful
                 if (reply.ExpectedModificationCount == expected)
                 {
-                    onConfirm.Invoke(Serialization.Deserialize<T>(value));
+                    onConfirm?.Invoke(Serialization.Deserialize<T>(value));
                     return;
                 }
                 
@@ -77,15 +77,18 @@ namespace DMP.Databases
                 Value = value
             };
             
+            Console.WriteLine($"{this}: Sending request: {request}");
+            
             _client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 //request was successful
                 if (reply.ExpectedModificationCount == expected)
                 {
-                    onConfirm.Invoke(Serialization.Deserialize<T>(value));
+                    onConfirm?.Invoke(Serialization.Deserialize<T>(value));
                     return;
                 }
-                
+
+                Console.WriteLine($"{this}: Request failed: {request}");
                 TrackFailedRequest(valueId, modifyValueDelegate, reply.ExpectedModificationCount, onConfirm);
             });
         }
@@ -93,6 +96,8 @@ namespace DMP.Databases
         protected internal void OnRemoteSet(string valueId, byte[] value, uint modCount)
         {
             if(modCount <= GetModCount(valueId, false)) return;
+            
+            Console.WriteLine($"{this}- received remote set id={valueId}, modCount={modCount}");
             
             lock (_values)
             {
@@ -115,9 +120,19 @@ namespace DMP.Databases
             IncrementModCount(valueId, true);
             IncrementModCount(valueId, false);
 
-            if(!TryDequeueFailedRequest(valueId, modCount, out FailedRequest failedRequest)) return;
+            if(!TryDequeueFailedRequest(valueId, modCount + 1, out FailedRequest failedRequest)) return;
+
+            Console.WriteLine($"{this}: executing delayed request: valueId={valueId}, modCount={failedRequest.ModCount}");
             
-            OnRemoteSet(valueId, failedRequest.RepeatModification(value), modCount + 1);
+            //repeat modification
+            value = failedRequest.RepeatModification(value);
+            modCount = failedRequest.ModCount;
+            
+            //notify peers of new value
+            _client.SendMessage(new SetValueMessage()
+                { DatabaseId = Id, ValueId = valueId, Value = value, ModificationCount = modCount });
+            
+            OnRemoteSet(valueId, value, modCount);
         }
 
         /// <summary>

@@ -36,10 +36,11 @@ namespace DMP.Databases
             lock (failedRequests)
             {
                 failedRequests.Enqueue(failedRequest);
+                Console.WriteLine($"{this} enqueued failed request id={valueId}, modCount={failedRequest.ModCount}");
             }
         }
 
-        private bool TryDequeueFailedRequest(string valueId, uint modCount, out FailedRequest failedRequest)
+        private bool TryDequeueFailedRequest(string valueId, uint maxModCount, out FailedRequest failedRequest)
         {
             Queue<FailedRequest> failedRequests;
             lock (_failedRequests)
@@ -53,7 +54,7 @@ namespace DMP.Databases
             }
 
             //mod count of queued request is too high
-            if (failedRequests.Peek().ModCount > modCount)
+            if (failedRequests.Peek().ModCount > maxModCount)
             {
                 failedRequest = null;
                 return false;
@@ -78,36 +79,36 @@ namespace DMP.Databases
     
     public class FailedRequest<T> : FailedRequest
     {
-        public readonly byte[] Value;
-        public readonly SetValueDelegate<T> SetValue;
+        private readonly byte[] _value;
+        private readonly SetValueDelegate<T> _setValue;
 
         private readonly Action<T> _onConfirm;
 
         public FailedRequest(byte[] value, uint modCount, Action<T> onConfirm) : base(modCount)
         {
-            Value = value;
-            SetValue = null;
+            _value = value;
+            _setValue = null;
             _onConfirm = onConfirm;
         }
         
         public FailedRequest(SetValueDelegate<T> setValue, uint modCount, Action<T> onConfirm) : base(modCount)
         {
-            Value = null;
-            SetValue = setValue;
+            _value = null;
+            _setValue = setValue;
             _onConfirm = onConfirm;
         }
 
         public override byte[] RepeatModification(byte[] value)
         {
-            if (Value != null)
+            if (_value != null)
             {
                 _onConfirm?.Invoke(Serialization.Deserialize<T>(value));
                 return value;
             }
             
-            if (SetValue != null)
+            if (_setValue != null)
             {
-                T obj = SetValue.Invoke(Serialization.Deserialize<T>(value));
+                T obj = _setValue.Invoke(Serialization.Deserialize<T>(value));
                 _onConfirm?.Invoke(obj);
                 return Serialization.Serialize(obj);
             }

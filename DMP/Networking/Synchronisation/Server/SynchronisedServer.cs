@@ -44,6 +44,7 @@ namespace DMP.Networking.Synchronisation.Server
                 //inform others of new value
                 if (success)
                 {
+                    Console.WriteLine($"Server: Confirmed set valueId={valueId}, modCount={modificationCount}");
                     BroadcastToOthers(request, session);
                 }
                 else

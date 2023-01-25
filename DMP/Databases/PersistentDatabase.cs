@@ -34,8 +34,6 @@ namespace DMP.Databases
             //no data to load
             if(!PersistentData.TryLoadDatabase(Id, out List<DeSerializedObject> serializedObjects)) return;
 
-            Console.WriteLine($"Loaded old data. Count: {serializedObjects.Count}");
-            
             lock (_serializedData)
             {
                 foreach (var serializedObject in serializedObjects)
