@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using DMP.Databases.VS;
 using DMP.Networking.Synchronisation.Client;
 using DMP.Networking.Synchronisation.Messages;
@@ -35,11 +36,11 @@ namespace DMP.Databases
 
         private bool _isSynchronised;
         
-        protected internal void OnLocalSet(string valueId, byte[] value)
+        protected internal void OnLocalSet<T>(string valueId, byte[] value, Action<T> onConfirm)
         {
             if(!IsSynchronised) return;
 
-            uint expected = IncrementModCount(valueId);
+            uint expected = IncrementModCount(valueId, true);
             
             SetValueRequest request = new SetValueRequest()
                 { 
@@ -52,41 +53,71 @@ namespace DMP.Databases
             _client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 //request was successful
-                if(reply.ExpectedModificationCount == expected) return;
-
-                //todo eventually send SetValueMessage on failure
-                throw new NotImplementedException();
+                if (reply.ExpectedModificationCount == expected)
+                {
+                    onConfirm.Invoke(Serialization.Deserialize<T>(value));
+                    return;
+                }
+                
+                TrackFailedRequest(valueId, value, reply.ExpectedModificationCount, onConfirm);
             });
         }
 
-        protected internal void OnLocalSet<T>(string valueId, byte[] value, SetValueDelegate<T> modifyValueDelegate)
+        protected internal void OnLocalSet<T>(string valueId, byte[] value, SetValueDelegate<T> modifyValueDelegate, Action<T> onConfirm)
         {
             if(!IsSynchronised) return;
 
-            throw new NotImplementedException();
+            uint expected = IncrementModCount(valueId, true);
+            
+            SetValueRequest request = new SetValueRequest()
+            { 
+                DatabaseId = Id,
+                ValueId = valueId, 
+                ModificationCount = expected, 
+                Value = value
+            };
+            
+            _client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
+            {
+                //request was successful
+                if (reply.ExpectedModificationCount == expected)
+                {
+                    onConfirm.Invoke(Serialization.Deserialize<T>(value));
+                    return;
+                }
+                
+                TrackFailedRequest(valueId, modifyValueDelegate, reply.ExpectedModificationCount, onConfirm);
+            });
         }
 
         protected internal void OnRemoteSet(string valueId, byte[] value, uint modCount)
         {
+            if(modCount <= GetModCount(valueId, false)) return;
+            
             lock (_values)
             {
-                Console.WriteLine($"{this}Remote update for: {valueId}. Values: {LogWriter.StringifyCollection(_values.Keys)}");
-                
                 //update local value if it exists
                 if (_values.TryGetValue(valueId, out ValueStorage valueStorage))
                 {
-                    Console.WriteLine($"{this}Updating {valueId} from remote");
                     valueStorage.InternalSet(value);
-                    return;
                 }
-
-                //allow delayed gets to retrieve and load data
-                lock (_serializedData)
+                else
                 {
-                    Console.WriteLine($"{this}Delaying remote update of {valueId} until value is accessed");
-                    _serializedData[valueId] = value;
+                    //allow delayed gets to retrieve and load data
+                    lock (_serializedData)
+                    {
+                        _serializedData[valueId] = value;
+                    }   
                 }
             }
+            
+            //local value was updated. Increase mod count
+            IncrementModCount(valueId, true);
+            IncrementModCount(valueId, false);
+
+            if(!TryDequeueFailedRequest(valueId, modCount, out FailedRequest failedRequest)) return;
+            
+            OnRemoteSet(valueId, failedRequest.RepeatModification(value), modCount + 1);
         }
 
         /// <summary>

@@ -33,18 +33,8 @@ namespace DMP.Databases
                 //try loading persistent value
                 lock (_serializedData)
                 {
-                    T obj;
-                    if (_serializedData.TryGetValue(id, out byte[] bytes))
-                    {
-                        obj = Serialization.Deserialize<T>(bytes);
-                        Console.WriteLine($"{this}Loaded object from serialization: {id}={obj}");
-                    }
-                    else
-                    {
-                        obj = default;
-                        Console.WriteLine($"{this}Created valueStorage with default value: {id}={obj}");
-                    }
-                    
+                    var obj = _serializedData.TryGetValue(id, out byte[] bytes) ? Serialization.Deserialize<T>(bytes) : default;
+
                     //create valueStorage
                     ValueStorage<T> newVs = new ValueStorage<T>(this, id, obj);
                 

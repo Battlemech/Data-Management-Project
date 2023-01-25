@@ -44,7 +44,6 @@ namespace DMP.Networking.Synchronisation.Server
                 //inform others of new value
                 if (success)
                 {
-                    Console.WriteLine("Server: Broadcasting successful set value request");
                     BroadcastToOthers(request, session);
                 }
                 else

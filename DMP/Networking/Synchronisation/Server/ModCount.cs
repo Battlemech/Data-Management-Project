@@ -32,11 +32,13 @@ namespace DMP.Networking.Synchronisation.Server
             //retrieve modCount from dictionary
             lock (modCounts)
             {
-                bool success = modCounts.TryGetValue(valueId, out uint modCount);
+                modCounts.TryGetValue(valueId, out uint modCount);
 
                 //increment mod count by 1
-                if (!success) modCounts[valueId] = 1;
-                else modCounts[valueId] = modCount + 1;
+                modCount++;
+                
+                //update modCount locally
+                modCounts[valueId] = modCount;
                 
                 return modCount;
             }

@@ -12,7 +12,7 @@ namespace Tests
         [Test]
         public static void TestSimpleSet()
         {
-            int clientCount = 2;
+            int clientCount = 10;
 
             List<SynchronisedClient> clients = TestUtility.ConnectClients(out SynchronisedServer server, out List<Database> databases, clientCount);
             

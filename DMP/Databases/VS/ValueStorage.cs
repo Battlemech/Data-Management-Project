@@ -6,9 +6,9 @@ using DMP.Utility;
 namespace DMP.Databases.VS
 {
     public delegate TOut SafeOperationDelegate<T, TOut>(T current);
-    public delegate T SetValueDelegate<out T>();
+    public delegate T SetValueDelegate<T>(T current);
     
-    public partial class ValueStorage<T> : VS.ValueStorage
+    public partial class ValueStorage<T> : ValueStorage
     {
         public readonly Database Database;
 
@@ -49,10 +49,9 @@ namespace DMP.Databases.VS
             }
         }
         
-        public void Set(T value)
+        public void Set(T value, Action<T> onConfirm = null)
         {
             byte[] serializedBytes;
-            uint modCount;
             
             lock (Id)
             {
@@ -64,18 +63,17 @@ namespace DMP.Databases.VS
             Scheduler.Enqueue((() =>
             {
                 InvokeAllCallbacks(serializedBytes);
-                Database.OnLocalSet(Id, serializedBytes);
+                Database.OnLocalSet(Id, serializedBytes, onConfirm);
             }));
         }
 
-        public void BlockingSet(SetValueDelegate<T> setValueDelegate)
+        public void BlockingSet(SetValueDelegate<T> setValueDelegate, Action<T> onConfirm = null)
         {
             byte[] serializedBytes;
-            uint modCount;
             
             lock (Id)
             {
-                _data = setValueDelegate.Invoke();
+                _data = setValueDelegate.Invoke(_data);
                 serializedBytes = Serialization.Serialize(_data);
             }
             
@@ -83,7 +81,7 @@ namespace DMP.Databases.VS
             Scheduler.Enqueue((() =>
             {
                 InvokeAllCallbacks(serializedBytes);
-                Database.OnLocalSet(Id, serializedBytes, setValueDelegate);
+                Database.OnLocalSet(Id, serializedBytes, setValueDelegate, onConfirm);
             }));
         }
     }
