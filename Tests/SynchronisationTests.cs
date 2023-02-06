@@ -603,20 +603,23 @@ namespace Tests
                 {
                     Assert.IsFalse(confirmedValues.Contains(confirmed));
                     confirmedValues.Add(confirmed);
+                    Console.WriteLine($"1-{confirmed}");
                 });
                 Database2.Modify<int>(id, (value) => value + 1, confirmed =>
                 {
                     Assert.IsFalse(confirmedValues.Contains(confirmed));
                     confirmedValues.Add(confirmed);
+                    Console.WriteLine($"2-{confirmed}");
                 });
                 Database3.Modify<int>(id, (value) => value + 1, confirmed =>
                 {
                     Assert.IsFalse(confirmedValues.Contains(confirmed));
                     confirmedValues.Add(confirmed);
+                    Console.WriteLine($"3-{confirmed}");
                 });
             }
             
-            TestUtility.AreEqual(modCount * 3, () => Database1.GetValue<int>(id), timeInMs: 5000);
+            TestUtility.AreEqual(modCount * 3, () => Database1.GetValue<int>(id));
             TestUtility.AreEqual(modCount * 3, () => Database2.GetValue<int>(id));
             TestUtility.AreEqual(modCount * 3, () => Database3.GetValue<int>(id));
         }
