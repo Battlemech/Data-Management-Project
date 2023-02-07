@@ -80,5 +80,17 @@ namespace DMP.Databases.Utility
                 return value;
             }));
         }
+
+        public static bool TryGet<TDictionary, TKey, TValue>(this ValueStorage<TDictionary> valueStorage, TKey key, out TValue value)
+            where TDictionary : IDictionary<TKey, TValue>
+        {
+            //retrieve values
+            TValue delegateValue = default;
+            bool success = valueStorage.BlockingGet(values => values.TryGetValue(key, out delegateValue));
+
+            //assign retrieved values
+            value = delegateValue;
+            return success;
+        }
     }
 }

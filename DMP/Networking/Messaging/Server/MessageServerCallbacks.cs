@@ -119,7 +119,17 @@ namespace DMP.Networking.Messaging.Server
 
             public override void InvokeCallback(object message, MessageSession session)
             {
-                if(message is T data) _received.Invoke(data, session); 
+                if (message is T data)
+                {
+                    try
+                    {
+                        _received.Invoke(data, session);
+                    }
+                    catch (Exception e)
+                    {
+                        LogWriter.LogException(e);
+                    }
+                } 
                 else throw new ArgumentException($"Expected {typeof(T)}, but got {message.GetType()}");
             }
 
