@@ -92,5 +92,16 @@ namespace DMP.Databases.Utility
             value = delegateValue;
             return success;
         }
+
+        public static void Update<TDictionary, TKey, TValue>(this ValueStorage<TDictionary> valueStorage, TKey key,
+            TValue value)
+            where TDictionary : IDictionary<TKey, TValue>
+        {
+            valueStorage.Modify((dict =>
+            {
+                dict[key] = value;
+                return dict;
+            }));
+        }
     }
 }
