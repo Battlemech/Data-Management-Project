@@ -51,6 +51,30 @@ namespace DMP.Databases.ValueStorage
             return _callbacks.TryRemove(name, out List<Callback> callbacks) ? callbacks.Count : 0;
         }
 
+        public int InvokeCallbacks(string name = "")
+        {
+            int count = 0;
+
+            BlockingGet((value =>
+            {
+                foreach (var kv in _callbacks)
+                {
+                    //skip invocation of callbacks with names differing to specified one
+                    if(kv.Key != name) continue;
+
+                    //copy list to allow removing during iteration
+                    foreach (var callback in new List<Callback>(kv.Value))
+                    {
+                        if (!callback.Invoke(value)) kv.Value.Remove(callback);
+                    }
+
+                    count += kv.Value.Count;
+                }
+            }));
+
+            return count;
+        }
+        
         public override int InvokeAllCallbacks() => BlockingGet(InvokeAllCallbacks);
 
         public override int InvokeAllCallbacks(byte[] value) => InvokeAllCallbacks(Serialization.Deserialize<T>(value));
