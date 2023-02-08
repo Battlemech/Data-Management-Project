@@ -4,18 +4,15 @@ namespace DMP.Networking.Messaging
 {
     public class Message
     {
-        public readonly string SerializedType;
+        public string SerializedType { get; }
         protected Message()
         {
             SerializedType = GetType().FullName;
         }
-    }
-
-    public static class MessageUtility
-    {
-        public static byte[] Serialize<T>(this T message) where T : Message
+        
+        public byte[] Serialize()
         {
-            return NetworkSerializer.Serialize(Serialization.Serialize(message));
+            return NetworkSerializer.Serialize(Serialization.Serialize(this));
         }
     }
 

@@ -62,7 +62,7 @@ namespace Tests
         public class TestMessage : Message
         {
             public string Content { get; set; }
-            public string Test;
+            public string Test { get; set; }
 
             public TestMessage()
             {
@@ -135,12 +135,12 @@ namespace Tests
 
         public class TestRequest : RequestMessage<TestReply>
         {
-            public int PleaseTransform;
+            public int PleaseTransform { get; set; }
         }
         
         public class TestReply : ReplyMessage
         {
-            public string Transformed;
+            public string Transformed { get; set; }
             public TestReply(RequestMessage requestMessage) : base(requestMessage)
             {
             }

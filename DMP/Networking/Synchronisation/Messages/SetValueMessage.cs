@@ -5,10 +5,10 @@ namespace DMP.Networking.Synchronisation.Messages
 {
     public class SetValueMessage : Message
     {
-        public readonly string DatabaseId;
-        public readonly string ValueId;
-        public readonly uint ModCount;
-        public readonly byte[] Value;
+        public string DatabaseId { get; }
+        public string ValueId { get; }
+        public uint ModCount { get; }
+        public byte[] Value { get; }
         
         public SetValueMessage(SetValueRequest request)
         {
@@ -24,11 +24,6 @@ namespace DMP.Networking.Synchronisation.Messages
             ValueId = valueId;
             ModCount = modCount;
             Value = value;
-        }
-
-        public string GetContent<T>()
-        {
-            return $"Database={DatabaseId}, ValueId={ValueId}, ModCount={ModCount}, Value={Serialization.Deserialize<T>(Value)}";
         }
 
         public override string ToString()

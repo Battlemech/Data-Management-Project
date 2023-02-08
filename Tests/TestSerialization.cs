@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DMP;
 using DMP.Networking.Synchronisation.Client;
+using DMP.Networking.Synchronisation.Messages;
 using DMP.Objects;
 using DMP.Utility;
 using GroBuf;
@@ -33,12 +34,24 @@ namespace Tests
         }
 
         [Test]
+        public static void TestMessageSerialization()
+        {
+            SetValueMessage message = new SetValueMessage("123", "123213", 123123, new byte[2]{1, 2});
+            SetValueMessage copy = Serialization.Deserialize<SetValueMessage>(Serialization.Serialize(message));
+         
+            Assert.AreEqual(message.DatabaseId, copy.DatabaseId);
+            Assert.AreEqual(message.ValueId, copy.ValueId);
+            Assert.AreEqual(message.ModCount, copy.ModCount);
+            Assert.AreEqual(message.Value, copy.Value);
+        }
+        
+        [Test]
         public static void TestGlobalSerialization()
         {
-            //init serializer locally
+            //init serializer locally //default: AllFieldsExtractor
             Serializer serializer = new Serializer(new AllPropertiesExtractor(), options : GroBufOptions.WriteEmptyObjects);
             
-            TestClass original = new TestClass(){Count = 100, Message = "This is a public service announcement. You are dead."};
+            TestClass original = new TestClass(){Count = 100, Message = "This is a public service announcement. You are dead.", DontSerializeThis = 12};
 
             //use local serializer
             byte[] localBytes = serializer.Serialize(original);
@@ -48,6 +61,7 @@ namespace Tests
             Assert.AreEqual(original.GetType(), copy.GetType());
             Assert.AreEqual(original.Count, copy.Count);
             Assert.AreEqual(original.Message, copy.Message);
+            Assert.AreNotEqual(original.DontSerializeThis, copy.DontSerializeThis);
 
             Console.WriteLine("Local serialization succeeded");
             
@@ -59,6 +73,7 @@ namespace Tests
             Assert.AreEqual(original.GetType(), copy.GetType(), "Global serializer failed");
             Assert.AreEqual(original.Count, copy.Count, "Global serializer failed");
             Assert.AreEqual(original.Message, copy.Message, "Global serializer failed");
+            Assert.AreNotEqual(original.DontSerializeThis, copy.DontSerializeThis);
             
             Console.WriteLine("Global serialization succeeded");
         }
@@ -67,6 +82,8 @@ namespace Tests
         {
             public int Count { get; set; }
             public string Message { get; set; }
+
+            public double DontSerializeThis;
         }
         
         public class TestClass2 : TestClass
@@ -225,6 +242,12 @@ namespace Tests
                 Console.WriteLine("Invoked constructor");
                 ConstructorCalled = true;
             }
+        }
+
+        [Test]
+        public static void TestSimpleExamples()
+        {
+            
         }
     }
 }

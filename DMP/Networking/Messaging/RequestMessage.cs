@@ -4,8 +4,13 @@ namespace DMP.Networking.Messaging
 {
     public abstract class RequestMessage : Message
     {
-        public readonly Int16 Id = IdGenerator.GenerateId();
+        public Int16 Id { get; }
 
+        protected RequestMessage()
+        {
+            Id = IdGenerator.GenerateId();
+        }
+        
         private static class IdGenerator
         {
             private static Int16 _currentId;
@@ -25,7 +30,7 @@ namespace DMP.Networking.Messaging
 
     public abstract class ReplyMessage : Message
     {
-        public readonly Int16 Id;
+        public Int16 Id { get; }
 
         protected ReplyMessage(RequestMessage requestMessage)
         {
