@@ -86,7 +86,7 @@ namespace DMP.Databases.Utility
         {
             //retrieve values
             TValue delegateValue = default;
-            bool success = valueStorage.BlockingGet(values => values.TryGetValue(key, out delegateValue));
+            bool success = valueStorage.BlockingGet(values => values != null && values.TryGetValue(key, out delegateValue));
 
             //assign retrieved values
             value = delegateValue;
@@ -95,10 +95,12 @@ namespace DMP.Databases.Utility
 
         public static void Update<TDictionary, TKey, TValue>(this ValueStorage<TDictionary> valueStorage, TKey key,
             TValue value)
-            where TDictionary : IDictionary<TKey, TValue>
+            where TDictionary : IDictionary<TKey, TValue>, new()
         {
             valueStorage.Modify((dict =>
             {
+                if (dict == null) dict = new TDictionary();
+                
                 dict[key] = value;
                 return dict;
             }));
