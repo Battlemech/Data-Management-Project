@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP;
+using DMP.Networking.Messaging;
 using DMP.Networking.Synchronisation.Client;
 using DMP.Networking.Synchronisation.Messages;
 using DMP.Objects;
@@ -43,6 +44,22 @@ namespace Tests
             Assert.AreEqual(message.ValueId, copy.ValueId);
             Assert.AreEqual(message.ModCount, copy.ModCount);
             Assert.AreEqual(message.Value, copy.Value);
+
+            TestRequest message2 = new TestRequest() { Test = 123213 };
+            TestRequest copy2 = Serialization.Deserialize<TestRequest>(Serialization.Serialize(message2));
+            Assert.AreEqual(message2.Test, copy2.Test);
+        }
+
+        private class TestRequest : RequestMessage<TestReply>
+        {
+            public int Test { get; init; }
+        }
+
+        private class TestReply : ReplyMessage
+        {
+            public TestReply(RequestMessage requestMessage) : base(requestMessage)
+            {
+            }
         }
         
         [Test]
