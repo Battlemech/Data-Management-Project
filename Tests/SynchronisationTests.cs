@@ -764,7 +764,7 @@ namespace Tests
             });
             
             //set value locally
-            Database1.SetValue(testName, new PlayerData("PlayerData"){Name = "Jeff"});
+            Database1.SetValue(testName, new PlayerData("PlayerData", "Jeff"));
 
             //ensure local synchronisation
             Assert.IsTrue(triggered1.WaitOne(Options.DefaultTimeout), "Local callback triggered");
@@ -781,13 +781,11 @@ namespace Tests
         
         private class PlayerData : SynchronisedObject
         {
-            public string Name
+            public ValueStorage<string> Name => GetDatabase().Get<string>(nameof(Name));
+
+            public PlayerData(string databaseId, string name) : base(databaseId)
             {
-                get => GetDatabase().GetValue<string>(nameof(Name));
-                set => GetDatabase().SetValue(nameof(Name), value);
-            }
-            public PlayerData(string databaseId) : base(databaseId)
-            {
+                
             }
         }
         
