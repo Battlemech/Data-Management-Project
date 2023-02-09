@@ -810,7 +810,6 @@ namespace Tests
             TestUtility.AreEqual(true, () => Database1.GetValue<TestObject>(id) != null, "Local load");
             TestUtility.AreEqual(true, () => Database2.GetValue<TestObject>(id) != null, "Remote load");
             TestUtility.AreEqual(true, () => Database3.GetValue<TestObject>(id) != null, "Remote load");
-
             Console.WriteLine("TestObject was loaded on all clients!");
             
             //TestObject has InvokeCount 1: It was increased when TestObject was created
