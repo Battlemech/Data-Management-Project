@@ -62,6 +62,8 @@ namespace DMP.Databases.ValueStorage
             {
                 InvokeAllCallbacks(serializedBytes);
                 Database.OnSet(Id, serializedBytes);
+                
+                Console.WriteLine($"{this} Executed delegated set");
             }));
         }
 
@@ -84,5 +86,10 @@ namespace DMP.Databases.ValueStorage
         }
 
         public void OnInitialized(Action<T> onInitialized) => Database.OnInitialized(Id, onInitialized);
+
+        public override string ToString()
+        {
+            return $"{Database}-{Id}:";
+        }
     }
 }

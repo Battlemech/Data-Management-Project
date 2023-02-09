@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP;
 using DMP.Databases;
 using DMP.Databases.Utility;
 using DMP.Databases.ValueStorage;
@@ -740,11 +741,42 @@ namespace Tests
             string testName = nameof(TestSynchronisedObjectSynchronisation);
             Setup(testName);
             
-            Database1.SetValue(testName, new PlayerData("PlayerData"){Name = "Jeff"});
+            //make sure callbacks are triggered
+            ManualResetEvent triggered1 = new ManualResetEvent(false);
+            ManualResetEvent triggered2 = new ManualResetEvent(false);
+            ManualResetEvent triggered3 = new ManualResetEvent(false);
             
+            //allow waiting thread to proceed
+            Database1.AddCallback<PlayerData>(testName, data =>
+            {
+                Console.WriteLine("Invoked callback 1");
+                triggered1.Set();
+            });
+            Database2.AddCallback<PlayerData>(testName, data =>
+            {
+                Console.WriteLine("Invoked callback 2");
+                triggered2.Set();
+            });
+            Database3.AddCallback<PlayerData>(testName, data =>
+            {
+                Console.WriteLine("Invoked callback 3");
+                triggered3.Set();
+            });
+            
+            //set value locally
+            Database1.SetValue(testName, new PlayerData("PlayerData"){Name = "Jeff"});
+
+            //ensure local synchronisation
+            Assert.IsTrue(triggered1.WaitOne(Options.DefaultTimeout), "Local callback triggered");
             TestUtility.AreEqual("Jeff", () => Database1.GetValue<PlayerData>(testName)?.Name, "Local load");
+            
+            //ensure remote synchronisation
+            Assert.IsTrue(triggered2.WaitOne(Options.DefaultTimeout), "Remote callback triggered");
             TestUtility.AreEqual("Jeff", () => Database2.GetValue<PlayerData>(testName)?.Name, "Remote load");
+
+            Assert.IsTrue(triggered3.WaitOne(Options.DefaultTimeout), "Remote callback triggered");
             TestUtility.AreEqual("Jeff", () => Database3.GetValue<PlayerData>(testName)?.Name, "Remote load");
+
         }
         
         private class PlayerData : SynchronisedObject
