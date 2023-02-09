@@ -688,10 +688,14 @@ namespace Tests
             
             Console.WriteLine("User: Setting client persistence on Database1 to true");
             Database1.ClientPersistence.Set(true);
-            
-            Thread.Sleep(3000);
-            
+
             //default persistence is false. Database will either be host or persistence
+            TestUtility.AreEqual(true, () => Database1.IsHost || Database1.IsPersistent);
+            TestUtility.AreEqual(true, () => Database2.IsHost || Database2.IsPersistent);
+            TestUtility.AreEqual(true, () => Database3.IsHost || Database3.IsPersistent);
+            
+            //check again after pause to ensure continued persistence
+            Thread.Sleep(3000);
             Assert.IsTrue(Database1.IsHost || Database1.IsPersistent);
             Assert.IsTrue(Database2.IsHost || Database2.IsPersistent);
             Assert.IsTrue(Database3.IsHost || Database3.IsPersistent);
@@ -738,9 +742,9 @@ namespace Tests
             
             Database1.SetValue(testName, new PlayerData("PlayerData"){Name = "Jeff"});
             
-            TestUtility.AreEqual("Jeff", () => Database1.GetValue<PlayerData>(testName)?.Name);
-            TestUtility.AreEqual("Jeff", () => Database2.GetValue<PlayerData>(testName)?.Name);
-            TestUtility.AreEqual("Jeff", () => Database3.GetValue<PlayerData>(testName)?.Name);
+            TestUtility.AreEqual("Jeff", () => Database1.GetValue<PlayerData>(testName)?.Name, "Local load");
+            TestUtility.AreEqual("Jeff", () => Database2.GetValue<PlayerData>(testName)?.Name, "Remote load");
+            TestUtility.AreEqual("Jeff", () => Database3.GetValue<PlayerData>(testName)?.Name, "Remote load");
         }
         
         private class PlayerData : SynchronisedObject
@@ -803,9 +807,9 @@ namespace Tests
             Database1.SetValue(id, new TestObject("Test"));
 
             //wait until its loaded on all databases
-            TestUtility.AreEqual(true, () => Database1.GetValue<TestObject>(id) != null);
-            TestUtility.AreEqual(true, () => Database2.GetValue<TestObject>(id) != null);
-            TestUtility.AreEqual(true, () => Database3.GetValue<TestObject>(id) != null);
+            TestUtility.AreEqual(true, () => Database1.GetValue<TestObject>(id) != null, "Local load");
+            TestUtility.AreEqual(true, () => Database2.GetValue<TestObject>(id) != null, "Remote load");
+            TestUtility.AreEqual(true, () => Database3.GetValue<TestObject>(id) != null, "Remote load");
 
             Console.WriteLine("TestObject was loaded on all clients!");
             
