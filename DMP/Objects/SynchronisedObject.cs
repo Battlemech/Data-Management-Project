@@ -59,6 +59,18 @@ namespace DMP.Objects
             //retrieve local version of database if necessary
             if (_database == null)
             {
+                if (Id == null)
+                {
+                    /* 
+                     * If users create setter functions directly assigning values to ValueStorages,
+                     * set operation will be repeated each time a SynchronisedObject is deserialized.
+                     * Since values of super classes are deserialized and set first, the Id will be null,
+                     * causing this exception. Thus, this exception prevents additional sets.
+                     *
+                     */ //todo: create documentation entry for this error
+                    throw new InvalidOperationException("No id! Avoid writing setters functions for ValueStorage attributes of synchronised objects!");
+                }
+
                 //try retrieving the client
                 SynchronisedClient client = SynchronisedClient.Instance;
                 if (client == null) 

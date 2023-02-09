@@ -785,7 +785,7 @@ namespace Tests
 
             public PlayerData(string databaseId, string name) : base(databaseId)
             {
-                
+                Name.Set(name);
             }
         }
         
