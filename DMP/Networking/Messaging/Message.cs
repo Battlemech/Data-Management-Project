@@ -4,13 +4,16 @@ namespace DMP.Networking.Messaging
 {
     public class Message
     {
-        public readonly string SerializedType;
+        public string SerializedType { get; }
         protected Message()
         {
             SerializedType = GetType().FullName;
         }
     }
-
+    
+    /// <summary>
+    /// Allows preserving type of message when calling Serialize() function
+    /// </summary>
     public static class MessageUtility
     {
         public static byte[] Serialize<T>(this T message) where T : Message

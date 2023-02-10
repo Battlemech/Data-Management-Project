@@ -16,7 +16,7 @@ namespace DMP.Utility
         /// </summary>
         public static readonly List<Type> IgnoredTypes = new List<Type>() { typeof(Database) };
         
-        private static readonly Serializer Serializer = new Serializer(new AllFieldsExtractor(), options : GroBufOptions.WriteEmptyObjects, customSerializerCollection: new IgnoreObjectSerializerCollection());
+        private static readonly Serializer Serializer = new Serializer(new AllPropertiesExtractor(), options : GroBufOptions.WriteEmptyObjects, customSerializerCollection: new IgnoreObjectSerializerCollection());
 
         /// <summary>
         /// Serializes the object
