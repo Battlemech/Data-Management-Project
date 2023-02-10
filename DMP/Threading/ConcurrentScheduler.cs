@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP.Utility;
 
 namespace DMP.Threading
 {
@@ -83,6 +84,12 @@ namespace DMP.Threading
                 while (_toExecuteTasks.TryDequeue(out Task task))
                 {
                     TryExecuteTask(task);
+                    
+                    //continue executing tasks if execution was successful
+                    if(task.Exception == null) continue;
+                    
+                    //log exception
+                    LogWriter.LogException(task.Exception);
                 }
 
                 //signal that thread is now idle

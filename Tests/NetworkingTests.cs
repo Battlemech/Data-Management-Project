@@ -8,6 +8,7 @@ using DMP;
 using DMP.Networking.Messaging;
 using DMP.Networking.Messaging.Client;
 using DMP.Networking.Messaging.Server;
+using DMP.Utility;
 using NUnit.Framework;
 
 namespace Tests
@@ -62,7 +63,7 @@ namespace Tests
         public class TestMessage : Message
         {
             public string Content { get; set; }
-            public string Test;
+            public string Test { get; set; }
 
             public TestMessage()
             {
@@ -135,12 +136,12 @@ namespace Tests
 
         public class TestRequest : RequestMessage<TestReply>
         {
-            public int PleaseTransform;
+            public int PleaseTransform { get; set; }
         }
         
         public class TestReply : ReplyMessage
         {
-            public string Transformed;
+            public string Transformed { get; set; }
             public TestReply(RequestMessage requestMessage) : base(requestMessage)
             {
             }
@@ -162,13 +163,25 @@ namespace Tests
             Assert.IsTrue(client.WaitForConnect());
 
             TestRequest request = new TestRequest() { PleaseTransform = toTransform };
+            Console.WriteLine($"Client: Requesting {request.PleaseTransform} to be transformed");
             
+            //make sure the value is serialized correctly
+            TestRequest copy = Serialization.Deserialize<TestRequest>(Serialization.Serialize(request));
+            Assert.AreEqual(toTransform, request.PleaseTransform);
+            Assert.AreEqual(request.PleaseTransform, copy.PleaseTransform);
+            Console.WriteLine("Local serialization succeeded");
+
             //add request callback to server
             server.AddCallback<TestRequest>(((message, session) =>
             {
+                //ensure server received correct number
+                Assert.AreEqual(toTransform, message.PleaseTransform, "Server received wrong int value!");
+                
                 //transform int
                 var testReply = new TestReply(message) { Transformed = message.PleaseTransform.ToString() };
 
+                Console.WriteLine($"Server: Transformed {message.PleaseTransform} to {testReply.Transformed}");
+                
                 //send reply
                 session.SendMessage(testReply);
             }));

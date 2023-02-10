@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP;
 using DMP.Databases;
 using DMP.Databases.Utility;
 using DMP.Databases.ValueStorage;
@@ -688,10 +689,14 @@ namespace Tests
             
             Console.WriteLine("User: Setting client persistence on Database1 to true");
             Database1.ClientPersistence.Set(true);
-            
-            Thread.Sleep(3000);
-            
+
             //default persistence is false. Database will either be host or persistence
+            TestUtility.AreEqual(true, () => Database1.IsHost || Database1.IsPersistent);
+            TestUtility.AreEqual(true, () => Database2.IsHost || Database2.IsPersistent);
+            TestUtility.AreEqual(true, () => Database3.IsHost || Database3.IsPersistent);
+            
+            //check again after pause to ensure continued persistence
+            Thread.Sleep(3000);
             Assert.IsTrue(Database1.IsHost || Database1.IsPersistent);
             Assert.IsTrue(Database2.IsHost || Database2.IsPersistent);
             Assert.IsTrue(Database3.IsHost || Database3.IsPersistent);
@@ -736,22 +741,51 @@ namespace Tests
             string testName = nameof(TestSynchronisedObjectSynchronisation);
             Setup(testName);
             
-            Database1.SetValue(testName, new PlayerData("PlayerData"){Name = "Jeff"});
+            //make sure callbacks are triggered
+            ManualResetEvent triggered1 = new ManualResetEvent(false);
+            ManualResetEvent triggered2 = new ManualResetEvent(false);
+            ManualResetEvent triggered3 = new ManualResetEvent(false);
             
-            TestUtility.AreEqual("Jeff", () => Database1.GetValue<PlayerData>(testName)?.Name);
-            TestUtility.AreEqual("Jeff", () => Database2.GetValue<PlayerData>(testName)?.Name);
-            TestUtility.AreEqual("Jeff", () => Database3.GetValue<PlayerData>(testName)?.Name);
+            //allow waiting thread to proceed
+            Database1.AddCallback<PlayerData>(testName, data =>
+            {
+                Console.WriteLine("Invoked callback 1");
+                triggered1.Set();
+            });
+            Database2.AddCallback<PlayerData>(testName, data =>
+            {
+                Console.WriteLine("Invoked callback 2");
+                triggered2.Set();
+            });
+            Database3.AddCallback<PlayerData>(testName, data =>
+            {
+                Console.WriteLine("Invoked callback 3");
+                triggered3.Set();
+            });
+            
+            //set value locally
+            Database1.SetValue(testName, new PlayerData("PlayerData", "Jeff"));
+
+            //ensure local synchronisation
+            Assert.IsTrue(triggered1.WaitOne(Options.DefaultTimeout), "Local callback triggered");
+            TestUtility.AreEqual("Jeff", () => Database1.GetValue<PlayerData>(testName)?.Name, "Local load");
+            
+            //ensure remote synchronisation
+            Assert.IsTrue(triggered2.WaitOne(Options.DefaultTimeout), "Remote callback triggered");
+            TestUtility.AreEqual("Jeff", () => Database2.GetValue<PlayerData>(testName)?.Name, "Remote load");
+
+            Assert.IsTrue(triggered3.WaitOne(Options.DefaultTimeout), "Remote callback triggered");
+            TestUtility.AreEqual("Jeff", () => Database3.GetValue<PlayerData>(testName)?.Name, "Remote load");
+
         }
         
         private class PlayerData : SynchronisedObject
         {
-            public string Name
+            public ValueStorage<string> Name => GetDatabase().Get<string>(nameof(Name));
+
+            public PlayerData(string databaseId, string name) : base(databaseId)
             {
-                get => GetDatabase().GetValue<string>(nameof(Name));
-                set => GetDatabase().SetValue(nameof(Name), value);
-            }
-            public PlayerData(string databaseId) : base(databaseId)
-            {
+                Name.Set(name);
             }
         }
         
@@ -802,24 +836,19 @@ namespace Tests
             //init test object
             Database1.SetValue(id, new TestObject("Test"));
 
-            //wait until its loaded on all databases
-            TestUtility.AreEqual(true, () => Database1.GetValue<TestObject>(id) != null);
-            TestUtility.AreEqual(true, () => Database2.GetValue<TestObject>(id) != null);
-            TestUtility.AreEqual(true, () => Database3.GetValue<TestObject>(id) != null);
-
-            Console.WriteLine("TestObject was loaded on all clients!");
-            
             //TestObject has InvokeCount 1: It was increased when TestObject was created
-            TestUtility.AreEqual(1, () => Database1.GetValue<TestObject>(id).InvokeCount.Get(), "Creator initialisation");
+            TestUtility.AreEqual(1, () => Database1.GetValue<TestObject>(id)?.InvokeCount.Get(), "Creator initialisation");
             
             //Accessing values on each database -> Invoking their constructors
             SynchronisedClient.SetInstance(Client2); //simulate client where SynchronisedObject is retrieved to be client 2
-            TestUtility.AreEqual(2, () => Database2.GetValue<TestObject>(id).InvokeCount.Get(), "Accessed by number two");
+            TestUtility.AreEqual(2, () => Database2.GetValue<TestObject>(id)?.InvokeCount.Get(), "Accessed by number two");
             
             SynchronisedClient.SetInstance(Client3); //simulate client where SynchronisedObject is retrieved to be client 3
-            TestUtility.AreEqual(3, () => Database3.GetValue<TestObject>(id).InvokeCount.Get(), "Accessed by number three");
+            TestUtility.AreEqual(3, () => Database3.GetValue<TestObject>(id)?.InvokeCount.Get(), "Accessed by number three");
             
             SynchronisedClient.SetInstance(Client1);
+            
+            Console.WriteLine($"Invoke count: {Database3.GetValue<TestObject>(id)?.InvokeCount.Get()}");
         }
         
         private class TestObject : SynchronisedObject
@@ -834,12 +863,9 @@ namespace Tests
             protected override void Constructor()
             {
                 Console.WriteLine($"Invoked constructor on {GetDatabase().Client}.");
-                InvokeCount.Modify((value =>
-                {
-                    Console.WriteLine($"New invokeCount: {value + 1}");    
-                    return value + 1;
-                }));
+                InvokeCount.Modify((value => value + 1));
             }
         }
+        
     }
 }

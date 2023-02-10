@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using DMP.Networking;
+using DMP.Networking.Messaging;
+using DMP.Networking.Synchronisation.Messages;
 using DMP.Utility;
 using NUnit.Framework;
 
@@ -122,6 +124,29 @@ namespace Tests
             Assert.AreEqual(0, serializer.Deserialize(new byte[] {0,1,2,3,4,5,6}).Count);
             Assert.AreEqual(0, serializer.Deserialize(new byte[] {0,1,2,3,4,5,6}).Count);
             Assert.AreEqual(0, serializer.Deserialize(new byte[] {0,1,2,3,4,5,6}).Count);
+        }
+
+        [Test]
+        public static void DeserializeTestMessage()
+        {
+            SetValueMessage message = new SetValueMessage("123", "456", 1, new byte[1] { 1 });
+            NetworkSerializer serializer = new NetworkSerializer();
+
+            //make sure received bytes equal sent bytes
+            byte[] toSend = message.Serialize();
+            Console.WriteLine($"Sending {toSend.Length} bytes!");
+            
+            byte[] receivedMessage = serializer.Deserialize(toSend)[0];
+            Assert.AreEqual(Serialization.Serialize(message), receivedMessage, "Valid byte serialization");
+            Console.WriteLine("Received valid bytes");
+            
+            //make sure message was deserialized correctly
+            SetValueMessage copy = Serialization.Deserialize<SetValueMessage>(receivedMessage);
+            
+            Assert.AreEqual(message.DatabaseId, copy.DatabaseId);
+            Assert.AreEqual(message.ValueId, copy.ValueId);
+            Assert.AreEqual(message.ModCount, copy.ModCount);
+            Assert.AreEqual(message.Value, copy.Value);
         }
     }
 }

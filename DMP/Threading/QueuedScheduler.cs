@@ -1,6 +1,8 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DMP.Utility;
 using Scheduler = System.Threading.Tasks.TaskScheduler;
 
 namespace DMP.Threading
@@ -50,6 +52,12 @@ namespace DMP.Threading
                 while (_queuedTasks.TryDequeue(out Task task))
                 {
                     TryExecuteTask(task);
+                    
+                    //continue executing tasks if execution was successful
+                    if(task.Exception == null) continue;
+                    
+                    //log exception
+                    LogWriter.LogException(task.Exception);
                 }
 
                 //try to stop executing tasks
