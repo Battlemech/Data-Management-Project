@@ -23,7 +23,7 @@ namespace DMP.Objects
         public ValueStorage<bool> ClientPersistence => GetDatabase().ClientPersistence;
         public ValueStorage<bool> HostPersistence => GetDatabase().HostPersistence;
 
-        //value is ignored during serialization (See Options.cs)
+        [NonSerialized]
         private Database _database = null;
         
         protected SynchronisedObject(string id, bool isPersistent = false)

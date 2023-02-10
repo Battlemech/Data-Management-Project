@@ -237,16 +237,6 @@ namespace Tests
             Assert.IsTrue(copy.ConstructorCalled);
         }
 
-        [Test]
-        public static void TestIgnoredTypes()
-        {
-            //ignore strings
-            Serialization.IgnoredTypes.Add(typeof(string));
-            
-            //make sure strings are ignored
-            Assert.IsNull(Serialization.Deserialize<string>(Serialization.Serialize("Test")));
-        }
-        
         private class TestObject : SynchronisedObject
         {
             public bool ConstructorCalled = false;
