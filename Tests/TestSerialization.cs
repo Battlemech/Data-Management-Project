@@ -100,6 +100,7 @@ namespace Tests
             public int Count { get; set; }
             public string Message { get; set; }
 
+            [NonSerialized]
             public double DontSerializeThis;
         }
         

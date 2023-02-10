@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using DMP.Databases;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
@@ -15,8 +16,8 @@ namespace DMP.Utility
         /// Changes to IgnoredTypes after the initialization will not have any effect
         /// </summary>
         public static readonly List<Type> IgnoredTypes = new List<Type>() { typeof(Database) };
-        
-        private static readonly Serializer Serializer = new Serializer(new AllPropertiesExtractor(), options : GroBufOptions.WriteEmptyObjects, customSerializerCollection: new IgnoreObjectSerializerCollection());
+
+        private static readonly Serializer Serializer = new Serializer(new AttributeAwareExtractor(), options : GroBufOptions.WriteEmptyObjects, customSerializerCollection: new IgnoreObjectSerializerCollection());
 
         /// <summary>
         /// Serializes the object
@@ -49,6 +50,33 @@ namespace DMP.Utility
         public static T Copy<T>(T o)
         {
             return Serializer.Copy(o);
+        }
+    }
+    
+    public class AttributeAwareExtractor : IDataMembersExtractor
+    {
+        public IDataMember[] GetMembers(Type type)
+        {
+            var result = new List<IDataMember>();
+            GetMembers(type, result);
+            return result.ToArray();
+        }
+
+        private static void GetMembers(Type type, List<IDataMember> members)
+        {
+            if (type == null || type == typeof(object))
+                return;
+
+            //get fields //todo: optimize?
+            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | 
+                                        BindingFlags.Public | BindingFlags.DeclaredOnly)
+                //filter fields with NonSerialized attribute
+                .Where((info =>
+                    !info.CustomAttributes.Select((data => data.AttributeType))
+                        .Contains(typeof(NonSerializedAttribute))));
+            
+            members.AddRange(fields.Select(DataMember.Create));
+            GetMembers(type.BaseType, members);
         }
     }
     
