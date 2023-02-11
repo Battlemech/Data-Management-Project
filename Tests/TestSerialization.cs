@@ -66,9 +66,9 @@ namespace Tests
         public static void TestGlobalSerialization()
         {
             //init serializer locally //default: AllFieldsExtractor
-            Serializer serializer = new Serializer(new AllPropertiesExtractor(), options : GroBufOptions.WriteEmptyObjects);
+            Serializer serializer = new Serializer(new AttributeAwareExtractor(), options : GroBufOptions.WriteEmptyObjects);
             
-            TestClass original = new TestClass(){Count = 100, Message = "This is a public service announcement. You are dead.", DontSerializeThis = 12};
+            TestClass original = new TestClass(){Count = 100, Message = "This is a public service announcement. You are dead.", DontSerializeThis = 12, DontSerializeThis2 = 24};
 
             //use local serializer
             byte[] localBytes = serializer.Serialize(original);
@@ -79,6 +79,7 @@ namespace Tests
             Assert.AreEqual(original.Count, copy.Count);
             Assert.AreEqual(original.Message, copy.Message);
             Assert.AreNotEqual(original.DontSerializeThis, copy.DontSerializeThis);
+            Assert.AreNotEqual(original.DontSerializeThis2, copy.DontSerializeThis2);
 
             Console.WriteLine("Local serialization succeeded");
             
@@ -91,6 +92,7 @@ namespace Tests
             Assert.AreEqual(original.Count, copy.Count, "Global serializer failed");
             Assert.AreEqual(original.Message, copy.Message, "Global serializer failed");
             Assert.AreNotEqual(original.DontSerializeThis, copy.DontSerializeThis);
+            Assert.AreNotEqual(original.DontSerializeThis2, copy.DontSerializeThis2);
             
             Console.WriteLine("Global serialization succeeded");
         }
@@ -100,8 +102,11 @@ namespace Tests
             public int Count { get; set; }
             public string Message { get; set; }
 
-            [NonSerialized]
-            public double DontSerializeThis;
+            [PreventSerialization]
+            public double DontSerializeThis { get; set; }
+
+            [PreventSerialization]
+            public double DontSerializeThis2;
         }
         
         public class TestClass2 : TestClass
@@ -253,9 +258,11 @@ namespace Tests
         }
 
         [Test]
-        public static void TestSimpleExamples()
+        public static void TestByteLength()
         {
-            
+            string test = "Lorem ipsum et doloret et cetera et cetera et cetera";
+            Console.WriteLine($"Default serializer byte size: {new Serializer(new AllPropertiesExtractor()).Serialize(test).Length}");
+            Console.WriteLine($"Custom serializer byte size: {new Serializer(new AttributeAwareExtractor()).Serialize(test).Length}");
         }
     }
 }

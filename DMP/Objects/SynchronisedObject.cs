@@ -3,6 +3,7 @@ using System.Runtime.Serialization;
 using DMP.Databases;
 using DMP.Databases.ValueStorage;
 using DMP.Networking.Synchronisation.Client;
+using DMP.Utility;
 
 namespace DMP.Objects
 {
@@ -23,7 +24,7 @@ namespace DMP.Objects
         public ValueStorage<bool> ClientPersistence => GetDatabase().ClientPersistence;
         public ValueStorage<bool> HostPersistence => GetDatabase().HostPersistence;
 
-        [NonSerialized]
+        [PreventSerialization]
         private Database _database = null;
         
         protected SynchronisedObject(string id, bool isPersistent = false)

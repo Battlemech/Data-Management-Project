@@ -19,14 +19,11 @@ namespace DMP.Utility
         {
             if (type == null || type == typeof(object))
                 return;
-
-            //get fields //todo: optimize?
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | 
-                                        BindingFlags.Public | BindingFlags.DeclaredOnly)
-                //filter fields with NonSerialized attribute
-                .Where((info =>
-                    !info.CustomAttributes.Select((data => data.AttributeType))
-                        .Contains(typeof(NonSerializedAttribute))));
+            
+            //get members //todo: optimize?
+            var fields = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public |
+                                            BindingFlags.DeclaredOnly)
+                .Where(info => !info.CustomAttributes.Select(data => data.AttributeType).Contains(typeof(PreventSerialization)));
             
             members.AddRange(fields.Select(DataMember.Create));
             GetMembers(type.BaseType, members);
