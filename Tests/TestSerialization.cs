@@ -100,7 +100,7 @@ namespace Tests
         public class TestClass
         {
             public int Count { get; set; }
-            public string Message { get; set; }
+            public string Message;
 
             [PreventSerialization]
             public double DontSerializeThis { get; set; }

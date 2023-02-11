@@ -25,6 +25,8 @@ namespace DMP.Utility
                                             BindingFlags.DeclaredOnly)
                 .Where(info => !info.CustomAttributes.Select(data => data.AttributeType).Contains(typeof(PreventSerialization)));
             
+            Console.WriteLine($"Fields: {LogWriter.StringifyCollection(fields.Select((info => info.Name)).ToList())}");
+            
             members.AddRange(fields.Select(DataMember.Create));
             GetMembers(type.BaseType, members);
         }
