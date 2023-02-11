@@ -39,7 +39,8 @@ namespace Tests
             Serializer custom = new Serializer(new AttributeAwareExtractor(), options : GroBufOptions.WriteEmptyObjects);
 
             //serialization time
-            double elapsed;
+            double elapsedOriginal;
+            double elapsedCustom;
             
             //measure default time
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -51,7 +52,11 @@ namespace Tests
                 //make sure serialization was successful
                 Assert.AreEqual(i.ToString(), copy.One);
             }
-            elapsed = stopwatch.ElapsedMilliseconds;
+            
+            //measure time
+            stopwatch.Stop();
+            elapsedOriginal = stopwatch.ElapsedMilliseconds;
+            stopwatch.Restart();
             
             //measure custom time
             for (int i = 0; i < itemCount; i++)
@@ -63,9 +68,10 @@ namespace Tests
                 Assert.AreEqual(i.ToString(), copy.One);
             }
             stopwatch.Stop();
+            elapsedCustom = stopwatch.ElapsedMilliseconds;
             
-            Console.WriteLine($"Default serializer: {elapsed}ms, {elapsed / itemCount} per item");
-            Console.WriteLine($"Custom serializer: {stopwatch.ElapsedMilliseconds}ms, {stopwatch.ElapsedMilliseconds / itemCount} per item");
+            Console.WriteLine($"Default serializer: {elapsedOriginal}ms, {elapsedOriginal / itemCount} per item");
+            Console.WriteLine($"Custom serializer: {elapsedCustom}ms, {elapsedCustom / itemCount} per item");
         }
     }
 

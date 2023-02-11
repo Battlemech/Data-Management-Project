@@ -25,10 +25,9 @@ namespace DMP.Utility
             Console.WriteLine("Exception: "+exception);
         }
 
-        public static string PrintCollection(object o)
+        public static void PrintCollection(object o)
         {
-            if (o is ICollection collection) return StringifyCollection(collection);
-            return o.ToString();
+            Log(o is ICollection collection ? StringifyCollection(collection) : o.ToString());
         }
         
         public static string StringifyCollection(ICollection collection)
