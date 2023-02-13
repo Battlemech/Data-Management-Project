@@ -5,10 +5,10 @@ namespace DMP.Networking.Synchronisation.Messages
 {
     public class SetValueMessage : Message
     {
-        public string DatabaseId { get; }
-        public string ValueId { get; }
-        public uint ModCount { get; }
-        public byte[] Value { get; }
+        public readonly string DatabaseId;
+        public readonly string ValueId;
+        public readonly uint ModCount;
+        public readonly byte[] Value;
         
         public SetValueMessage(SetValueRequest request)
         {

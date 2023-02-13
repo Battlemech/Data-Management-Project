@@ -26,7 +26,7 @@ namespace Tests
             Assert.AreEqual("1", copy.One);
             Assert.AreNotEqual("2", copy.Two);
             Assert.AreEqual("3", copy.Three);
-            Assert.AreEqual("4", copy.Four);
+            Assert.AreNotEqual("4", copy.Four);
         }
 
         [Test]
@@ -38,10 +38,6 @@ namespace Tests
             Serializer original = new Serializer(new AllFieldsExtractor(), options : GroBufOptions.WriteEmptyObjects);
             Serializer custom = new Serializer(new AttributeAwareExtractor(), options : GroBufOptions.WriteEmptyObjects);
 
-            //serialization time
-            double elapsedOriginal;
-            double elapsedCustom;
-            
             //measure default time
             Stopwatch stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < itemCount; i++)
@@ -55,7 +51,7 @@ namespace Tests
             
             //measure time
             stopwatch.Stop();
-            elapsedOriginal = stopwatch.ElapsedMilliseconds;
+            double elapsedOriginal = stopwatch.ElapsedMilliseconds;
             stopwatch.Restart();
             
             //measure custom time
@@ -68,10 +64,22 @@ namespace Tests
                 Assert.AreEqual(i.ToString(), copy.One);
             }
             stopwatch.Stop();
-            elapsedCustom = stopwatch.ElapsedMilliseconds;
+            double elapsedCustom = stopwatch.ElapsedMilliseconds;
             
             Console.WriteLine($"Default serializer: {elapsedOriginal}ms, {elapsedOriginal / itemCount} per item");
             Console.WriteLine($"Custom serializer: {elapsedCustom}ms, {elapsedCustom / itemCount} per item");
+        }
+
+        [Test]
+        public static void TestCollections()
+        {
+            List<int> ints = new List<int>() { 1, 2, 3, 4, 5 };
+            
+            Assert.AreEqual(ints, Serialization.Deserialize<List<int>>(Serialization.Serialize(ints)));
+
+            SortedList<int, string> sortedList = new SortedList<int, string> { { 3, "3" } };
+
+            Assert.AreEqual(sortedList, Serialization.Deserialize<SortedList<int, string>>(Serialization.Serialize(sortedList)));
         }
     }
 

@@ -101,8 +101,7 @@ namespace Tests
         {
             public int Count { get; set; }
             public string Message;
-
-            [PreventSerialization]
+            
             public double DontSerializeThis { get; set; }
 
             [PreventSerialization]

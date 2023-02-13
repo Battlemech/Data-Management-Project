@@ -4,7 +4,7 @@ namespace DMP.Networking.Messaging
 {
     public class Message
     {
-        public string SerializedType { get; }
+        public readonly string SerializedType;
         protected Message()
         {
             SerializedType = GetType().FullName;
