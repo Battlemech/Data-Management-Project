@@ -5,7 +5,7 @@ namespace DMP.Databases.Utility
 {
     public abstract class FailedModifyRequest : SetValueRequest
     {
-        public bool IncrementModCount { get; protected set; }
+        public bool IncrementModCount;
         
         public abstract object RepeatModification(object current);
 
@@ -14,14 +14,14 @@ namespace DMP.Databases.Utility
 
     public class FailedModifyRequest<T> : FailedModifyRequest
     {
-        public readonly ModifyValueDelegate<T> Modify;
+        private readonly ModifyValueDelegate<T> _modify;
 
         public FailedModifyRequest(string databaseId, string valueId, uint modCount, ModifyValueDelegate<T> modify, bool incrementModCount = false)
         {
             DatabaseId = databaseId;
             ValueId = valueId;
             ModCount = modCount;
-            Modify = modify;
+            _modify = modify;
             IncrementModCount = incrementModCount;
         }
         
@@ -30,12 +30,12 @@ namespace DMP.Databases.Utility
             DatabaseId = request.DatabaseId;
             ValueId = request.ValueId;
             ModCount = request.ModCount;
-            Modify = modify;
+            _modify = modify;
         }
 
         public override object RepeatModification(object current)
         {
-            if (current is T data) return Modify.Invoke(data);
+            if (current is T data) return _modify.Invoke(data);
 
             throw new ArgumentException($"Expected {typeof(T)}, but got {current?.GetType()}");
         }

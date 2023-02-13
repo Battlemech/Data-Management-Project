@@ -4,7 +4,7 @@ namespace DMP.Networking.Messaging
 {
     public abstract class RequestMessage : Message
     {
-        public Int16 Id { get; }
+        public readonly Int16 Id;
 
         protected RequestMessage()
         {
@@ -30,7 +30,7 @@ namespace DMP.Networking.Messaging
 
     public abstract class ReplyMessage : Message
     {
-        public Int16 Id { get; }
+        public readonly Int16 Id;
 
         protected ReplyMessage(RequestMessage requestMessage)
         {
