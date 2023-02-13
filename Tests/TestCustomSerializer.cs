@@ -67,7 +67,7 @@ namespace Tests
             double elapsedCustom = stopwatch.ElapsedMilliseconds;
             
             Console.WriteLine($"Default serializer: {elapsedOriginal}ms, {elapsedOriginal / itemCount} per item");
-            Console.WriteLine($"Custom serializer: {elapsedCustom}ms, {elapsedCustom / itemCount} per item");
+            Console.WriteLine($"Custom serializer:  {elapsedCustom}ms, {elapsedCustom / itemCount} per item");
         }
 
         [Test]
