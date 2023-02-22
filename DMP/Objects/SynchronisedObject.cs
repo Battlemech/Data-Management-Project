@@ -9,7 +9,8 @@ namespace DMP.Objects
 {
     public abstract class SynchronisedObject
     {
-        protected readonly string Id;
+        public string Id => _id;
+        private readonly string _id;
         
         public bool IsHost => GetDatabase().IsHost;
         public Guid HostId => GetDatabase().HostId;
@@ -32,7 +33,7 @@ namespace DMP.Objects
             if (id.Contains("/")) 
                 throw new ArgumentException("Id may not contain '/', it is used as an internal separator!");
             
-            Id = id;
+            _id = id;
             _database = new Database(id, isPersistent, true);
             
             //if the synchronised object was referenced the first time on this client: Invoke its constructor
@@ -48,8 +49,8 @@ namespace DMP.Objects
             if (id.Contains("/")) 
                 throw new ArgumentException("Id may not contain '/', it is used as an internal separator!");
             
-            Id = $"{synchronisedObject.Id}/{id}";
-            _database = new Database(Id, isPersistent, true);
+            _id = $"{synchronisedObject._id}/{id}";
+            _database = new Database(_id, isPersistent, true);
             
             //if the synchronised object was referenced the first time on this client: Invoke its constructor
             if(_database.TryTrackObject(this)) Constructor();
@@ -60,7 +61,7 @@ namespace DMP.Objects
             //retrieve local version of database if necessary
             if (_database == null)
             {
-                if (Id == null)
+                if (_id == null)
                 {
                     /* 
                      * If users create setter functions directly assigning values to ValueStorages,
@@ -78,7 +79,7 @@ namespace DMP.Objects
                     throw new InvalidOperationException("Can't retrieve SynchronisedObject if no local SynchronisedClient exists!");
 
                 //retrieve the database
-                _database = client.Get(Id);
+                _database = client.Get(_id);
                 
                 //if the synchronised object was referenced the first time on this client: Invoke its constructor
                 if(_database.TryTrackObject(this)) Constructor();
@@ -114,13 +115,13 @@ namespace DMP.Objects
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj is SynchronisedObject so) return so.Id == Id;
+            if (obj is SynchronisedObject so) return so._id == _id;
             return false;
         }
 
         public override int GetHashCode()
         {
-            return Id.GetHashCode();
+            return _id.GetHashCode();
         }
     }
 }
