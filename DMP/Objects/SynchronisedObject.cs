@@ -98,7 +98,7 @@ namespace DMP.Objects
         /// <remarks>If its invoked in the constructor of the SynchronisedObject, it will be executed before super constructors of SynchronisedObject are called!</remarks>
         protected virtual void Constructor()
         {
-            
+            //todo: remove this: Constructor is called by during serialization (only constructor?)
         }
         
         public void Delete()
