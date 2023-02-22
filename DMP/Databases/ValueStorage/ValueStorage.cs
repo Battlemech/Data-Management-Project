@@ -62,8 +62,6 @@ namespace DMP.Databases.ValueStorage
             {
                 InvokeAllCallbacks(serializedBytes);
                 Database.OnSet(Id, serializedBytes);
-                
-                Console.WriteLine($"{this} Executed delegated set");
             }));
         }
 
