@@ -9,7 +9,7 @@ namespace DMP.Objects
 {
     public abstract class SynchronisedObject
     {
-        public string Id { get; }
+        protected readonly string Id;
         
         public bool IsHost => GetDatabase().IsHost;
         public Guid HostId => GetDatabase().HostId;
