@@ -7,7 +7,7 @@ using DMP.Utility;
 
 namespace DMP.Objects
 {
-    public abstract class SynchronisedObject
+    public abstract class SynchronisedObject : ISynchronisedObject
     {
         public string Id => _id;
         private readonly string _id;
