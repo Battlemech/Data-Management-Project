@@ -105,5 +105,11 @@ namespace DMP.Databases.Utility
                 return dict;
             }));
         }
+
+        public static bool Contains<TCollection, TValue>(this ValueStorage<TCollection> collection, TValue value)
+            where TCollection : ICollection<TValue>
+        {
+            return collection.BlockingGet((values => values.Contains(value)));
+        }
     }
 }
