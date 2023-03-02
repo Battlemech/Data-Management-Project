@@ -109,7 +109,7 @@ namespace DMP.Databases.Utility
         public static bool Contains<TCollection, TValue>(this ValueStorage<TCollection> collection, TValue value)
             where TCollection : ICollection<TValue>
         {
-            return collection.BlockingGet((values => values.Contains(value)));
+            return collection.BlockingGet((values => values != null && values.Contains(value)));
         }
     }
 }
