@@ -28,7 +28,7 @@ namespace DMP.Databases.ValueStorage
             //set value in dictionary
             lock (Id)
             {
-                _data = modify.Invoke(_data);
+                _data = TryModify(modify, _data);
                 serializedBytes = Serialization.Serialize(_data);
             }
             
@@ -60,6 +60,22 @@ namespace DMP.Databases.ValueStorage
 
             //assign value resulting from modification to out parameter
             result = value;
+        }
+
+        /// <summary>
+        /// Try invoking the delegate, logging any exceptions which occur
+        /// </summary>
+        public static T TryModify(ModifyValueDelegate<T> modify, T current)
+        {
+            try
+            {
+                return modify.Invoke(current);
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogException(e);
+                throw;
+            }
         }
     }
 }
