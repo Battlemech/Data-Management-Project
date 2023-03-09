@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DMP.Databases.Utility;
+using DMP.Databases.ValueStorage;
 using DMP.Networking;
 using DMP.Networking.Synchronisation.Messages;
 using DMP.Utility;
@@ -34,7 +35,7 @@ namespace DMP.Databases
             }
 
             //serialize bytes to save current value (safe from modification)
-            byte[] bytes = Get<T>(id).BlockingGet((Serialization.Serialize));
+            byte[] bytes = Get<T>(id).Serialize();
 
             //wait for access from server
             uint modCount = GetModCount(id);
@@ -70,7 +71,7 @@ namespace DMP.Databases
                 //if request was successful: execute modify now
                 if (success)
                 {
-                    T newValue = modify.Invoke(Serialization.Deserialize<T>(bytes));
+                    T newValue = ValueStorage<T>.TryModify(modify, Serialization.Deserialize<T>(bytes));
                     ExecuteDelayedSet(id, Serialization.Serialize(newValue), expectedModCount, true);
                     return;
                 }
