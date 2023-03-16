@@ -37,7 +37,18 @@ namespace DMP.Databases.ValueStorage
             callbacks.Add(new Callback(onValueChange, removeOnError));
             
             //invoke callback if desired
-            if (invokeCallback) BlockingGet(onValueChange.Invoke);
+            if (!invokeCallback) return true;
+            
+            //log exceptions caused by instantaneous callback execution
+            try
+            {
+                BlockingGet(onValueChange.Invoke);
+            }
+            catch (Exception e)
+            {
+                LogWriter.LogException(e);
+                return false;
+            }
 
             return true;
         }
