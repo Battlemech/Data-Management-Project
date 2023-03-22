@@ -86,6 +86,9 @@ namespace DMP.Databases
             throw new ArgumentException($"Saved value has type {value.GetEnclosedType()}, not {typeof(T)}");
         }
 
+        
+        public ReadOnlyStorage<T> GetReadOnly<T>(string id) => Get<T>(id);
+
         public T GetValue<T>(string id) => Get<T>(id).Get();
 
         public void SetValue<T>(string id, T value) => Get<T>(id).Set(value);

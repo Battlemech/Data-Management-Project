@@ -37,7 +37,7 @@ namespace DMP.Databases.ValueStorage
         protected internal abstract ValueStorage Copy();
     }
     
-    public partial class ValueStorage<T>
+    public partial class ReadOnlyStorage<T>
     {
         public override Type GetEnclosedType()
         {
@@ -74,6 +74,6 @@ namespace DMP.Databases.ValueStorage
             }
         }
 
-        public static implicit operator T(ValueStorage<T> valueStorage) => valueStorage.Get();
+        public static implicit operator T(ReadOnlyStorage<T> valueStorage) => valueStorage.Get();
     }
 }

@@ -4,7 +4,7 @@ using DMP.Threading;
 
 namespace DMP.Databases.ValueStorage
 {
-    public partial class ValueStorage<T>
+    public partial class ReadOnlyStorage<T>
     {
         private readonly QueuedScheduler _scheduler = new QueuedScheduler();
         
