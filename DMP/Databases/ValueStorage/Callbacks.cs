@@ -5,7 +5,7 @@ using DMP.Utility;
 
 namespace DMP.Databases.ValueStorage
 {
-    public partial class ValueStorage<T>
+    public partial class ReadOnlyStorage<T>
     {
         private readonly ConcurrentDictionary<string, List<Callback>> _callbacks = new ConcurrentDictionary<string, List<Callback>>();
 

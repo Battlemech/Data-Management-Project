@@ -6,45 +6,11 @@ namespace DMP.Databases.ValueStorage
     public delegate TOut SafeOperationDelegate<T, TOut>(T current);
     public delegate T SetValueDelegate<out T>();
     
-    public partial class ValueStorage<T> : ValueStorage
+    public partial class ValueStorage<T> : ReadOnlyStorage<T>
     {
-        public readonly Database Database;
-
-        private T _data;
-        
-        public ValueStorage(Database database, string id, T data) : base(id)
+        public ValueStorage(Database database, string id, T data) : base(database, id, data)
         {
-            Database = database;
-            _data = data;
-        }
-
-        /// <summary>
-        /// Returns the current value
-        /// </summary>
-        /// <remarks>Value may be modified by other threads. If you want to make sure the value isn't changed, use BlockingGet()</remarks>
-        public T Get() => _data;
-        
-        public void BlockingGet(Action<T> action)
-        {
-            lock (Id)
-            {
-                action.Invoke(_data);
-            }
-        }
-
-        /// <summary>
-        /// Performs a thread-safe operation on the current value
-        /// </summary>
-        /// <param name="safeOperation">Action to execute</param>
-        /// <typeparam name="TOut">Expected result of operation</typeparam>
-        /// <returns></returns>
-        /// <remarks>Don't modify current value! If you want to change it, use Modify() instead!</remarks>
-        public TOut BlockingGet<TOut>(SafeOperationDelegate<T, TOut> safeOperation)
-        {
-            lock (Id)
-            {
-                return safeOperation.Invoke(_data);
-            }
+            
         }
         
         public void Set(T value)
@@ -83,11 +49,11 @@ namespace DMP.Databases.ValueStorage
             }));
         }
 
-        public void OnInitialized(Action<T> onInitialized) => Database.OnInitialized(Id, onInitialized);
-
         public override string ToString()
         {
             return $"{Database}-{Id}:";
         }
+        
+        public static implicit operator T(ValueStorage<T> valueStorage) => valueStorage.Get();
     }
 }
