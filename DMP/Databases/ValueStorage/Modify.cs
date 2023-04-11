@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP.Threading;
 using DMP.Utility;
 
 namespace DMP.Databases.ValueStorage
@@ -60,6 +61,25 @@ namespace DMP.Databases.ValueStorage
 
             //assign value resulting from modification to out parameter
             result = value;
+        }
+
+        public Task<T> ModifyAsync(ModifyValueDelegate<T> modify)
+        {
+            //create task
+            Task<T> task = new Task<T>((() =>
+            {
+                //await the modification operation
+                Modify(modify, out T result);
+                
+                //retrieve result
+                return result;
+            }));
+
+            //start executing it
+            Delegation.DelegateTask(task);
+
+            //return reference to task
+            return task;
         }
 
         /// <summary>
