@@ -10,6 +10,7 @@ using DMP.Networking.Messaging;
 using DMP.Networking.Synchronisation.Client;
 using DMP.Networking.Synchronisation.Messages;
 using DMP.Objects;
+using DMP.Threading;
 using DMP.Utility;
 using GroBuf;
 using GroBuf.DataMembersExtracters;
@@ -114,7 +115,7 @@ namespace Tests
         }
 
         [Test]
-        public static void TestTypeSerialization()
+        public static void TestImplicitTypeSerialization()
         {
             Stopwatch serializationTime = new Stopwatch();
             Stopwatch deserializationTime = new Stopwatch();
@@ -262,6 +263,16 @@ namespace Tests
             string test = "Lorem ipsum et doloret et cetera et cetera et cetera";
             Console.WriteLine($"Default serializer byte size: {new Serializer(new AllPropertiesExtractor()).Serialize(test).Length}");
             Console.WriteLine($"Custom serializer byte size: {new Serializer(new AttributeAwareExtractor()).Serialize(test).Length}");
+        }
+        
+        [Test]
+        public static void TestExplicitTypeSerialization()
+        {
+            Type type = typeof(ConcurrentScheduler);
+            byte[] bytes = Serialization.Serialize(type);
+            Type deserialized = Serialization.Deserialize<Type>(bytes);
+            
+            Assert.AreEqual(type, deserialized);
         }
     }
 }

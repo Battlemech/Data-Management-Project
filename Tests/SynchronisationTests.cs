@@ -866,6 +866,17 @@ namespace Tests
                 InvokeCount.Modify((value => value + 1));
             }
         }
+
+        [Test]
+        public static async Task TestModifyTask()
+        {
+            string id = nameof(TestModifyTask);
+            Setup(id);
+
+            string result = await Database1.Get<string>(id).ModifyAsync((value => id));
+            
+            Assert.AreEqual(id, result);
+        }
         
     }
 }
