@@ -19,22 +19,28 @@ namespace DMP.Threading
         /// <summary>
         /// Delegate an action, attempting to execute it as soon as possible
         /// </summary>
-        public static void DelegateAction(Action action) => DelegateTask(new Task(action));
+        public static Task DelegateAction(Action action) => DelegateTask(new Task(action));
         /// <summary>
         /// Delegate a task, attempting to execute it as soon as possible
         /// </summary>
-        public static void DelegateTask(Task task) => task.Start(ConcurrentScheduler);
-        
-        
+        public static Task DelegateTask(Task task)
+        {
+            task.Start(ConcurrentScheduler);
+            return task;
+        }
+
+
         /// <summary>
         /// Enqueue an action, executing it after other previously enqueued actions
         /// </summary>
-        public static void EnqueueAction(Action action) => EnqueueTask(new Task(action));
+        public static Task EnqueueAction(Action action) => EnqueueTask(new Task(action));
         /// <summary>
         /// Enqueue a task, executing it after other previously enqueued tasks
         /// </summary>
-        public static void EnqueueTask(Task task) => task.Start(QueuedScheduler);
-
-
+        public static Task EnqueueTask(Task task)
+        {
+            task.Start(QueuedScheduler);
+            return task;
+        }
     }
 }

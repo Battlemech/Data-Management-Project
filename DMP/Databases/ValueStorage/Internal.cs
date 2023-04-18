@@ -20,7 +20,7 @@ namespace DMP.Databases.ValueStorage
 
         public abstract void UnsafeSet(byte[] bytes);
 
-        public abstract void Delegate(Task task);
+        public abstract Task Delegate(Task task);
 
         public abstract int GetQueuedTasksCount();
 
