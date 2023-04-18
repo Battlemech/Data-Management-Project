@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP.Threading;
@@ -8,6 +9,7 @@ namespace DMP.Databases.ValueStorage
 {
     public partial class ValueStorage<T>
     {
+
         /// <summary>
         /// The modify operation considers current value during modification action.
         /// Necessary for synchronised collections: If multiple adds will be executed at the same time,
@@ -22,7 +24,8 @@ namespace DMP.Databases.ValueStorage
         /// to be up to date</param>
         /// <param name="onResultConfirmed">Delegate called once the current value was confirmed by server</param>
         /// <typeparam name="T">Type of value being modified</typeparam>
-        public void Modify(ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null)
+        /// <returns>The internal task invoking callbacks and sending the modification request</returns>
+        public Task Modify(ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null)
         {
             byte[] serializedBytes;
 
@@ -34,7 +37,7 @@ namespace DMP.Databases.ValueStorage
             }
             
             //delegates internal logic to a thread, increasing performance
-            Delegate(() =>
+            return Delegate(() =>
             {
                 InvokeAllCallbacks(serializedBytes);
                 Database.OnModify(Id, serializedBytes, modify, onResultConfirmed);
@@ -45,13 +48,13 @@ namespace DMP.Databases.ValueStorage
         {
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             T value = default;
-            
+
             //start modification action
             Modify(modify, valueConfirmed =>
             {
                 //save result locally
                 value = valueConfirmed;
-                
+
                 //signal waiting thread to continue
                 resetEvent.Set();
             });
@@ -63,29 +66,37 @@ namespace DMP.Databases.ValueStorage
             result = value;
         }
 
-        public Task<T> ModifyAsync(ModifyValueDelegate<T> modify)
+        public async Task<T> ModifyAsync(ModifyValueDelegate<T> modify)
         {
-            //create task
-            Task<T> task = new Task<T>((() =>
+            //allow waiting for modification to complete
+            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            
+            //save remotely confirmed value
+            T value = default;
+            
+            //wait for internal logic to be executed
+            await Modify(modify, obj =>
             {
-                //await the modification operation
-                Modify(modify, out T result);
+                //save value
+                value = obj;
                 
-                //retrieve result
-                return result;
-            }));
+                //allow waiting thread to continue
+                resetEvent.Set();
+            });
 
-            //start executing it
-            Delegation.DelegateTask(task);
+            //wait for value to be confirmed by remote
+            if (!resetEvent.WaitOne(Options.DefaultTimeout))
+            {
+                throw new TimeoutException($"Failed to modify {Id} within {Options.DefaultTimeout} ms!");
+            }
 
-            //return reference to task
-            return task;
+            return value;
         }
 
         /// <summary>
         /// Try invoking the delegate, logging any exceptions which occur
         /// </summary>
-        public static T TryModify(ModifyValueDelegate<T> modify, T current)
+        protected internal static T TryModify(ModifyValueDelegate<T> modify, T current)
         {
             try
             {

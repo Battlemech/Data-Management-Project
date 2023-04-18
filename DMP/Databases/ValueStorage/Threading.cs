@@ -13,8 +13,12 @@ namespace DMP.Databases.ValueStorage
             return _scheduler.QueuedTasksCount;
         }
         
-        public override void Delegate(Task task) => task.Start(_scheduler);
+        public override Task Delegate(Task task)
+        {
+            task.Start(_scheduler);
+            return task;
+        }
 
-        public void Delegate(Action action) => Delegate(new Task(action));
+        public Task Delegate(Action action) => Delegate(new Task(action));
     }
 }

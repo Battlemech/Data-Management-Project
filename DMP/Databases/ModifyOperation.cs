@@ -32,6 +32,9 @@ namespace DMP.Databases
 
         public void Modify<T>(string id, ModifyValueDelegate<T> modify, out T result)
             => Get<T>(id).Modify(modify, out result);
+
+        public Task<T> ModifyAsync<T>(string id, ModifyValueDelegate<T> modify)
+            => Get<T>(id).ModifyAsync(modify);
         
         protected internal void OnModify<T>(string id, byte[] serializedBytes, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
         {
@@ -56,7 +59,7 @@ namespace DMP.Databases
 
             //start saving bytes which arrive from network in case they are required later
             IncrementPendingCount(id);
-
+            
             bool success = Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
                 uint expectedModCount = reply.ExpectedModCount;
@@ -109,7 +112,7 @@ namespace DMP.Databases
                     return newValue;
                 })));
             });
-
+            
             if (success) return;
 
             throw new NotConnectedException();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -876,6 +877,50 @@ namespace Tests
             string result = await Database1.Get<string>(id).ModifyAsync((value => id));
             
             Assert.AreEqual(id, result);
+        }
+
+        [Test]
+        public static void TestConcurrentModifyTask()
+        {
+            int count = 1000;
+            
+            string id = nameof(TestConcurrentModifyTask);
+            Setup(id);
+
+            //generate ids to modify
+            List<string> taskIds = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                taskIds.Add(i.ToString());                
+            }
+            
+            //setup timers
+            Stopwatch iterativeWatch = new Stopwatch();
+            Stopwatch concurrentWatch = new Stopwatch();
+            
+            //try synchronous modification without task
+            iterativeWatch.Start();
+            foreach (var taskId in taskIds)
+            {
+                Database1.Modify(taskId, value => taskId + "!", out string s);
+                Assert.AreEqual(taskId + "!", s);
+            }
+            iterativeWatch.Stop();
+
+            //try asynchronous modification
+            concurrentWatch.Start();
+            var whenAll = Task.WhenAll(taskIds.Select((s => Database1.ModifyAsync<string>(s, value => s))));
+            
+            //wait for tasks to complete
+            Assert.IsTrue(whenAll.Wait(Options.DefaultTimeout * 2), "Tasks timed out!");
+            concurrentWatch.Stop();
+            
+            for (int i = 0; i < count; i++)
+            {
+                Assert.AreEqual(i.ToString(), whenAll.Result[i]);
+            }
+            
+            Console.WriteLine($"Count: {count}. Iterative: {(float)iterativeWatch.ElapsedMilliseconds / (float)count} ms/obj. Concurrent: {(float)concurrentWatch.ElapsedMilliseconds / (float)count} ms/obj");
         }
         
     }
