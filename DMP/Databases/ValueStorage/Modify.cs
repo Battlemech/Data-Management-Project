@@ -58,7 +58,7 @@ namespace DMP.Databases.ValueStorage
                 //signal waiting thread to continue
                 resetEvent.Set();
             });
-
+            
             if (!resetEvent.WaitOne(Options.DefaultTimeout))
                 throw new TimeoutException($"Failed to modify {Id} within {Options.DefaultTimeout} ms!");
 
@@ -84,11 +84,15 @@ namespace DMP.Databases.ValueStorage
                 resetEvent.Set();
             });
 
-            //wait for value to be confirmed by remote
-            if (!resetEvent.WaitOne(Options.DefaultTimeout))
+            //await action in new thead to allow current thread to continue executing
+            await Delegation.DelegateAction((() =>
             {
-                throw new TimeoutException($"Failed to modify {Id} within {Options.DefaultTimeout} ms!");
-            }
+                //wait for value to be confirmed by remote
+                if (!resetEvent.WaitOne(Options.DefaultTimeout))
+                {
+                    throw new TimeoutException($"Failed to modify {Id} within {Options.DefaultTimeout} ms!");
+                }
+            }));
 
             return value;
         }
