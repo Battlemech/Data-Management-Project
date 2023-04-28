@@ -40,9 +40,9 @@ namespace DMP.Databases
 
         private bool _isPersistent;
 
-        private void OnSetPersistent(string id, byte[] value)
+        private void OnSetPersistent(string id, byte[] value, Type type)
         {
-            PersistentData.Save(Id, id, value, !_isSynchronised);
+            PersistentData.Save(Id, id, value, type, !_isSynchronised);
         }
         
         /// <summary>
@@ -56,7 +56,7 @@ namespace DMP.Databases
             //save its values
             foreach (var kv in _values)
             {
-                OnSetPersistent(kv.Key, kv.Value.Serialize());
+                OnSetPersistent(kv.Key, kv.Value.Serialize(out Type type), type);
             }
         }
         
@@ -74,7 +74,7 @@ namespace DMP.Databases
             foreach (var kv in _values)
             {
                 ValueStorage.ValueStorage valueStorage = kv.Value;
-                OnSetPersistent(kv.Key, Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
+                OnSetPersistent(kv.Key, valueStorage.Serialize(out Type type), type);
             }
 
             //load all values from database which didn't already exist
@@ -86,7 +86,7 @@ namespace DMP.Databases
                 if (existingIds.Contains(id) || _values.ContainsKey(id)) continue;
 
                 //save value to be deserialized later
-                _serializedData[id] = tso.Buffer;
+                _serializedData[id] = new Tuple<byte[], Type>(tso.Buffer, Type.GetType(tso.Type, true));
 
                 //skip objects which don't have to be synchronised
                 if(!tso.SyncRequired) continue;
@@ -101,7 +101,7 @@ namespace DMP.Databases
             //inform peers that data was modified while no connection was established
             foreach (var tso in toSynchronise)
             {
-                OnOfflineModification(tso.ValueStorageId, tso.Buffer);
+                OnOfflineModification(tso.ValueStorageId, tso.Buffer, Type.GetType(tso.Type));
             }
         }
     }

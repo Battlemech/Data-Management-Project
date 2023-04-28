@@ -8,7 +8,7 @@ namespace DMP.Databases
         /// <summary>
         /// Invoked when a value was modified while no connection was established.
         /// </summary>
-        private void OnOfflineModification(string id, byte[] value)
+        private void OnOfflineModification(string id, byte[] value, Type type)
         {
             //prevent modification of hostId if offline
             if(id == nameof(HostId)) return;
@@ -22,7 +22,7 @@ namespace DMP.Databases
                 if (!isHost) return;
 
                 //if host modified data without connection: Synchronise it
-                OnSetSynchronised(id, value);
+                OnSetSynchronised(id, value, type);
             }));
         }
     }

@@ -38,7 +38,7 @@ namespace Tests
         [Test]
         public static void TestMessageSerialization()
         {
-            SetValueMessage message = new SetValueMessage("123", "123213", 123123, new byte[2]{1, 2});
+            SetValueMessage message = new SetValueMessage("123", "213123", new byte[2] { 1, 2 }, "ANYTYPE", 2);
             SetValueMessage copy = Serialization.Deserialize<SetValueMessage>(Serialization.Serialize(message));
          
             Assert.AreEqual(message.DatabaseId, copy.DatabaseId);

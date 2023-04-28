@@ -134,7 +134,7 @@ namespace Tests
             PersistentData.DeleteDatabase(nameof(LoadDatabase));
             
             //database doesnt exist
-            Assert.IsFalse(PersistentData.TryLoadDatabase(nameof(LoadDatabase), out List<DeSerializedObject> savedObjects));
+            Assert.IsFalse(PersistentData.TryLoadDatabase(nameof(LoadDatabase), out List<TrackedSavedObject> savedObjects));
             
             PersistentData.CreateDatabase(nameof(LoadDatabase));
             
@@ -161,7 +161,7 @@ namespace Tests
 
                 //keep testing if data wasn't saved internally yet
                 if (!success || saveCount != savedObjects.Count) return false;
-                
+
                 internalSaveTime.Stop();
                 return true;
 
@@ -174,7 +174,7 @@ namespace Tests
 
         private static void Save<T>(string databaseId, string valueStorageId, T value, bool syncRequired = false)
         {
-            PersistentData.Save(databaseId, valueStorageId, Serialization.Serialize(value), syncRequired);
+            PersistentData.Save(databaseId, valueStorageId, Serialization.Serialize(value), typeof(T), syncRequired);
         }
     }
 }
