@@ -16,36 +16,42 @@ namespace DMP.Databases.ValueStorage
         public void Set(T value)
         {
             byte[] serializedBytes;
+            Type type;
+            
             lock (Id)
             {
                 _data = value;
                 serializedBytes = Serialization.Serialize(value);
+                type = _data.GetType();
             }
             
             //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
             //allowing the delegation of callbacks to a task
             Delegate((() =>
             {
-                InvokeAllCallbacks(serializedBytes);
-                Database.OnSet(Id, serializedBytes);
+                InvokeAllCallbacks(serializedBytes, type);
+                Database.OnSet(Id, serializedBytes, type);
             }));
         }
 
         public void BlockingSet(SetValueDelegate<T> setValueDelegate)
         {
             byte[] serializedBytes;
+            Type type;
+            
             lock (Id)
             {
                 _data = setValueDelegate.Invoke();
                 serializedBytes = Serialization.Serialize(_data);
+                type = _data.GetType();
             }
             
             //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
             //allowing the delegation of callbacks to a task
             Delegate((() =>
             {
-                InvokeAllCallbacks(serializedBytes);
-                Database.OnSet(Id, serializedBytes);
+                InvokeAllCallbacks(serializedBytes, type);
+                Database.OnSet(Id, serializedBytes, type);
             }));
         }
 

@@ -28,19 +28,21 @@ namespace DMP.Databases.ValueStorage
         public Task Modify(ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null)
         {
             byte[] serializedBytes;
+            Type type;
 
             //set value in dictionary
             lock (Id)
             {
                 _data = TryModify(modify, _data);
                 serializedBytes = Serialization.Serialize(_data);
+                type = _data.GetType();
             }
             
             //delegates internal logic to a thread, increasing performance
             return Delegate(() =>
             {
-                InvokeAllCallbacks(serializedBytes);
-                Database.OnModify(Id, serializedBytes, modify, onResultConfirmed);
+                InvokeAllCallbacks(serializedBytes, type);
+                Database.OnModify(Id, serializedBytes, type, modify, onResultConfirmed);
             });
         }
         
@@ -58,7 +60,7 @@ namespace DMP.Databases.ValueStorage
                 //signal waiting thread to continue
                 resetEvent.Set();
             });
-
+            
             if (!resetEvent.WaitOne(Options.DefaultTimeout))
                 throw new TimeoutException($"Failed to modify {Id} within {Options.DefaultTimeout} ms!");
 
@@ -84,11 +86,15 @@ namespace DMP.Databases.ValueStorage
                 resetEvent.Set();
             });
 
-            //wait for value to be confirmed by remote
-            if (!resetEvent.WaitOne(Options.DefaultTimeout))
+            //await action in new thead to allow current thread to continue executing
+            await Delegation.DelegateAction((() =>
             {
-                throw new TimeoutException($"Failed to modify {Id} within {Options.DefaultTimeout} ms!");
-            }
+                //wait for value to be confirmed by remote
+                if (!resetEvent.WaitOne(Options.DefaultTimeout))
+                {
+                    throw new TimeoutException($"Failed to modify {Id} within {Options.DefaultTimeout} ms!");
+                }
+            }));
 
             return value;
         }

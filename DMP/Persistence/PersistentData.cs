@@ -1,188 +1,211 @@
-﻿
+﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Threading.Tasks;
+using Dapper;
 using DMP.Threading;
 using DMP.Utility;
-using Mono.Data.Sqlite;
 
 namespace DMP.Persistence
 {
     public static class PersistentData
     {
+        public static int DataToSaveCount => DataToSaveQueue.Count;
+        public static bool SavingData { get; private set; }
         
-    private const string Path = "./Data.sql";
-    private const string ConnectionString = "Data Source=" + Path;
-
-    public static bool SavingData { get; private set; }
-    public static int DataToSaveCount => DataToSave.Count;
-    private static readonly ConcurrentQueue<ToSave> DataToSave = new ConcurrentQueue<ToSave>();
-
-    static PersistentData()
-    {
-        SqliteConnection.CreateFile(Path);
-    }
-
-    public static void CreateDatabase(string databaseId)
-    {
-        ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB, syncRequired BOOLEAN DEFAULT FALSE)");
-    }
-
-    public static void DeleteDatabase(string databaseId)
-    {
-        ExecuteCommand($"drop table if exists '{databaseId}'");
-    }
-
-    public static void Save(string databaseId, string valueId, byte[] bytes, bool syncRequired)
-    {
-        DataToSave.Enqueue(new ToSave()
-        {
-            DatabaseId = databaseId,
-            ValueId = valueId,
-            Bytes = bytes,
-            SyncRequired = syncRequired
-        });
-
-        lock (DataToSave)
-        {
-            if(SavingData) return;
-            SavingData = true;
-        }
+        private const string ConnectionString = "Data Source="+Path;
+        private const string Path = "./Data.sqlite";
         
-        //make sure only one thread is saving data at the same time to avoid waiting for transactions
-        Delegation.EnqueueAction(SaveQueuedData);
-    }
+        private static readonly ConcurrentQueue<SerializedObject> DataToSaveQueue =
+            new ConcurrentQueue<SerializedObject>();
 
-    private static void SaveQueuedData()
-    {
-        using SqliteConnection connection = new SqliteConnection(ConnectionString);
-        connection.Open();
-    
-        //save all queued data
-        while (DataToSave.TryDequeue(out ToSave r))
+        static PersistentData()
         {
-            //setup command
-            using SqliteCommand command = connection.CreateCommand();
-            command.CommandText = $"insert or replace into '{r.DatabaseId}'(id, bytes, syncRequired) values ('{r.ValueId}', :bytes, :syncRequired)";
-            command.Parameters.AddWithValue(":bytes", r.Bytes);
-            command.Parameters.AddWithValue(":syncRequired", r.SyncRequired);
-
-            command.ExecuteNonQuery();
+            //makes sure that the database exists
+            SQLiteConnection.CreateFile("Data.sqlite");
         }
 
-        lock (DataToSave)
+        #region Manage Databases
+
+        /// <summary>
+        /// Creates a reference of a database locally
+        /// </summary>
+        /// <param name="databaseId"></param>
+        public static void CreateDatabase(string databaseId)
         {
-            if (DataToSave.IsEmpty)
+            ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB, syncRequired BOOLEAN DEFAULT FALSE, type TEXT)");
+        }
+
+        /// <summary>
+        /// Deletes the local reference of a database.
+        /// </summary>
+        public static void DeleteDatabase(string databaseId) => ExecuteCommand($"drop table if exists '{databaseId}'");
+
+        public static bool DoesDatabaseExist(string databaseId)
+        {
+            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+            
+            //get list of all tables with that name
+            var result = connection.Query($"select name from sqlite_master where type='table' and name='{databaseId}'") as ICollection;
+                
+            //return true if the list has any entries
+            return result?.Count != 0;
+        }
+
+        #endregion
+
+        #region Load Data
+
+        /// <summary>
+        /// Loads a value from the database
+        /// </summary>
+        public static T Load<T>(string databaseId, string valueStorageId)
+        {
+            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+            
+            //load data
+            byte[] bytes = connection.QueryFirst<byte[]>($"select bytes from '{databaseId}' where id='{valueStorageId}'");
+
+            //deserialize object
+            return Serialization.Deserialize<T>(bytes);
+        }
+
+        public static bool TryLoad<T>(string databaseId, string valueStorageId, out T data)
+        {
+            //try to load the data
+            try
             {
-                SavingData = false;
-                return;
+                data = Load<T>(databaseId, valueStorageId);
             }
-        }
-    
-        SaveQueuedData();
-    }
-
-    public static bool TryLoadDatabase(string databaseId, out List<SavedObject> savedObjects)
-    {
-        savedObjects = new List<SavedObject>();
-    
-        //setup command
-        using SqliteConnection connection = new SqliteConnection(ConnectionString);
-        connection.Open();
-        using SqliteCommand command = connection.CreateCommand();
-        command.CommandText = $"select id as ValueStorageId, bytes as Buffer, syncRequired as SyncRequired from '{databaseId}'";
-
-        //read data
-        try
-        {
-            SqliteDataReader reader = command.ExecuteReader();
-            while (reader.Read())
+            catch (SQLiteException e)
             {
-                savedObjects.Add(new SavedObject()
-                {
-                    ValueId = reader.GetString(0),
-                    Bytes = reader[1] as byte[],
-                    SyncRequired = reader.GetBoolean(2)
-                });
+                //make sure it was the right exception: database didn't exist
+                if (!e.Message.Contains($"no such table: {databaseId}")) throw;
+
+                data = default;
+                return false;
             }
-        }
-        catch (SqliteException e)
-        {
-            if (!e.Message.Contains($"no such table: {databaseId}")) throw;
+            catch (InvalidOperationException e)
+            {
+                //make sure it was the right exception: element didn't exist
+                if (e.Message != "Sequence contains no elements") throw;
+                
+                data = default;
+                return false;
+            }
 
-            return false;
-        }
-
-        return true;
-    }
-    
-    public static bool TryGetObject(string databaseId, string valueId, out SavedObject result)
-    {
-        if (!TryLoadDatabase(databaseId, out List<SavedObject> savedObjects))
-        {
-            result = default;
-            return false;
-        }
-
-        foreach (var savedObject in savedObjects)
-        {
-            if(savedObject.ValueId != valueId) continue;
-
-            result = savedObject;
             return true;
         }
 
-        result = default;
-        return false;
-    }
-    
-    public static bool TryLoad<T>(string databaseId, string valueId, out T value)
-    {
-        bool success = TryGetObject(databaseId, valueId, out SavedObject savedObject);
-        value = (success) ? Serialization.Deserialize<T>(savedObject.Bytes) : default;
-        return success;
-    }
+        public static bool TryLoadDatabase(string databaseId, out List<TrackedSavedObject> serializedObjects)
+        {
+            //init return lists
+            serializedObjects = new List<TrackedSavedObject>();
+            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+            connection.Open();
+            
+            try
+            {
+                //todo: fix for 1000000 addCount in LoadDatabase, "database is locked" SQLite Exception
+                //https://stackoverflow.com/questions/17592671/sqlite-database-locked-exception
+                
+                serializedObjects = connection.Query<TrackedSavedObject>($"select id as ValueStorageId, bytes as Buffer, type as Type, syncRequired as SyncRequired from '{databaseId}'").AsList();
+            }
+            catch (SQLiteException e)
+            {
+                //make sure it was the right exception: database didn't exist
+                if (!e.Message.Contains($"no such table: {databaseId}")) throw;
+                    
+                return false;
+            }
 
-    public static bool TryGetSyncRequired(string databaseId, string valueId, out bool syncRequired)
-    {
-        bool success = TryGetObject(databaseId, valueId, out SavedObject savedObject);
-        syncRequired = success && savedObject.SyncRequired;
-        return success;
-    }
-    
-    
-    //todo: more efficient implementation
-    public static bool DoesDatabaseExist(string databaseId)
-    {
-        return TryLoadDatabase(databaseId, out _);
-    }
+            return true;
+        }
 
-    private static void ExecuteCommand(string commandString)
-    {
-        //setup command
-        using SqliteConnection connection = new SqliteConnection(ConnectionString);
-        connection.Open();
-        using SqliteCommand command = connection.CreateCommand();
-        command.CommandText = commandString;
+        public static bool SyncRequired(string databaseId, string valueId)
+        {
+            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+            
+            //load data
+            return connection.QueryFirst<bool>($"select syncRequired from '{databaseId}' where id='{valueId}'");
+        }
+        
+        #endregion
 
-        //execute command
-        command.ExecuteNonQuery();
-        connection.Close();
+        #region Save Data
+
+        /// <summary>
+        /// Saves an value locally. Requires a database to be created before
+        /// </summary>
+        public static void Save(string databaseId, string valueStorageId, byte[] bytes, Type type, bool syncRequired)
+        {
+            //enqueue it to be saved in sql table by working thread
+            DataToSaveQueue.Enqueue(new SerializedObject(databaseId, valueStorageId, bytes, type, syncRequired));
+
+            //return if another thread is already writing the data to the sql database
+            lock (DataToSaveQueue)
+            {
+                if (SavingData) return;
+                SavingData = true;
+            }
+            
+            Delegation.EnqueueAction(SaveQueuedData);
+        }
+
+        private static void SaveQueuedData()
+        {
+            while (true)
+            {
+                //establish connection with database
+                using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+                connection.Open();
+
+                //notify database that changes will be made
+                using SQLiteTransaction transaction = connection.BeginTransaction();
+
+                //execute all queued changes
+                while (DataToSaveQueue.TryDequeue(out SerializedObject obj))
+                {
+                    try
+                    {
+                        //set new value
+                        string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes, syncRequired, type) values ('{obj.ValueStorageId}', @Buffer, '{obj.SyncRequired}', '{obj.Type}')";
+                        connection.Execute(command, obj);
+                    }
+                    catch (Exception e)
+                    {
+                        LogWriter.LogError($"Failed setting {obj.DataBaseId}-{obj.ValueStorageId}");
+                        LogWriter.LogException(e);
+                        throw;
+                    }
+                }
+
+                //commit the queued changes
+                transaction.Commit();
+
+                //stop executing commands if none are left to execute
+                lock (DataToSaveQueue)
+                {
+                    if (!DataToSaveQueue.IsEmpty) continue;
+                    
+                    SavingData = false;
+                    return;
+                }
+
+                //if commands are left to execute, start executing them again
+            }
+        }
+
+        #endregion
+
+        private static void ExecuteCommand(string command)
+        {
+            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+            connection.Execute(command);
+        }
+
+        
     }
-
-    private struct ToSave
-    {
-        public string DatabaseId;
-        public string ValueId;
-        public byte[] Bytes;
-        public bool SyncRequired;            
-    }
-    }
-}
-
-
-public struct SavedObject
-{
-    public string ValueId;
-    public byte[] Bytes;
-    public bool SyncRequired;
 }

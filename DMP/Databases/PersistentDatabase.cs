@@ -28,7 +28,7 @@ namespace DMP.Databases
                 }
 
                 //see if database exists
-                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<SavedObject> savedObjects);
+                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSavedObject> savedObjects);
 
                 if (!databaseExists) OnNoData();
                 else OnDataFound(savedObjects);
@@ -40,9 +40,9 @@ namespace DMP.Databases
 
         private bool _isPersistent;
 
-        private void OnSetPersistent(string id, byte[] value)
+        private void OnSetPersistent(string id, byte[] value, Type type)
         {
-            PersistentData.Save(Id, id, value, !_isSynchronised);
+            PersistentData.Save(Id, id, value, type, !_isSynchronised);
         }
         
         /// <summary>
@@ -56,16 +56,16 @@ namespace DMP.Databases
             //save its values
             foreach (var kv in _values)
             {
-                OnSetPersistent(kv.Key, kv.Value.Serialize());
+                OnSetPersistent(kv.Key, kv.Value.Serialize(out Type type), type);
             }
         }
-
+        
         /// <summary>
         /// Invoked when persistent data was found
         /// </summary>
-        private void OnDataFound(List<SavedObject> savedObjects)
+        private void OnDataFound(List<TrackedSavedObject> savedObjects)
         {
-            List<SavedObject> toSynchronise = new List<SavedObject>(savedObjects.Count);
+            List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
 
             //get list of currently known ids
             List<string> existingIds = _values.Keys.ToList();
@@ -74,35 +74,34 @@ namespace DMP.Databases
             foreach (var kv in _values)
             {
                 ValueStorage.ValueStorage valueStorage = kv.Value;
-                OnSetPersistent(kv.Key,
-                    Serialization.Serialize(valueStorage.GetEnclosedType(), valueStorage.GetObject()));
+                OnSetPersistent(kv.Key, valueStorage.Serialize(out Type type), type);
             }
 
             //load all values from database which didn't already exist
             foreach (var tso in savedObjects)
             {
-                string id = tso.ValueId;
-
+                string id = tso.ValueStorageId;
+                    
                 //Skip if object with loaded id already exists
                 if (existingIds.Contains(id) || _values.ContainsKey(id)) continue;
 
                 //save value to be deserialized later
-                _serializedData[id] = tso.Bytes;
+                _serializedData[id] = new Tuple<byte[], Type>(tso.Buffer, Type.GetType(tso.Type, true));
 
                 //skip objects which don't have to be synchronised
-                if (!tso.SyncRequired) continue;
-
+                if(!tso.SyncRequired) continue;
+                    
                 //queue object for synchronisation
                 toSynchronise.Add(tso);
             }
 
             //no need to inform peers if database is not synchronised
-            if (!_isSynchronised || Client == null || !Client.IsConnected) return;
+            if(!_isSynchronised || Client == null || !Client.IsConnected) return;
 
             //inform peers that data was modified while no connection was established
             foreach (var tso in toSynchronise)
             {
-                OnOfflineModification(tso.ValueId, tso.Bytes);
+                OnOfflineModification(tso.ValueStorageId, tso.Buffer, Type.GetType(tso.Type));
             }
         }
     }

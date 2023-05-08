@@ -36,10 +36,10 @@ namespace DMP.Databases
                 : 0;
         }
         
-        public int InvokeAllCallbacks(string id, byte[] serializedBytes)
+        public int InvokeAllCallbacks(string id, byte[] serializedBytes, Type type)
         {
             return _values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage)
-                ? valueStorage.InvokeAllCallbacks(serializedBytes)
+                ? valueStorage.InvokeAllCallbacks(serializedBytes, type)
                 : 0;
         }
 

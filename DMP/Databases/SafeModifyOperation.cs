@@ -35,7 +35,7 @@ namespace DMP.Databases
             }
 
             //serialize bytes to save current value (safe from modification)
-            byte[] bytes = Get<T>(id).Serialize();
+            byte[] bytes = Get<T>(id).Serialize(out Type type);
 
             //wait for access from server
             uint modCount = GetModCount(id);
@@ -71,8 +71,8 @@ namespace DMP.Databases
                 //if request was successful: execute modify now
                 if (success)
                 {
-                    T newValue = ValueStorage<T>.TryModify(modify, Serialization.Deserialize<T>(bytes));
-                    ExecuteDelayedSet(id, Serialization.Serialize(newValue), expectedModCount, true);
+                    T newValue = ValueStorage<T>.TryModify(modify, (T)Serialization.Deserialize(bytes, type));
+                    ExecuteDelayedSet(id, Serialization.Serialize(newValue), type, expectedModCount, true);
                     return;
                 }
                     
@@ -81,7 +81,7 @@ namespace DMP.Databases
                 if(!TryGetType(id)) _failedGets[id] = typeof(T);
 
                 //enqueue failed request
-                EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, modify, true));
+                EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, type, modify, true));
             });
 
             if(!success) throw new NotConnectedException();
@@ -110,14 +110,14 @@ namespace DMP.Databases
 
         private void ExecuteModification<T>(string id, ModifyValueDelegate<T> modify)
         {
-            byte[] serializedBytes = Get<T>(id).InternalSet(modify);
+            byte[] serializedBytes = Get<T>(id).InternalSet(modify, out Type type);
             
             Delegate(id, (() =>
             {
                 //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
                 //allowing the delegation of callbacks to a task
-                InvokeAllCallbacks(id, serializedBytes);
-                if(_isPersistent) OnSetPersistent(id, serializedBytes);
+                InvokeAllCallbacks(id, serializedBytes, type);
+                if(_isPersistent) OnSetPersistent(id, serializedBytes, type);
             }));
         }
     }

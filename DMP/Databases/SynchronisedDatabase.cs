@@ -17,7 +17,8 @@ namespace DMP.Databases
         /// <summary>
         /// Saves all data which could not be deserialized on a remote set
         /// </summary>
-        private readonly Dictionary<string, byte[]> _serializedData = new Dictionary<string, byte[]>();
+        private readonly Dictionary<string, Tuple<byte[], Type>> _serializedData =
+            new Dictionary<string, Tuple<byte[], Type>>();
 
         public bool IsSynchronised
         {
@@ -65,7 +66,7 @@ namespace DMP.Databases
 
                 foreach (var vs in _values.Values)
                 {
-                    OnOfflineModification(vs.Id, vs.Serialize());
+                    OnOfflineModification(vs.Id, vs.Serialize(out Type type), type);
                 }
             }));
         }
@@ -73,17 +74,11 @@ namespace DMP.Databases
         /// <summary>
         /// Invoked when a value is set
         /// </summary>
-        private void OnSetSynchronised(string id, byte[] value)
+        private void OnSetSynchronised(string id, byte[] value, Type type)
         {
             uint modCount = IncrementModCount(id);
-            
-            SetValueRequest request = new SetValueRequest()
-            {
-                DatabaseId = Id,
-                ValueId = id,
-                ModCount = modCount,
-                Value = value
-            };
+
+            SetValueRequest request = new SetValueRequest(Id, id, modCount, value, type);
             
             //no need to increment pending request count: previous data is simply overwritten by operation
 
@@ -99,7 +94,7 @@ namespace DMP.Databases
                 {
                     //todo: this corner-case is difficult to reproduce and almost never appears. Design test?
                     //repeat operation with last confirmed value
-                    ExecuteDelayedSet(id, value, expectedModCount, false);
+                    ExecuteDelayedSet(id, value, type, expectedModCount, false);
                     return;
                 }
 
@@ -115,7 +110,7 @@ namespace DMP.Databases
             throw new NotConnectedException();
         }
 
-        protected internal void OnRemoteSet(string id, byte[] value, uint modCount, bool incrementModCount)
+        protected internal void OnRemoteSet(string id, byte[] value, Type type, uint modCount, bool incrementModCount)
         {
             //during synchronisation, multiple setValueMessages will be broadcast. This will filter duplicates
             if(TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount > modCount) return;
@@ -124,18 +119,18 @@ namespace DMP.Databases
             if (_values.TryGetValue(id, out ValueStorage.ValueStorage valueStorage))
             {
                 //value exists locally. Update it
-                valueStorage.UnsafeSet(value);
+                valueStorage.UnsafeSet(value, type);
             }
             else
             {
                 //value doesn't exist locally. Save bytes for later deserialization
-                _serializedData[id] = value;
+                _serializedData[id] = new Tuple<byte[], Type>(value, type);
 
                 //if value was created by other thread during modification
                 if (_values.TryGetValue(id, out valueStorage))
                 {
                     //update newly created value
-                    valueStorage.UnsafeSet(value);
+                    valueStorage.UnsafeSet(value, type);
                     _serializedData.Remove(id);
                 }
             }
@@ -156,10 +151,10 @@ namespace DMP.Databases
             //     -> callbacks will be able to access local value (which might be old value, or overwritten by new set process)
             
             //invoke callbacks
-            InvokeAllCallbacks(id, value);
+            InvokeAllCallbacks(id, value, type);
             
             //save data persistently if necessary
-            if(_isPersistent) OnSetPersistent(id, value);
+            if(_isPersistent) OnSetPersistent(id, value, type);
 
             /*
              * try processing a local delayed modification request.
@@ -172,12 +167,12 @@ namespace DMP.Databases
 
             bool incrementNext = false;
             
+            //get updated type from delayed request
+            type = Type.GetType(request.Type);
+            
             //if the request is a failed modify request:
             if (request is FailedModifyRequest modifyRequest)
             {
-                //repeat the operation with the up to date value
-                Type type = modifyRequest.GetDelegateType();
-                
                 //deserialize value again because the locally saved remote value might have been modified in the meantime
                 request.Value = Serialization.Serialize(type,modifyRequest.RepeatModification(Serialization.Deserialize(value, type)));
                 
@@ -189,7 +184,7 @@ namespace DMP.Databases
             Client.SendMessage(new SetValueMessage(request));
 
             //execute delayed set locally
-            OnRemoteSet(id, request.Value, request.ModCount, incrementNext);
+            OnRemoteSet(id, request.Value, type, request.ModCount, incrementNext);
         }
     }
 }

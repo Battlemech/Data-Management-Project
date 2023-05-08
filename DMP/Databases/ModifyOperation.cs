@@ -36,26 +36,20 @@ namespace DMP.Databases
         public Task<T> ModifyAsync<T>(string id, ModifyValueDelegate<T> modify)
             => Get<T>(id).ModifyAsync(modify);
         
-        protected internal void OnModify<T>(string id, byte[] serializedBytes, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
+        protected internal void OnModify<T>(string id, byte[] serializedBytes, Type type, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
         {
             //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
             //allowing the delegation of callbacks to a task
-            if(_isSynchronised && Client.IsConnected) OnModifyValueSynchronised(id, serializedBytes, modify, onResultConfirmed);
-            else onResultConfirmed?.Invoke(Serialization.Deserialize<T>(serializedBytes));
-            if(_isPersistent) OnSetPersistent(id, serializedBytes);
+            if(_isSynchronised && Client.IsConnected) OnModifyValueSynchronised(id, serializedBytes, type, modify, onResultConfirmed);
+            else onResultConfirmed?.Invoke((T)Serialization.Deserialize(serializedBytes, type));
+            if(_isPersistent) OnSetPersistent(id, serializedBytes, type);
         }
 
-        private void OnModifyValueSynchronised<T>(string id, byte[] value, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
+        private void OnModifyValueSynchronised<T>(string id, byte[] value, Type type, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
         {
             uint modCount = IncrementModCount(id);
 
-            SetValueRequest request = new SetValueRequest()
-            {
-                DatabaseId = Id,
-                ValueId = id,
-                ModCount = modCount,
-                Value = value
-            };
+            SetValueRequest request = new SetValueRequest(Id, id, modCount, value, type);
 
             //start saving bytes which arrive from network in case they are required later
             IncrementPendingCount(id);
@@ -86,7 +80,7 @@ namespace DMP.Databases
                         value = Serialization.Serialize(newValue);
                     }
                     
-                    ExecuteDelayedSet(id, value, expectedModCount, false);
+                    ExecuteDelayedSet(id, value, type, expectedModCount, false);
                     success = true;
                 }
                 
@@ -118,13 +112,13 @@ namespace DMP.Databases
             throw new NotConnectedException();
         }
 
-        private void ExecuteDelayedSet(string id, byte[] serializedBytes, uint modCount, bool incrementModCount)
+        private void ExecuteDelayedSet(string id, byte[] serializedBytes, Type type, uint modCount, bool incrementModCount)
         {
             //notify peers of new value
-            Client.SendMessage(new SetValueMessage(Id, id, modCount, serializedBytes));
+            Client.SendMessage(new SetValueMessage(Id, id, serializedBytes, type.AssemblyQualifiedName, modCount));
 
             //update values locally
-            OnRemoteSet(id, serializedBytes, modCount, incrementModCount);
+            OnRemoteSet(id, serializedBytes, type, modCount, incrementModCount);
         }
     }
 }
