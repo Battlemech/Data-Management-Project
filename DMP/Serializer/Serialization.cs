@@ -37,7 +37,7 @@ namespace DMP.Utility
 
         public static object Deserialize(byte[] bytes, Type type)
         {
-            return Serializer.Deserialize(type, bytes);
+            return type == null ? default : Serializer.Deserialize(type, bytes);
         }
 
         public static T Copy<T>(T o)

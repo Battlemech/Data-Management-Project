@@ -17,7 +17,7 @@ namespace DMP.Networking.Synchronisation.Messages
             ValueId = valueId;
             ModCount = modCount;
             Value = value;
-            Type = type.AssemblyQualifiedName;
+            Type = type?.AssemblyQualifiedName;
         }
 
         public SetValueRequest(SetValueRequest other)
