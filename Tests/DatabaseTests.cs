@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using DMP.Databases;
 using DMP.Databases.Utility;
 using DMP.Networking.Synchronisation.Server;
@@ -84,6 +85,26 @@ namespace Tests
             //wait until callback from set was triggered
             TestUtility.AreEqual(0, () => database.QueuedTasksCount);
             TestUtility.AreEqual(2, () => database.GetValue<int>("2"));
+        }
+
+        [Test]
+        public static async Task TestExceptionHandling()
+        {
+            Database database = new Database("Test");
+
+            //raise exception when callback is triggered
+            database.AddCallback<string>("Id", (value) => throw new NotImplementedException());
+
+            try
+            {
+                await database.Get<string>("Id").Set("Test");
+            }
+            catch (NotImplementedException)
+            {
+                return;
+            }
+            
+            Assert.Fail("Failed to trigger not implemented exception");
         }
         
     }
