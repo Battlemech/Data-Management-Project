@@ -28,7 +28,7 @@ namespace DMP.Databases
                 }
 
                 //see if database exists
-                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<TrackedSavedObject> savedObjects);
+                bool databaseExists = PersistentData.TryLoadDatabase(Id, out List<SerializedObject> savedObjects);
 
                 if (!databaseExists) OnNoData();
                 else OnDataFound(savedObjects);
@@ -63,9 +63,9 @@ namespace DMP.Databases
         /// <summary>
         /// Invoked when persistent data was found
         /// </summary>
-        private void OnDataFound(List<TrackedSavedObject> savedObjects)
+        private void OnDataFound(List<SerializedObject> savedObjects)
         {
-            List<TrackedSavedObject> toSynchronise = new List<TrackedSavedObject>(savedObjects.Count);
+            List<SerializedObject> toSynchronise = new List<SerializedObject>(savedObjects.Count);
 
             //get list of currently known ids
             List<string> existingIds = _values.Keys.ToList();

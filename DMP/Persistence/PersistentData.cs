@@ -99,10 +99,10 @@ namespace DMP.Persistence
             return true;
         }
 
-        public static bool TryLoadDatabase(string databaseId, out List<TrackedSavedObject> serializedObjects)
+        public static bool TryLoadDatabase(string databaseId, out List<SerializedObject> serializedObjects)
         {
             //init return lists
-            serializedObjects = new List<TrackedSavedObject>();
+            serializedObjects = new List<SerializedObject>();
             using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
             connection.Open();
             
@@ -111,7 +111,7 @@ namespace DMP.Persistence
                 //todo: fix for 1000000 addCount in LoadDatabase, "database is locked" SQLite Exception
                 //https://stackoverflow.com/questions/17592671/sqlite-database-locked-exception
                 
-                serializedObjects = connection.Query<TrackedSavedObject>($"select id as ValueStorageId, bytes as Buffer, type as Type, syncRequired as SyncRequired from '{databaseId}'").AsList();
+                serializedObjects = connection.Query<SerializedObject>($"select id as ValueStorageId, bytes as Buffer, type as Type, syncRequired as SyncRequired from '{databaseId}'").AsList();
             }
             catch (SQLiteException e)
             {
