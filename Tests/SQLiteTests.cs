@@ -134,7 +134,7 @@ namespace Tests
             PersistentData.DeleteDatabase(nameof(LoadDatabase));
             
             //database doesnt exist
-            Assert.IsFalse(PersistentData.TryLoadDatabase(nameof(LoadDatabase), out List<TrackedSavedObject> savedObjects));
+            Assert.IsFalse(PersistentData.TryLoadDatabase(nameof(LoadDatabase), out List<SerializedObject> savedObjects));
             
             PersistentData.CreateDatabase(nameof(LoadDatabase));
             
