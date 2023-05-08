@@ -10,14 +10,16 @@ namespace DMP.Databases
         //Sum up all currently enqueued tasks
         public int QueuedTasksCount => _values.Values.Sum(vs => vs.GetQueuedTasksCount());
         
-        public void Delegate(string id, Task task)
+        public Task Delegate(string id, Task task)
         {
             //enqueue task in value storage if it exists
-            if (_values.TryGetValue(id, out ValueStorage.ValueStorage value)) value.Delegate(task);
+            if (_values.TryGetValue(id, out ValueStorage.ValueStorage value)) return value.Delegate(task);
+            
             //start task if it doesn't exist
-            else task.Start();
+            task.Start();
+            return task;
         }
 
-        public void Delegate(string id, Action action) => Delegate(id, new Task(action));
+        public Task Delegate(string id, Action action) => Delegate(id, new Task(action));
     }
 }

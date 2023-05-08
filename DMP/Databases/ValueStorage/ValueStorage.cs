@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using DMP.Utility;
 
 namespace DMP.Databases.ValueStorage
@@ -13,7 +14,11 @@ namespace DMP.Databases.ValueStorage
             
         }
         
-        public void Set(T value)
+        /// <summary>
+        /// Updates the value, and returns the background task invoking callbacks,
+        /// synchronising values and saving new data persistently, if necessary
+        /// </summary>
+        public Task Set(T value)
         {
             byte[] serializedBytes;
             Type type;
@@ -27,14 +32,18 @@ namespace DMP.Databases.ValueStorage
             
             //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
             //allowing the delegation of callbacks to a task
-            Delegate((() =>
+            return Delegate((() =>
             {
                 InvokeAllCallbacks(serializedBytes, type);
                 Database.OnSet(Id, serializedBytes, type);
             }));
         }
 
-        public void BlockingSet(SetValueDelegate<T> setValueDelegate)
+        /// <summary>
+        /// Updates the value by executing the action in the delegate, and returns the background task invoking callbacks,
+        /// synchronising values and saving new data persistently, if necessary
+        /// </summary>
+        public Task BlockingSet(SetValueDelegate<T> setValueDelegate)
         {
             byte[] serializedBytes;
             Type type;
@@ -43,12 +52,12 @@ namespace DMP.Databases.ValueStorage
             {
                 _data = setValueDelegate.Invoke();
                 serializedBytes = Serialization.Serialize(_data);
-                type = _data.GetType();
+                type = _data?.GetType();
             }
             
             //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
             //allowing the delegation of callbacks to a task
-            Delegate((() =>
+            return Delegate((() =>
             {
                 InvokeAllCallbacks(serializedBytes, type);
                 Database.OnSet(Id, serializedBytes, type);
