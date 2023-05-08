@@ -91,7 +91,7 @@ namespace DMP.Databases.ValueStorage
 
         public override int InvokeAllCallbacks(byte[] value, Type type)
         {
-            return InvokeAllCallbacks((T)Serialization.Deserialize(value, type));
+            return type == null ? InvokeAllCallbacks(default) : InvokeAllCallbacks((T)Serialization.Deserialize(value, type));
         }
         
         public int InvokeAllCallbacks(T value)

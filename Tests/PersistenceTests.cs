@@ -259,6 +259,18 @@ namespace Tests
             }
         }
         
+        [Test]
+        public static void TestNull()
+        {
+            //set value
+            Database database = new Database("Test", true);
+            database.SetValue<string>("Test", null);
+            
+            //load value
+            database = new Database("Test", true);
+            Assert.AreEqual(null, database.Get<string>("Test").Get());
+        }
+        
         private class PlayerData : SynchronisedObject
         {
             public PlayerData(string databaseId) : base(databaseId, true)
