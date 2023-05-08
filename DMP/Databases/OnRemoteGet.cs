@@ -35,7 +35,7 @@ namespace DMP.Databases
                         ValueStorage.ValueStorage storage = values.Find((storage => storage.Id == id));
                         
                         if (success)
-                            messages.Add(new SetValueMessage(Id, id, storage.Serialize(out Type type), type.FullName, serverModCount));
+                            messages.Add(new SetValueMessage(Id, id, storage.Serialize(out Type type), type, serverModCount));
                         
                         //other lookups still need to be completed. Wait
                         completedLookups++;

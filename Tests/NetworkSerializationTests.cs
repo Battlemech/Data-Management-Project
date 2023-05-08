@@ -130,7 +130,7 @@ namespace Tests
         public static void DeserializeTestMessage()
         {
             Type type = typeof(SetValueMessage);
-            SetValueMessage message = new SetValueMessage("123", "456", new byte[1] { 9 }, type.AssemblyQualifiedName, 0);
+            SetValueMessage message = new SetValueMessage("123", "456", new byte[1] { 9 }, type, 0);
             NetworkSerializer serializer = new NetworkSerializer();
 
             //make sure received bytes equal sent bytes
