@@ -82,8 +82,6 @@ namespace DMP.Databases
             {
                 string id = tso.ValueStorageId;
                 
-                Console.WriteLine($"Loading: {id}");
-                    
                 //Skip if object with loaded id already exists
                 if (existingIds.Contains(id) || _values.ContainsKey(id)) continue;
 
