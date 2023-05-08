@@ -115,7 +115,7 @@ namespace DMP.Databases
         private void ExecuteDelayedSet(string id, byte[] serializedBytes, Type type, uint modCount, bool incrementModCount)
         {
             //notify peers of new value
-            Client.SendMessage(new SetValueMessage(Id, id, serializedBytes, type.AssemblyQualifiedName, modCount));
+            Client.SendMessage(new SetValueMessage(Id, id, serializedBytes, type, modCount));
 
             //update values locally
             OnRemoteSet(id, serializedBytes, type, modCount, incrementModCount);

@@ -1,4 +1,5 @@
-﻿using DMP.Networking.Messaging;
+﻿using System;
+using DMP.Networking.Messaging;
 using DMP.Utility;
 
 namespace DMP.Networking.Synchronisation.Messages
@@ -20,13 +21,13 @@ namespace DMP.Networking.Synchronisation.Messages
             Value = request.Value;
         }
 
-        public SetValueMessage(string databaseId, string valueId, byte[] value, string type, uint modCount)
+        public SetValueMessage(string databaseId, string valueId, byte[] value, Type type, uint modCount)
         {
             DatabaseId = databaseId;
             ValueId = valueId;
             ModCount = modCount;
             Value = value;
-            Type = type;
+            Type = type?.AssemblyQualifiedName;
         }
 
         public override string ToString()
