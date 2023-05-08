@@ -49,7 +49,7 @@ namespace DMP.Networking.Synchronisation.Client
             AddCallback<SetValueMessage>((message =>
             {
                 //forward set value message to database
-                Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, message.ModCount, true);
+                Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, Type.GetType(message.Type, true), message.ModCount, true);
             }));
             
             AddCallback<GetValueRequest>((message) =>

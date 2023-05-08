@@ -1,4 +1,6 @@
-﻿namespace DMP.Persistence
+﻿using System;
+
+namespace DMP.Persistence
 {
     /// <summary>
     /// Object which will be saved persistently
@@ -8,14 +10,16 @@
         public string DataBaseId { get; }
         public string ValueStorageId { get; }
         public byte[] Buffer { get; }
+        public string Type { get; }
         public bool SyncRequired { get; }
 
-        public SerializedObject(string dataBaseId, string valueStorageId, byte[] buffer, bool syncRequired)
+        public SerializedObject(string dataBaseId, string valueStorageId, byte[] buffer, Type type, bool syncRequired)
         {
-            Buffer = buffer;
-            SyncRequired = syncRequired;
-            ValueStorageId = valueStorageId;
             DataBaseId = dataBaseId;
+            ValueStorageId = valueStorageId;
+            Buffer = buffer;
+            Type = type.AssemblyQualifiedName;
+            SyncRequired = syncRequired;
         }
     }
     
@@ -42,13 +46,15 @@
     {
         public string ValueStorageId { get; }
         public byte[] Buffer { get; }
+        public string Type { get; }
         public bool SyncRequired { get; }
 
-        public TrackedSavedObject(string valueStorageId, byte[] buffer, bool syncRequired)
+        public TrackedSavedObject(string valueStorageId, byte[] buffer, string type, bool syncRequired)
         {
             Buffer = buffer;
             SyncRequired = syncRequired;
             ValueStorageId = valueStorageId;
+            Type = type;
         }
 
         public override string ToString()

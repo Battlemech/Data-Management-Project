@@ -89,7 +89,10 @@ namespace DMP.Databases.ValueStorage
         
         public override int InvokeAllCallbacks() => BlockingGet(InvokeAllCallbacks);
 
-        public override int InvokeAllCallbacks(byte[] value) => InvokeAllCallbacks(Serialization.Deserialize<T>(value));
+        public override int InvokeAllCallbacks(byte[] value, Type type)
+        {
+            return InvokeAllCallbacks((T)Serialization.Deserialize(value, type));
+        }
         
         public int InvokeAllCallbacks(T value)
         {

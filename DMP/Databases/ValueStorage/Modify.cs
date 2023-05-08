@@ -28,19 +28,21 @@ namespace DMP.Databases.ValueStorage
         public Task Modify(ModifyValueDelegate<T> modify, Action<T> onResultConfirmed = null)
         {
             byte[] serializedBytes;
+            Type type;
 
             //set value in dictionary
             lock (Id)
             {
                 _data = TryModify(modify, _data);
                 serializedBytes = Serialization.Serialize(_data);
+                type = _data.GetType();
             }
             
             //delegates internal logic to a thread, increasing performance
             return Delegate(() =>
             {
-                InvokeAllCallbacks(serializedBytes);
-                Database.OnModify(Id, serializedBytes, modify, onResultConfirmed);
+                InvokeAllCallbacks(serializedBytes, type);
+                Database.OnModify(Id, serializedBytes, type, modify, onResultConfirmed);
             });
         }
         

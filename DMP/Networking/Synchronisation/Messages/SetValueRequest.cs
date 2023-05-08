@@ -1,13 +1,33 @@
-﻿using DMP.Networking.Messaging;
+﻿using System;
+using DMP.Networking.Messaging;
 
 namespace DMP.Networking.Synchronisation.Messages
 {
     public class SetValueRequest : RequestMessage<SetValueReply>
     {
-        public string DatabaseId;
-        public string ValueId;
+        public readonly string DatabaseId;
+        public readonly string ValueId;
         public uint ModCount;
         public byte[] Value;
+        public readonly string Type;
+
+        public SetValueRequest(string databaseId, string valueId, uint modCount, byte[] value, Type type)
+        {
+            DatabaseId = databaseId;
+            ValueId = valueId;
+            ModCount = modCount;
+            Value = value;
+            Type = type.AssemblyQualifiedName;
+        }
+
+        public SetValueRequest(SetValueRequest other)
+        {
+            DatabaseId = other.DatabaseId;
+            ValueId = other.ValueId;
+            ModCount = other.ModCount;
+            Value = other.Value;
+            Type = other.Type;
+        }
 
         public override string ToString()
         {

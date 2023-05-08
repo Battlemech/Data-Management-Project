@@ -53,9 +53,9 @@ namespace DMP.Databases
             {
                 T obj;
                 //try loading the object from not-deserialized data (occurs if type is missing)
-                if (_serializedData.TryGetValue(id, out byte[] serializedData)) 
+                if (_serializedData.TryGetValue(id, out Tuple<byte[], Type> serializedData)) 
                 {
-                    obj = Serialization.Deserialize<T>(serializedData);
+                    obj = (T) Serialization.Deserialize(serializedData.Item1, serializedData.Item2);
                     
                     //remove serialized data, it is no longer required
                     _serializedData.Remove(id);
@@ -93,10 +93,10 @@ namespace DMP.Databases
 
         public void SetValue<T>(string id, T value) => Get<T>(id).Set(value);
         
-        protected internal void OnSet(string id, byte[] serializedBytes)
+        protected internal void OnSet(string id, byte[] serializedBytes, Type type)
         {
-            if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes);
-            if(_isPersistent) OnSetPersistent(id, serializedBytes);
+            if(_isSynchronised && Client.IsConnected) OnSetSynchronised(id, serializedBytes, type);
+            if(_isPersistent) OnSetPersistent(id, serializedBytes, type);
         }
     }
 }

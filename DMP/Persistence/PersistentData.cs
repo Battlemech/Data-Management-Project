@@ -35,7 +35,7 @@ namespace DMP.Persistence
         /// <param name="databaseId"></param>
         public static void CreateDatabase(string databaseId)
         {
-            ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB, syncRequired BOOLEAN DEFAULT FALSE)");
+            ExecuteCommand($"create table if not exists '{databaseId}'(id MESSAGE_TEXT PRIMARY KEY, bytes BLOB, syncRequired BOOLEAN DEFAULT FALSE, type TEXT)");
         }
 
         /// <summary>
@@ -111,36 +111,7 @@ namespace DMP.Persistence
                 //todo: fix for 1000000 addCount in LoadDatabase, "database is locked" SQLite Exception
                 //https://stackoverflow.com/questions/17592671/sqlite-database-locked-exception
                 
-                serializedObjects = connection.Query<TrackedSavedObject>($"select id as ValueStorageId, bytes as Buffer, syncRequired as SyncRequired from '{databaseId}'").AsList();
-            }
-            catch (SQLiteException e)
-            {
-                //make sure it was the right exception: database didn't exist
-                if (!e.Message.Contains($"no such table: {databaseId}")) throw;
-                    
-                return false;
-            }
-
-            return true;
-        }
-
-        public static bool TryLoadDatabase(string databaseId, out List<DeSerializedObject> savedObjects)
-        {
-            //init return list
-            savedObjects = new List<DeSerializedObject>();
-
-            //open connection
-            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
-            connection.Open();
-            
-            try
-            {
-                var serializedObjects = connection.Query<SavedObject>($"select id as ValueStorageId, bytes as Buffer from '{databaseId}'").AsList();
-
-                foreach (var serializedObject in serializedObjects)
-                {
-                    savedObjects.Add(new DeSerializedObject(serializedObject.ValueStorageId, Serialization.Deserialize<object>(serializedObject.Buffer)));
-                }
+                serializedObjects = connection.Query<TrackedSavedObject>($"select id as ValueStorageId, bytes as Buffer, type as Type, syncRequired as SyncRequired from '{databaseId}'").AsList();
             }
             catch (SQLiteException e)
             {
@@ -168,10 +139,10 @@ namespace DMP.Persistence
         /// <summary>
         /// Saves an value locally. Requires a database to be created before
         /// </summary>
-        public static void Save(string databaseId, string valueStorageId, byte[] bytes, bool syncRequired)
+        public static void Save(string databaseId, string valueStorageId, byte[] bytes, Type type, bool syncRequired)
         {
             //enqueue it to be saved in sql table by working thread
-            DataToSaveQueue.Enqueue(new SerializedObject(databaseId, valueStorageId, bytes, syncRequired));
+            DataToSaveQueue.Enqueue(new SerializedObject(databaseId, valueStorageId, bytes, type, syncRequired));
 
             //return if another thread is already writing the data to the sql database
             lock (DataToSaveQueue)
@@ -185,47 +156,48 @@ namespace DMP.Persistence
 
         private static void SaveQueuedData()
         {
-            //establish connection with database
-            using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
-            connection.Open();
-
-            //notify database that changes will be made
-            using SQLiteTransaction transaction = connection.BeginTransaction();
-
-            //execute all queued changes
-            while (DataToSaveQueue.TryDequeue(out SerializedObject obj))
+            while (true)
             {
-                try
-                {
-                    //set new value
-                    string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes, syncRequired) values ('{obj.ValueStorageId}', @Buffer, '{obj.SyncRequired}')";
-                    connection.Execute(command, obj);
-                }
-                catch (Exception e)
-                {
-                    LogWriter.LogError($"Failed setting {obj.DataBaseId}-{obj.ValueStorageId}");
-                    LogWriter.LogException(e);
-                    throw;
-                }
-            }
+                //establish connection with database
+                using SQLiteConnection connection = new SQLiteConnection(ConnectionString);
+                connection.Open();
 
-            //commit the queued changes
-            transaction.Commit();
-            
-            //stop executing commands if none are left to execute
-            lock (DataToSaveQueue)
-            {
-                if (DataToSaveQueue.IsEmpty)
+                //notify database that changes will be made
+                using SQLiteTransaction transaction = connection.BeginTransaction();
+
+                //execute all queued changes
+                while (DataToSaveQueue.TryDequeue(out SerializedObject obj))
                 {
+                    try
+                    {
+                        //set new value
+                        string command = $"insert or replace into '{obj.DataBaseId}'(id, bytes, syncRequired, type) values ('{obj.ValueStorageId}', @Buffer, '{obj.SyncRequired}', '{obj.Type}')";
+                        connection.Execute(command, obj);
+                    }
+                    catch (Exception e)
+                    {
+                        LogWriter.LogError($"Failed setting {obj.DataBaseId}-{obj.ValueStorageId}");
+                        LogWriter.LogException(e);
+                        throw;
+                    }
+                }
+
+                //commit the queued changes
+                transaction.Commit();
+
+                //stop executing commands if none are left to execute
+                lock (DataToSaveQueue)
+                {
+                    if (!DataToSaveQueue.IsEmpty) continue;
+                    
                     SavingData = false;
                     return;
                 }
+
+                //if commands are left to execute, start executing them again
             }
-                
-            //if commands are left to execute, start executing them again
-            SaveQueuedData();
         }
-        
+
         #endregion
 
         private static void ExecuteCommand(string command)

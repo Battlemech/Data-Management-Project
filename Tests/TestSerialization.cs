@@ -38,7 +38,7 @@ namespace Tests
         [Test]
         public static void TestMessageSerialization()
         {
-            SetValueMessage message = new SetValueMessage("123", "123213", 123123, new byte[2]{1, 2});
+            SetValueMessage message = new SetValueMessage("123", "213123", new byte[2] { 1, 2 }, "ANYTYPE", 2);
             SetValueMessage copy = Serialization.Deserialize<SetValueMessage>(Serialization.Serialize(message));
          
             Assert.AreEqual(message.DatabaseId, copy.DatabaseId);
@@ -53,7 +53,7 @@ namespace Tests
 
         private class TestRequest : RequestMessage<TestReply>
         {
-            public int Test { get; init; }
+            public int Test;
         }
 
         private class TestReply : ReplyMessage
@@ -100,7 +100,7 @@ namespace Tests
 
         public class TestClass
         {
-            public int Count { get; set; }
+            public int Count;
             public string Message;
             
             public double DontSerializeThis { get; set; }
@@ -111,7 +111,7 @@ namespace Tests
         
         public class TestClass2 : TestClass
         {
-            public bool IsTrue { get; set; }
+            public bool IsTrue;
         }
 
         [Test]
@@ -263,16 +263,6 @@ namespace Tests
             string test = "Lorem ipsum et doloret et cetera et cetera et cetera";
             Console.WriteLine($"Default serializer byte size: {new Serializer(new AllPropertiesExtractor()).Serialize(test).Length}");
             Console.WriteLine($"Custom serializer byte size: {new Serializer(new AttributeAwareExtractor()).Serialize(test).Length}");
-        }
-        
-        [Test]
-        public static void TestExplicitTypeSerialization()
-        {
-            Type type = typeof(ConcurrentScheduler);
-            byte[] bytes = Serialization.Serialize(type);
-            Type deserialized = Serialization.Deserialize<Type>(bytes);
-            
-            Assert.AreEqual(type, deserialized);
         }
     }
 }

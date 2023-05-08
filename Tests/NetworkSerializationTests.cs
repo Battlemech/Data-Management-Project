@@ -14,7 +14,7 @@ namespace Tests
     {
         public struct NetworkNotificationMessage
         {
-            public string Notification { get; set; }
+            public string Notification;
         }
         
         [Test]
@@ -129,7 +129,8 @@ namespace Tests
         [Test]
         public static void DeserializeTestMessage()
         {
-            SetValueMessage message = new SetValueMessage("123", "456", 1, new byte[1] { 1 });
+            Type type = typeof(SetValueMessage);
+            SetValueMessage message = new SetValueMessage("123", "456", new byte[1] { 9 }, type.AssemblyQualifiedName, 0);
             NetworkSerializer serializer = new NetworkSerializer();
 
             //make sure received bytes equal sent bytes
@@ -139,6 +140,7 @@ namespace Tests
             byte[] receivedMessage = serializer.Deserialize(toSend)[0];
             Assert.AreEqual(Serialization.Serialize(message), receivedMessage, "Valid byte serialization");
             Console.WriteLine("Received valid bytes");
+            Console.WriteLine(message.Type);
             
             //make sure message was deserialized correctly
             SetValueMessage copy = Serialization.Deserialize<SetValueMessage>(receivedMessage);
@@ -147,6 +149,7 @@ namespace Tests
             Assert.AreEqual(message.ValueId, copy.ValueId);
             Assert.AreEqual(message.ModCount, copy.ModCount);
             Assert.AreEqual(message.Value, copy.Value);
+            Assert.AreEqual(type, Type.GetType(message.Type, true));
         }
     }
 }

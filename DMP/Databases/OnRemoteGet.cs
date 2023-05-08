@@ -25,20 +25,17 @@ namespace DMP.Databases
                 {
                     uint localModCount = GetModCount(id);
                     uint serverModCount = remoteModCounts[id];
-                    Type type = null;
                     
                     //local modification count doesn't equal the servers -> Value can't be safely retrieved
                     bool success = serverModCount == localModCount;
 
-                    //object cant be serialized because the type is unknown ->
-                    //Occurs if object is default -> null -> Will be automatically mirrored on remote database
-                    success = success && TryGetType(id, out type);
-
                     //value can be loaded safely
                     lock (messages)
                     {
+                        ValueStorage.ValueStorage storage = values.Find((storage => storage.Id == id));
+                        
                         if (success)
-                            messages.Add(new SetValueMessage(Id, id, serverModCount, Serialization.Serialize(type, values.Find(v => v.Id == id).GetObject())));
+                            messages.Add(new SetValueMessage(Id, id, storage.Serialize(out Type type), type.FullName, serverModCount));
                         
                         //other lookups still need to be completed. Wait
                         completedLookups++;
