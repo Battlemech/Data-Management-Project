@@ -18,7 +18,7 @@ namespace DMP.Persistence
             DataBaseId = dataBaseId;
             ValueStorageId = valueStorageId;
             Buffer = buffer;
-            Type = type.AssemblyQualifiedName;
+            Type = type?.AssemblyQualifiedName;
             SyncRequired = syncRequired;
         }
     }

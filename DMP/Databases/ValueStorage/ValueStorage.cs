@@ -22,7 +22,7 @@ namespace DMP.Databases.ValueStorage
             {
                 _data = value;
                 serializedBytes = Serialization.Serialize(value);
-                type = _data.GetType();
+                type = _data?.GetType();
             }
             
             //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,

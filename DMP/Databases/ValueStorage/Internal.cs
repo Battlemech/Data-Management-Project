@@ -61,7 +61,7 @@ namespace DMP.Databases.ValueStorage
         {
             lock (Id)
             {
-                type = _data.GetType();
+                type = _data?.GetType();
                 return Serialization.Serialize(_data);
             }
         }
@@ -76,7 +76,7 @@ namespace DMP.Databases.ValueStorage
             lock (Id)
             {
                 _data = modify.Invoke(_data);
-                type = _data.GetType();
+                type = _data?.GetType();
                 return Serialization.Serialize(_data);
             }
         }

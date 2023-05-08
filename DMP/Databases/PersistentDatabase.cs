@@ -81,6 +81,8 @@ namespace DMP.Databases
             foreach (var tso in savedObjects)
             {
                 string id = tso.ValueStorageId;
+                
+                Console.WriteLine($"Loading: {id}");
                     
                 //Skip if object with loaded id already exists
                 if (existingIds.Contains(id) || _values.ContainsKey(id)) continue;
