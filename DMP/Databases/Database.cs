@@ -63,13 +63,6 @@ namespace DMP.Databases
                 else
                 {
                     obj = default;
-                        
-                    //if it won't be possible to extract the type later
-                    if (obj == null)
-                    {
-                        //keep track of failed get attempts to allow synchronisedDatabase to create objects of requested types
-                        _failedGets[id] = typeof(T);
-                    }
                 }
 
                 ValueStorage<T> valueStorage = new ValueStorage<T>(this, id, obj);

@@ -305,5 +305,59 @@ namespace Tests
             //wait for reply, expecting none to come
             Assert.IsFalse(originReceived.WaitOne(1000));
         }
+
+        [Test]
+        public static async Task TestAsyncSend()
+        {
+            string localhost = "127.0.0.1";
+            int toTransform = 100;
+            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestRequestReply));
+
+            MessageServer server = new MessageServer(localhost, port);
+            server.Start();
+
+            MessageClient client = new MessageClient(localhost, port);
+            client.ConnectAsync();
+
+            Assert.IsTrue(client.WaitForConnect());
+
+            TestRequest request = new TestRequest() { PleaseTransform = toTransform };
+            Console.WriteLine($"Client: Requesting {request.PleaseTransform} to be transformed");
+            
+            //make sure the value is serialized correctly
+            TestRequest copy = Serialization.Deserialize<TestRequest>(Serialization.Serialize(request));
+            Assert.AreEqual(toTransform, request.PleaseTransform);
+            Assert.AreEqual(request.PleaseTransform, copy.PleaseTransform);
+            Console.WriteLine("Local serialization succeeded");
+
+            //add request callback to server
+            server.AddCallback<TestRequest>(((message, session) =>
+            {
+                //ensure server received correct number
+                Assert.AreEqual(toTransform, message.PleaseTransform, "Server received wrong int value!");
+                
+                //transform int
+                var testReply = new TestReply(message) { Transformed = message.PleaseTransform.ToString() };
+
+                Console.WriteLine($"Server: Transformed {message.PleaseTransform} to {testReply.Transformed}");
+                
+                //send reply
+                session.SendMessage(testReply);
+            }));
+
+            TestReply reply = await client.SendRequest<TestRequest, TestReply>(request);
+            
+            Assert.IsTrue(reply != null, "Received reply");
+            Assert.AreEqual(request.Id, reply.Id, "Id persistence");
+            Assert.AreEqual(toTransform.ToString(), reply.Transformed, "server value transformation");
+
+            //remove callback from server
+            Assert.AreEqual(1, server.RemoveCallbacks<TestRequest>());
+            
+            Assert.IsFalse(client.SendRequest(request, out reply, 1000), "Received reply, but callback was removed");
+            
+            server.Stop();
+            client.DisconnectAsync();
+        }
     }
 }
