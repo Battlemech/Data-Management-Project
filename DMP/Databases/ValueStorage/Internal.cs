@@ -54,7 +54,11 @@ namespace DMP.Databases.ValueStorage
         
         public override void UnsafeSet(byte[] bytes, Type type)
         {
-            lock (Id) {_data = (T)Serialization.Deserialize(bytes, type);}
+            lock (Id)
+            {
+                _data = (T)Serialization.Deserialize(bytes, type);
+                InvokeAllCallbacks(_data);
+            }
         }
 
         public override byte[] Serialize(out Type type)

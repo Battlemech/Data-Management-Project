@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DMP.Databases.ValueStorage;
 using DMP.Objects;
@@ -11,7 +12,7 @@ namespace DMP.Databases
     public partial class Database
     {
         public readonly string Id;
-        private readonly ConcurrentDictionary<string, ValueStorage.ValueStorage> _values = new ConcurrentDictionary<string, ValueStorage.ValueStorage>();
+        private readonly Dictionary<string, ValueStorage.ValueStorage> _values = new Dictionary<string, ValueStorage.ValueStorage>();
 
         public Database(string id, bool isPersistent = false, bool isSynchronised = false)
         {
@@ -45,34 +46,38 @@ namespace DMP.Databases
 
         public ValueStorage<T> Get<T>(string id)
         {
-            //try retrieving the value
-            bool success = _values.TryGetValue(id, out ValueStorage.ValueStorage value);
-
-            //if it wasn't found: Add default value
-            if (!success)
+            ValueStorage.ValueStorage value;
+            
+            lock (_values)
             {
-                T obj;
-                //try loading the object from not-deserialized data (occurs if type is missing)
-                if (_serializedData.TryGetValue(id, out Tuple<byte[], Type> serializedData)) 
+                //try retrieving the value
+                bool success = _values.TryGetValue(id, out value);
+
+                //if it wasn't found: Add default value
+                if (!success)
                 {
-                    obj = (T) Serialization.Deserialize(serializedData.Item1, serializedData.Item2);
+                    T obj;
+                    //try loading the object from not-deserialized data (occurs if type is missing)
+                    if (_serializedData.TryGetValue(id, out Tuple<byte[], Type> serializedData)) 
+                    {
+                        obj = (T) Serialization.Deserialize(serializedData.Item1, serializedData.Item2);
                     
-                    //remove serialized data, it is no longer required
-                    _serializedData.Remove(id);
-                }
-                else
-                {
-                    obj = default;
-                }
+                        //remove serialized data, it is no longer required
+                        _serializedData.Remove(id);
+                    }
+                    else
+                    {
+                        obj = default;
+                    }
 
-                ValueStorage<T> valueStorage = new ValueStorage<T>(this, id, obj);
-
-                //if adding valueStorage object failed: other thread must have added it in the meantime. Try getting it again
-                if (!_values.TryAdd(id, valueStorage)) return Get<T>(id);
+                    //create value storage and add it
+                    ValueStorage<T> valueStorage = new ValueStorage<T>(this, id, obj);
+                    _values.Add(id, valueStorage);
                 
-                return valueStorage;
+                    return valueStorage;
+                }
             }
-
+            
             //return valueStorage if it is of expected type
             if (value is ValueStorage<T> expected) return expected;
 

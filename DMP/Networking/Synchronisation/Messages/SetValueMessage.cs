@@ -16,7 +16,7 @@ namespace DMP.Networking.Synchronisation.Messages
         {
             DatabaseId = request.DatabaseId;
             ValueId = request.ValueId;
-            Type = request.Type;
+            Type = request.TypeAsString;
             ModCount = request.ModCount;
             Value = request.Value;
         }

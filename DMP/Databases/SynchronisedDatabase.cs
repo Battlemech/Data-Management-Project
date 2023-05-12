@@ -56,17 +56,17 @@ namespace DMP.Databases
             //try resolving HostId
             ConfigureSynchronisedPersistence();
 
-            //return if there are no values to synchronise
-            if(_values.Count == 0) return;
-            
             Delegation.DelegateAction((() =>
             {
-                //return if there are no values to synchronise
-                if (_values.Count == 0) return;
-
-                foreach (var vs in _values.Values)
+                lock (_values)
                 {
-                    OnOfflineModification(vs.Id, vs.Serialize(out Type type), type);
+                    //return if there are no values to synchronise
+                    if (_values.Count == 0) return;
+                    
+                    foreach (var vs in _values.Values)
+                    {
+                        OnOfflineModification(vs.Id, vs.Serialize(out Type type), type);
+                    }   
                 }
             }));
         }
@@ -76,17 +76,71 @@ namespace DMP.Databases
         /// </summary>
         private void OnSetSynchronised(string id, byte[] value, Type type)
         {
-            SetValueRequest request = new SetValueRequest(Id, id, GetModCount(id), value, type);
+            uint modCount = IncrementModCount(id);
+            SetValueRequest request = new SetValueRequest(Id, id, modCount, value, type);
 
             Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
             {
-                
+                //value was synchronised successfully
+                if(modCount == reply.ExpectedModCount) return;
+
+                request.ModCount = reply.ExpectedModCount;
+
+                //repeat sending the request once updated value is available locally
+                EnqueueFailedRequest(request);
             });
         }
 
         protected internal void OnRemoteSet(string id, byte[] value, Type type, uint modCount, bool incrementModCount)
         {
+            //during synchronisation, multiple setValueMessages will be broadcast. This will filter duplicates
+            if(TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount > modCount) return;
             
+            lock (_values)
+            {
+                //update local value
+                if (_values.TryGetValue(id, out ValueStorage.ValueStorage storage))
+                    //this will invoke callbacks internally
+                    storage.UnsafeSet(value, type);
+                //or save it for later deserialization
+                else
+                    _serializedData[id] = new Tuple<byte[], Type>(value, type);
+            }
+            
+            //increment local mod count, if necessary
+            if(incrementModCount) UpdateModCount(id, modCount);
+            
+            //update remotely confirmed mod count
+            lock (_confirmedModCount) _confirmedModCount[id] = modCount;
+            
+            //save persistently, if necessary
+            if(_isPersistent) OnSetPersistent(id, value, type);
+
+            //check if any locally attempted set requests exists which wait for the current mod count to be completed
+            if (!TryDequeueFailedRequest(id, modCount + 1, out SetValueRequest request)) return;
+
+            //update value and type of request if it resulted from a modify process
+            if (request is FailedModifyRequest modifyRequest)
+            {
+                value = modifyRequest.RepeatModification(value, type, out type);
+                incrementModCount = modifyRequest.IncrementModCount;
+            }
+            else
+            {
+                //extract value and type from delayed request
+                value = request.Value;
+                type = request.GetValueType();
+                
+                //local mod count was already increased, it doesn't need to be increased again
+                incrementModCount = false;
+            }
+            modCount = request.ModCount;
+            
+            //send previously delayed request to others
+            Client.SendMessage(new SetValueMessage(Id, id, value, type, modCount));
+            
+            //process the sent set value message locally
+            OnRemoteSet(id, value, type, modCount, incrementModCount);
         }
     }
 }
