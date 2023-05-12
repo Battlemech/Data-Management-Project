@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP;
+using DMP.Networking;
 using DMP.Networking.Messaging;
 using DMP.Networking.Messaging.Client;
 using DMP.Networking.Messaging.Server;
@@ -354,10 +355,31 @@ namespace Tests
             //remove callback from server
             Assert.AreEqual(1, server.RemoveCallbacks<TestRequest>());
             
-            Assert.IsFalse(client.SendRequest(request, out reply, 1000), "Received reply, but callback was removed");
+            try
+            {
+                reply = await client.SendRequest<TestRequest, TestReply>(request, 1000);
+                
+                Assert.Fail("Received no reply, but failed to throw exception");
+            }
+            catch (ReplyTimedOutException)
+            {
+                Console.WriteLine("Received no reply: callback was removed");
+            }
+            
             
             server.Stop();
             client.DisconnectAsync();
+            
+            try
+            {
+                reply = await client.SendRequest<TestRequest, TestReply>(request, 1000);
+                
+                Assert.Fail("Received no reply, but failed to throw exception");
+            }
+            catch (NotConnectedException)
+            {
+                Console.WriteLine("Received no reply: client isn't connected");
+            }
         }
     }
 }

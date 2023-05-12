@@ -109,14 +109,13 @@ namespace DMP.Networking.Messaging.Client
                     resetEvent.Set();
                 }), timeout);
 
+                //make sure message was sent
                 if (!success)
-                {
-                    LogWriter.LogError($"Failed to send {requestMessage}");
-                    return;
-                }
+                    throw new NotConnectedException();
                 
-                if(!resetEvent.WaitOne(timeout))
-                    LogWriter.LogError($"Received no reply for {requestMessage} within {timeout} ms!");
+                //make sure reply was received
+                if (!resetEvent.WaitOne(timeout))
+                    throw new ReplyTimedOutException(timeout);
             }));
 
             return reply;
