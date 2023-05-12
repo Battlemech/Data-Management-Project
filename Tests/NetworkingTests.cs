@@ -374,7 +374,7 @@ namespace Tests
             {
                 reply = await client.SendRequest<TestRequest, TestReply>(request, 1000);
                 
-                Assert.Fail("Received no reply, but failed to throw exception");
+                Assert.Fail("Failed to send message, but failed to throw exception");
             }
             catch (NotConnectedException)
             {
