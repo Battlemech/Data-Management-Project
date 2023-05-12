@@ -86,7 +86,7 @@ namespace DMP.Networking.Synchronisation.Server
                 string databaseId = request.DatabaseId;
                 string valueId = request.ValueId;
                 uint expected = IncrementModCount(databaseId, valueId);
-                
+
                 //a set request will be received later. Make sure server expects it
                 GetTracker(databaseId).EnqueueDelayedSetRequest(valueId, expected, session);
 

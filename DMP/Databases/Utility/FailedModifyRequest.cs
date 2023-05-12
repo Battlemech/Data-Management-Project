@@ -38,6 +38,7 @@ namespace DMP.Databases.Utility
         public override object RepeatModification(object current)
         {
             if (current is T data) return _modify.Invoke(data);
+            if (current is null) return _modify.Invoke(default);
 
             throw new ArgumentException($"Expected {typeof(T)}, but got {current?.GetType()}");
         }

@@ -48,12 +48,6 @@ namespace DMP.Databases
                 //decrement to 0. Remove entry
                 _pendingReplies.Remove(id);
             }
-            
-            //clear any saved values for remaining pending replies
-            lock (_confirmedValues)
-            {
-                _confirmedValues.Remove(id);
-            }
         }
 
         private bool RepliesPending(string id)

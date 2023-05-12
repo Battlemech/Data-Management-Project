@@ -167,15 +167,23 @@ namespace DMP.Databases
 
             bool incrementNext = false;
             
-            //get updated type from delayed request
-            type = Type.GetType(request.Type);
-            
             //if the request is a failed modify request:
             if (request is FailedModifyRequest modifyRequest)
             {
+                if (id != "HostId")
+                {
+                    Console.WriteLine($"{Client}: Repeating delayed modify: {id}, {request.ModCount}.");
+                    Console.WriteLine($"Value: {LogWriter.StringifyCollection(Serialization.Deserialize<List<int>>(value))}");
+                    Console.WriteLine($"Type: {type}");
+                }
+
                 //deserialize value again because the locally saved remote value might have been modified in the meantime
-                request.Value = Serialization.Serialize(type,modifyRequest.RepeatModification(Serialization.Deserialize(value, type)));
+                object newValue = modifyRequest.RepeatModification(Serialization.Deserialize(value, type));
+                type = newValue.GetType();
                 
+                request.SetType(type);
+                request.Value = Serialization.Serialize(type, newValue);
+
                 //check if modCount needs to be increased with delayed request
                 incrementNext = modifyRequest.IncrementModCount;
             }

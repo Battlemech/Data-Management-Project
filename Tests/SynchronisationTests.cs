@@ -330,6 +330,22 @@ namespace Tests
             //track added values
             List<int> addedValues = new List<int>(addCount * 3);
 
+            ModifyValueDelegate<List<int>> valueDelegate = value =>
+            {
+                //init list if necessary
+                value ??= new List<int>();
+                
+                //add value locally
+                Console.WriteLine($"Adding {value.Count} to {LogWriter.StringifyCollection(value)}");
+                value.Add(value.Count);
+                            
+                //make sure global copy doesn't contain new value
+                Assert.IsFalse(addedValues.Contains(value.Count));
+                addedValues.Add(value.Count);
+                            
+                return value;
+            };
+
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Task[] tasks = new[]
             {
@@ -338,16 +354,7 @@ namespace Tests
                     resetEvent.WaitOne();
                     for (int i = 0; i < addCount; i++)
                     {
-                        Database1.SafeModify<List<int>>(id, (value) =>
-                        {
-                            value ??= new List<int>(); 
-                            value.Add(value.Count);
-                            
-                            Assert.IsFalse(addedValues.Contains(value.Count));
-                            addedValues.Add(value.Count);
-                            
-                            return value;
-                        });
+                        Database1.SafeModify(id, valueDelegate);
                     }
                 })),
                 new Task((() =>
@@ -355,16 +362,7 @@ namespace Tests
                     resetEvent.WaitOne();
                     for (int i = 0; i < addCount; i++)
                     {
-                        Database2.SafeModify<List<int>>(id, (value) =>
-                        {
-                            value ??= new List<int>(); 
-                            value.Add(value.Count);
-                            
-                            Assert.IsFalse(addedValues.Contains(value.Count));
-                            addedValues.Add(value.Count);
-                            
-                            return value;
-                        });
+                        Database2.SafeModify(id, valueDelegate);
                     }
                 })),
                 new Task((() =>
@@ -372,16 +370,7 @@ namespace Tests
                     resetEvent.WaitOne();
                     for (int i = 0; i < addCount; i++)
                     {
-                        Database3.SafeModify<List<int>>(id, (value) =>
-                        {
-                            value ??= new List<int>(); 
-                            value.Add(value.Count);
-                            
-                            Assert.IsFalse(addedValues.Contains(value.Count));
-                            addedValues.Add(value.Count);
-                            
-                            return value;
-                        });
+                        Database3.SafeModify(id, valueDelegate);
                     }
                 }))
             };

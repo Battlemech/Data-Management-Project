@@ -43,7 +43,7 @@ namespace DMP.Databases.ValueStorage
         {
             lock (Id)
             {
-                return _data.GetType();
+                return _data?.GetType();
             }
         }
 

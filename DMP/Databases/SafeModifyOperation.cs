@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP.Databases.Utility;
@@ -52,7 +53,7 @@ namespace DMP.Databases
             bool success = Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
             {
                 if(lockReply == null) throw new TimeoutException($"Received no reply from server within {Options.DefaultTimeout} ms!");
-
+                
                 uint expectedModCount = lockReply.ExpectedModCount;
                     
                 //modCount was like client expected
@@ -71,7 +72,13 @@ namespace DMP.Databases
                 //if request was successful: execute modify now
                 if (success)
                 {
+                    //execute modification
                     T newValue = ValueStorage<T>.TryModify(modify, (T)Serialization.Deserialize(bytes, type));
+                    //update type of new object
+                    type = newValue?.GetType();
+                    
+                    if(id != "HostId") Console.WriteLine($"Executed local modify: {modCount},{expectedModCount}. New value: {LogWriter.StringifyCollection(newValue as List<int>)}");                    
+
                     ExecuteDelayedSet(id, Serialization.Serialize(newValue), type, expectedModCount, true);
                     return;
                 }
