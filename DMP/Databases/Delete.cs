@@ -45,7 +45,6 @@ namespace DMP.Databases
             _values.Clear();
             _confirmedValues.Clear();
             _failedRequests.Clear();
-            _pendingReplies.Clear();
             _serializedData.Clear();
             _onInitializedTracker = 0;
         }

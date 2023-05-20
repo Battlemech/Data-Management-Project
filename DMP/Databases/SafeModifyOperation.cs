@@ -28,7 +28,31 @@ namespace DMP.Databases
         /// </remarks>
         public void SafeModify<T>(string id, ModifyValueDelegate<T> modify)
         {
+            uint modCount = IncrementModCount(id);
             
+            //serialize type when SafeModify operation is executed to prevent changes to it while a reply is awaited
+            byte[] bytes = Get<T>(id).Serialize(out Type type);
+            
+            bool success = Client.SendRequest<LockValueRequest, LockValueReply>(new LockValueRequest(Id, id, modCount), (
+                reply =>
+                {
+                    bool success = modCount == reply.ExpectedModCount;
+
+                    //modification can be invoked now
+                    if (success)
+                    {
+                        //invoke modification, updating bytes and type
+                        bytes = Get<T>(id).UnsafeModify((T)Serialization.Deserialize(bytes, type), modify, out type);
+
+                        Client.SendMessage(new SetValueMessage(Id, id, bytes, type, modCount));
+                        return;
+                    }
+                    
+                    //modification needs to be delayed
+                    EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, reply.ExpectedModCount, modify, true));
+                }));
+
+            if (!success) throw new NotConnectedException();
         }
 
         public T SafeModifySync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)

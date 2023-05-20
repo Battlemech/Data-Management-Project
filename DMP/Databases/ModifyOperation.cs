@@ -47,7 +47,31 @@ namespace DMP.Databases
 
         private void OnModifyValueSynchronised<T>(string id, byte[] value, Type type, ModifyValueDelegate<T> modify, Action<T> onResultConfirmed)
         {
-            throw new NotImplementedException();
+            uint modCount = IncrementModCount(id);
+
+            Client.SendRequest<SetValueRequest, SetValueReply>(new SetValueRequest(Id, id, modCount, value, type),
+                reply =>
+                {
+                    //value was synchronised successfully
+                    if (modCount == reply.ExpectedModCount)
+                    {
+                        onResultConfirmed?.Invoke((T)Serialization.Deserialize(value, type));
+                        return;
+                    }
+                    
+                    //modify request failed. Repeating operation once up to date value exists locally
+                    EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, reply.ExpectedModCount, (currentValue =>
+                    {
+                        //invoke modify delegate
+                        T newValue = modify.Invoke(currentValue);
+                        
+                        //invoke onResultConfirmed, if necessary
+                        onResultConfirmed?.Invoke(newValue);
+
+                        //return updated value
+                        return newValue;
+                    })));
+                });
         }
     }
 }
