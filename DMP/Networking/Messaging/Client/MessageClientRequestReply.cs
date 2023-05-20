@@ -74,10 +74,7 @@ namespace DMP.Networking.Messaging.Client
             }, timeout);
 
             //failed to send request
-            if (!success)
-            {
-                return false;
-            }
+            if (!success) return false;
             
             //try waiting for a reply
             success = receivedReply.WaitOne(timeout);
@@ -88,15 +85,14 @@ namespace DMP.Networking.Messaging.Client
             return success;
         }
 
-        public async Task<TReply> SendRequest<TRequest, TReply>(TRequest requestMessage, int timeout = Options.DefaultTimeout)
+        public Task<TReply> SendRequest<TRequest, TReply>(TRequest requestMessage, int timeout = Options.DefaultTimeout)
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>
         {
-            TReply reply = default;
-
-            //wait for reply
-            await Delegation.DelegateAction((() =>
+            Task<TReply> requestTask = new Task<TReply>((() =>
             {
+                TReply reply = default;
+                
                 //allow new task to wait for reply
                 ManualResetEvent resetEvent = new ManualResetEvent(false);
                 
@@ -116,9 +112,14 @@ namespace DMP.Networking.Messaging.Client
                 //make sure reply was received
                 if (!resetEvent.WaitOne(timeout))
                     throw new ReplyTimedOutException(timeout);
+
+                return reply;
             }));
 
-            return reply;
+            //delegate task
+            Delegation.DelegateTask(requestTask);
+
+            return requestTask;
         }
     }
 }

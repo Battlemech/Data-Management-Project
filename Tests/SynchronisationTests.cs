@@ -911,6 +911,45 @@ namespace Tests
             
             Console.WriteLine($"Count: {count}. Iterative: {(float)iterativeWatch.ElapsedMilliseconds / (float)count} ms/obj. Concurrent: {(float)concurrentWatch.ElapsedMilliseconds / (float)count} ms/obj");
         }
+
+        [Test]
+        public static async Task TestExceptionHandling()
+        {
+            string id = nameof(TestExceptionHandling);
+            Setup(id);
+
+            //raise exceptions on callbacks
+            Database1.AddCallback<string>(id, (s => throw new NotImplementedException("Local")));
+
+            //catch local exception
+            try
+            {
+                await Database1.Get<string>(id).Set("Test");
+            }
+            catch (NotImplementedException e)
+            {
+                Assert.AreEqual("Local", e.Message);
+            }
+
+            /*
+             * cause remote exceptions
+             */
+            
+            //add callbacks causing exceptions
+            Assert.AreEqual(1, Database1.RemoveCallbacks(id));
+            Database2.AddCallback<string>(id, (s => throw new NotImplementedException("Remote 2")));
+            Database3.AddCallback<string>(id, (s => throw new NotImplementedException("Remote 3")));
+            
+            //add callbacks allowing to make sure all callbacks are still triggered
+            int invokeCount = 0;
+            Database1.AddCallback<string>(id, s => invokeCount++);
+            Database2.AddCallback<string>(id, s => invokeCount++);
+            Database3.AddCallback<string>(id, s => invokeCount++);
+            
+            await Database1.Get<string>(id).Set("Test");
+            
+            TestUtility.AreEqual(3, () => invokeCount, "Invoked all callbacks even after exceptions occour");
+        }
         
     }
 }

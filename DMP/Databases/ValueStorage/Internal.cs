@@ -59,8 +59,10 @@ namespace DMP.Databases.ValueStorage
         {
             lock (Id)
             {
-                _data = (T)Serialization.Deserialize(bytes, type);
-                InvokeAllCallbacks(_data);
+                _data = (T) Serialization.Deserialize(bytes, type);
+                
+                //dont throw on exceptions to prevent receiving thread to terminate
+                InvokeAllCallbacks(_data, false);
             }
         }
 
