@@ -32,7 +32,7 @@ namespace DMP.Networking.Synchronisation.Messages
 
         public override string ToString()
         {
-            return $"Database={DatabaseId}, ValueId={ValueId}, ModCount={ModCount}, Value={LogWriter.StringifyCollection(Value)}";
+            return $"Database={DatabaseId}, ValueId={ValueId}, ModCount={ModCount}";
         }
     }
 }

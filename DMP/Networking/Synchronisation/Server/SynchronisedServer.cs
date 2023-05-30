@@ -71,13 +71,13 @@ namespace DMP.Networking.Synchronisation.Server
                 if (!success)
                 {
                     LogWriter.LogError($"{session} tried to set data globally in wrong execution order!" +
-                                       $" Can't execute modCount={message.ModCount}");
+                                       $" Can't execute id={message.ValueId}, mod={message.ModCount}");
                     return;
                 }
 
                 BroadcastToOthers(message, session);
                 
-                if(message.ValueId == "TestSafeModify") Console.WriteLine($"Server: Broadcasting set {message.ModCount}");
+                Console.WriteLine($"Server: Broadcasting set id={message.ValueId}, mod={message.ModCount}");
                 
                 //checks if, after processing the delayed set, a delayed database delete may be processed
                 if(deleteDatabase) Broadcast(new DeleteDatabaseMessage() { DatabaseId = message.DatabaseId});

@@ -15,7 +15,6 @@ namespace Tests
         public delegate T GetValueDelegate<T>();
 
         //port tracking
-        private static readonly Dictionary<string, int> _ports = new Dictionary<string, int>();
         private static int _currentPort = Options.DefaultPort;
         
         public static void AreEqual<T>(T expected, GetValueDelegate<T> getValueDelegate, string testName = "Test", int timeInMs = Options.DefaultTimeout * 2, int waitTimeInMs = 10)
@@ -110,21 +109,9 @@ namespace Tests
             AreEqual(true, (() => true));
         }
 
-        public static int GetPort(string className, string testName)
+        public static int GetFreePort()
         {
-            string id = className + testName;
-            
-            //try get port
-            if (_ports.TryGetValue(id, out int port)) return port;
-
-            //add new port
-            port = _currentPort;
-            _ports.Add(id, port);
-
-            //increase currently used port
-            _currentPort++;
-            
-            return port;
+            return _currentPort++;
         }
     }
 }

@@ -45,7 +45,7 @@ namespace DMP.Databases
                     //modification can be invoked now
                     if (success)
                     {
-                        if(id == "TestSafeModify") Console.WriteLine($"{this}: Processing request {reply.ExpectedModCount}");
+                        if(id == "TestSafeModify") Console.WriteLine($"{this}: Successful request {reply.ExpectedModCount}");
                         
                         //invoke modification, updating bytes and type
                         bytes = InvokeDelegate(bytes, type, modify, out type);

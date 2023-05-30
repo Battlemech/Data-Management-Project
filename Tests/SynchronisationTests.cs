@@ -29,9 +29,10 @@ namespace Tests
         public static Database Database2;
         public static Database Database3;
 
-        public static void Setup(string testName)
+        [SetUp]
+        public static void Setup()
         {
-            int port = TestUtility.GetPort(nameof(NetworkingTests), testName);
+            int port = TestUtility.GetFreePort();
             
             //setup networking
             Server = new SynchronisedServer(Localhost, port);
@@ -64,7 +65,7 @@ namespace Tests
             Database2.IsSynchronised = true;
             Database3.IsSynchronised = true;
         }
-
+        
         [TearDown]
         public static void TearDown()
         {
@@ -82,13 +83,12 @@ namespace Tests
         [Test, Repeat(10)]
         public static void TestSetup()
         {
-            Setup(nameof(TestSetup));
+            
         }
         
         [Test]
         public static void TestSimpleSet()
-        { 
-            Setup(nameof(TestSimpleSet));
+        {
             string id = nameof(TestSimpleSet);
             
             //set value in database 1
@@ -102,7 +102,6 @@ namespace Tests
         [Test]
         public static void TestListSet()
         {
-            Setup(nameof(TestListSet));
             string id = nameof(TestListSet);
             
             //set value in database 1
@@ -116,7 +115,6 @@ namespace Tests
         [Test]
         public static void TestConcurrentSets()
         {
-            Setup(nameof(TestConcurrentSets));
             string id = nameof(TestConcurrentSets);
             
             const int setCount = 200;
@@ -202,7 +200,6 @@ namespace Tests
         [Test]
         public static void TestConcurrentAdd()
         {
-            Setup(nameof(TestConcurrentAdd));
             string id = nameof(TestConcurrentAdd);
             
             const int addCount = 2000;
@@ -300,7 +297,6 @@ namespace Tests
         [Test]
         public static void TestSafeModifySimple()
         {
-            Setup(nameof(TestSafeModifySimple));
             string id = nameof(TestSafeModifySimple);
             
             Database1.SafeModify<int>(id, (value) => 100);
@@ -321,7 +317,6 @@ namespace Tests
         [Test, Timeout(15000)]
         public static void TestSafeModify()
         {
-            Setup(nameof(TestSafeModify));
             string id = nameof(TestSafeModify);
             
             //test options
@@ -436,7 +431,6 @@ namespace Tests
         public static void TestSafeModifySync()
         {
             string id = nameof(TestSafeModifySync);
-            Setup(id);
 
             for (int i = 1; i <= 10; i++)
             {
@@ -474,7 +468,6 @@ namespace Tests
         public static void TestSimpleConnect()
         {
             string id = nameof(TestSimpleConnect);
-            Setup(id);
 
             //disconnect client 1
             //todo: instead, wait until all requests were answered before disconnecting
@@ -528,8 +521,7 @@ namespace Tests
         public static void TestConnectDuringModification()
         {
             string id = nameof(TestConnectDuringModification);
-            Setup(id);
-            
+
             //disconnect client 1
             Assert.IsTrue(Client1.DisconnectAsync());
             
@@ -559,8 +551,7 @@ namespace Tests
             int modifyCount = 10000;
             
             string id = nameof(TestRequestSuccess);
-            Setup(id);
-            
+
             Server.AddCallback<SetValueRequest>(((message, session) =>
             {
                 // -1 because the local mod count was already incremented by the previous SetValueRequest callback
@@ -587,7 +578,6 @@ namespace Tests
             int modCount = 10000;
             
             string id = nameof(TestOnModifyConfirm);
-            Setup(id);
 
             List<int> confirmedValues = new List<int>(modCount * 3);
 
@@ -622,8 +612,7 @@ namespace Tests
         public static void TestClientHostPersistence()
         {
             string id = nameof(TestClientHostPersistence);
-            Setup(id);
-            
+
             TestUtility.AreEqual(1, () =>
             {
                 int hostCount = 0;
@@ -678,8 +667,6 @@ namespace Tests
         [Test]
         public static void TestClientPersistence()
         {
-            Setup(nameof(TestClientPersistence));
-            
             Console.WriteLine("User: Setting client persistence on Database1 to true");
             Database1.ClientPersistence.Set(true);
 
@@ -698,8 +685,6 @@ namespace Tests
         [Test]
         public static void TestOnInitialized()
         {
-            Setup(nameof(TestOnInitialized));
-
             int invocationCount = 0;
             Database1.HostId.OnInitialized((guid =>
             {
@@ -714,8 +699,6 @@ namespace Tests
         [Test]
         public static void TestHostId()
         {
-            Setup(nameof(TestHostId));
-
             Database1.AddCallback<Guid>("HostId", guid => Console.WriteLine($"Set hostId to: {guid}"));
             
             Thread.Sleep(1000);
@@ -732,8 +715,7 @@ namespace Tests
         public static void TestSynchronisedObjectSynchronisation()
         {
             string testName = nameof(TestSynchronisedObjectSynchronisation);
-            Setup(testName);
-            
+
             //make sure callbacks are triggered
             ManualResetEvent triggered1 = new ManualResetEvent(false);
             ManualResetEvent triggered2 = new ManualResetEvent(false);
@@ -786,7 +768,6 @@ namespace Tests
         public static void TestSafeModifyLocalCallback()
         {
             string id = nameof(TestSafeModifyLocalCallback);
-            Setup(id);
 
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Database1.AddCallback<string>(id, s =>
@@ -804,8 +785,7 @@ namespace Tests
         public static void TestDelete()
         {
             string id = nameof(TestDelete);
-            Setup(id);
-            
+
             Database1.SetValue(id, "Test");
             
             TestUtility.AreEqual("Test", (() => Database1.GetValue<string>(id)));
@@ -824,8 +804,7 @@ namespace Tests
         public static void TestObjectConstructor()
         {
             string id = nameof(TestObjectConstructor);
-            Setup(id);
-            
+
             //init test object
             Database1.SetValue(id, new TestObject("Test"));
 
@@ -864,7 +843,6 @@ namespace Tests
         public static async Task TestModifyTask()
         {
             string id = nameof(TestModifyTask);
-            Setup(id);
 
             string result = await Database1.Get<string>(id).ModifyAsync((value => id));
             
@@ -877,7 +855,6 @@ namespace Tests
             int count = 1000;
             
             string id = nameof(TestConcurrentModifyTask);
-            Setup(id);
 
             //generate ids to modify
             List<string> taskIds = new List<string>();
@@ -919,7 +896,6 @@ namespace Tests
         public static async Task TestExceptionHandling()
         {
             string id = nameof(TestExceptionHandling);
-            Setup(id);
 
             //raise exceptions on callbacks
             Database1.AddCallback<string>(id, (s => throw new NotImplementedException("Local")));
