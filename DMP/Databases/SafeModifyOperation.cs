@@ -28,7 +28,7 @@ namespace DMP.Databases
         /// </remarks>
         public void SafeModify<T>(string id, ModifyValueDelegate<T> modify)
         {
-            uint modCount = IncrementModCount(id);
+            uint modCount = GetModCount(id);
             
             //serialize type when SafeModify operation is executed to prevent changes to it while a reply is awaited
             byte[] bytes = Get<T>(id).Serialize(out Type type);
@@ -36,19 +36,30 @@ namespace DMP.Databases
             bool success = Client.SendRequest<LockValueRequest, LockValueReply>(new LockValueRequest(Id, id, modCount), (
                 reply =>
                 {
-                    bool success = modCount == reply.ExpectedModCount;
+                    //client had the most up-to-date data when request was sent
+                    bool success = modCount == reply.ExpectedModCount ||
+                                   //client received up-to-date data while waiting for reply
+                                   (TryGetConfirmedValue(id, out uint confirmedCount, out bytes, out type) &&
+                                    confirmedCount + 1 >= reply.ExpectedModCount);
 
                     //modification can be invoked now
                     if (success)
                     {
+                        if(id == "TestSafeModify") Console.WriteLine($"{this}: Processing request {reply.ExpectedModCount}");
+                        
                         //invoke modification, updating bytes and type
-                        bytes = Get<T>(id).UnsafeModify((T)Serialization.Deserialize(bytes, type), modify, out type);
+                        bytes = InvokeDelegate(bytes, type, modify, out type);
 
+                        //notify peers that value was changed
                         Client.SendMessage(new SetValueMessage(Id, id, bytes, type, modCount));
+
+                        //process set locally
+                        OnRemoteSet(id, bytes, type, modCount, true);
                         return;
                     }
-                    
+
                     //modification needs to be delayed
+                    //if(id == "TestSafeModify") Console.WriteLine($"{this}: Delaying request {reply.ExpectedModCount}");
                     EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, reply.ExpectedModCount, modify, true));
                 }));
 
@@ -75,5 +86,21 @@ namespace DMP.Databases
 
             throw new TimeoutException($"Failed to execute modify operation within {timeout} ms!");
         }
+        
+        private static byte[] InvokeDelegate<T>(byte[] bytes, Type type, ModifyValueDelegate<T> modify, out Type resultType)
+        {
+            //Deserialize value
+            T value = type == null ? default : (T) Serialization.Deserialize(bytes, type);
+            
+            //update value
+            value = modify.Invoke(value);
+            
+            //extract type
+            resultType = value?.GetType();
+                
+            //return serialized bytes
+            return resultType == null ? null : Serialization.Serialize(resultType, value);
+        }
+        
     }
 }

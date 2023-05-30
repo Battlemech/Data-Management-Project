@@ -66,24 +66,6 @@ namespace DMP.Databases.ValueStorage
             }
         }
 
-        public byte[] UnsafeModify(T value, ModifyValueDelegate<T> modify, out Type type)
-        {
-            lock (Id)
-            {
-                //update value
-                _data = modify.Invoke(value);
-                
-                //invoke callbacks
-                InvokeAllCallbacks(_data);
-                
-                //extract type
-                type = _data?.GetType();
-                
-                //return serialized bytes
-                return Serialization.Serialize(type, _data);
-            }
-        }
-
         public override byte[] Serialize(out Type type)
         {
             lock (Id)

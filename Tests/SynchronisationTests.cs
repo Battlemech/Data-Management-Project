@@ -318,14 +318,14 @@ namespace Tests
             Assert.AreEqual(0, Database3.GetOngoingSets(id));
         }
         
-        [Test]
+        [Test, Timeout(15000)]
         public static void TestSafeModify()
         {
             Setup(nameof(TestSafeModify));
             string id = nameof(TestSafeModify);
             
             //test options
-            const int addCount = 100;
+            const int addCount = 1000;
             
             //track added values
             List<int> addedValues = new List<int>(addCount * 3);
@@ -335,13 +335,16 @@ namespace Tests
                 //init list if necessary
                 value ??= new List<int>();
                 
+                //get value to add
+                int toAdd = value.Count;
+                
                 //add value locally
-                Console.WriteLine($"Adding {value.Count} to {LogWriter.StringifyCollection(value)}");
-                value.Add(value.Count);
+                Console.WriteLine($"Adding {toAdd}");
+                value.Add(toAdd);
                             
                 //make sure global copy doesn't contain new value
-                Assert.IsFalse(addedValues.Contains(value.Count));
-                addedValues.Add(value.Count);
+                Assert.IsFalse(addedValues.Contains(toAdd), $"{toAdd} was already added");
+                addedValues.Add(toAdd);
                             
                 return value;
             };
@@ -419,10 +422,10 @@ namespace Tests
             Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
             
             Console.WriteLine(LogWriter.StringifyCollection(Database1.GetValue<List<int>>(id)));
-            
-            Assert.AreEqual(addCount * 3, Database1.GetModCount(id));
-            Assert.AreEqual(addCount * 3, Database2.GetModCount(id));
-            Assert.AreEqual(addCount * 3, Database3.GetModCount(id));
+
+            TestUtility.AreEqual<uint>(addCount * 3, () => Database1.GetModCount(id));
+            TestUtility.AreEqual<uint>(addCount * 3, () => Database2.GetModCount(id));
+            TestUtility.AreEqual<uint>(addCount * 3, () => Database3.GetModCount(id));
             
             Assert.AreEqual(0, Database1.GetOngoingSets(id));
             Assert.AreEqual(0, Database2.GetOngoingSets(id));

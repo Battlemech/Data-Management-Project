@@ -77,6 +77,8 @@ namespace DMP.Networking.Synchronisation.Server
 
                 BroadcastToOthers(message, session);
                 
+                if(message.ValueId == "TestSafeModify") Console.WriteLine($"Server: Broadcasting set {message.ModCount}");
+                
                 //checks if, after processing the delayed set, a delayed database delete may be processed
                 if(deleteDatabase) Broadcast(new DeleteDatabaseMessage() { DatabaseId = message.DatabaseId});
             }));

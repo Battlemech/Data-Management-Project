@@ -93,6 +93,8 @@ namespace DMP.Databases
 
         protected internal void OnRemoteSet(string id, byte[] value, Type type, uint modCount, bool incrementModCount)
         {
+            if(id == "TestSafeModify") Console.WriteLine($"{this}: Processing set: {modCount}");
+            
             //during synchronisation, multiple setValueMessages will be broadcast. This will filter duplicates
             if(TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount > modCount) return;
             
@@ -111,8 +113,8 @@ namespace DMP.Databases
             if(incrementModCount) UpdateModCount(id, modCount);
             
             //update remotely confirmed mod count
-            lock (_confirmedModCount) _confirmedModCount[id] = modCount;
-            
+            UpdateConfirmedValues(id, modCount, value, type);
+
             //save persistently, if necessary
             if(_isPersistent) OnSetPersistent(id, value, type);
 

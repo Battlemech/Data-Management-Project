@@ -41,8 +41,7 @@ namespace DMP.Networking.Messaging.Client
                 //remove the callback
                 RemoveCallbacks<TReply>(callbackId);
 
-                //invoke it with null as value
-                onReply.Invoke(null);
+                throw new ReplyTimedOutException(timeout);
             }));
 
             //send the request
