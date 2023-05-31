@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DMP.Callbacks;
 using DMP.Databases;
 using DMP.Databases.Utility;
+using DMP.Networking;
 using DMP.Networking.Synchronisation.Server;
+using DMP.Utility;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 
@@ -105,6 +108,59 @@ namespace Tests
             }
             
             Assert.Fail("Failed to trigger not implemented exception");
+        }
+
+        [Test]
+        public static void TestCallbackHandler()
+        {
+            CallbackHandler<int> callbackHandler = new CallbackHandler<int>();
+            string toInvoke = "Test";
+            string invoked = "";
+            
+            //test simple callback
+            callbackHandler.AddCallback<string>(0, (s => invoked = s));
+            callbackHandler.InvokeCallbacks(0, "Test");
+            
+            Assert.AreEqual(toInvoke, invoked);
+            
+            //make sure it was added correctly
+            Assert.AreEqual(1, callbackHandler.GetCallbackCount(0));
+            
+            //add faulty callback
+            callbackHandler.AddCallback<string>(0, (s => throw new NotImplementedException()));
+            
+            //invoke callback
+            callbackHandler.InvokeCallbacks(0, toInvoke);
+            
+            //make sure callback wasn't removed
+            Assert.AreEqual(2, callbackHandler.GetCallbackCount(0));
+            
+            //add self removing callback
+            callbackHandler.AddCallback<string>(0, (s => throw new NotImplementedException()), removeOnError:true);
+            Assert.AreEqual(3, callbackHandler.GetCallbackCount(0));
+            
+            //remove it by evoking it
+            callbackHandler.InvokeCallbacks(0, toInvoke);
+            Assert.AreEqual(2, callbackHandler.GetCallbackCount(0));
+            
+            //try adding callback with duplicate name
+            Assert.IsTrue(callbackHandler.AddCallback<string>(1, (Console.WriteLine), unique: true));
+            Assert.AreEqual(1, callbackHandler.GetCallbackCount(1));
+            Assert.IsFalse(callbackHandler.AddCallback<string>(1, (Console.WriteLine), unique: true));
+            Assert.AreEqual(1, callbackHandler.GetCallbackCount(1));
+        }
+
+        [Test]
+        public static void TestCallbackHandlerBytes()
+        {
+            string test = "ABC";
+            string invoked = "";
+            CallbackHandler<int> callbackHandler = new CallbackHandler<int>();
+
+            callbackHandler.AddCallback<string>(0, (s => invoked = s));
+            callbackHandler.UnsafeInvokeCallbacks(0, Serialization.Serialize(test), typeof(string));
+            
+            Assert.AreEqual(test, invoked);
         }
         
     }

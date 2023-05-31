@@ -52,6 +52,15 @@ namespace Tests
             Assert.AreEqual(message2.Test, copy2.Test);
         }
 
+        [Test]
+        public static void TestPartialMessageSerialization()
+        {
+            SetValueMessage message = new SetValueMessage("123", "213123", new byte[2] { 1, 2 }, null, 2);
+            Message partial = Serialization.Deserialize<Message>(Serialization.Serialize(message));
+            
+            Assert.AreEqual(message.SerializedType, partial.SerializedType);
+        }
+
         private class TestRequest : RequestMessage<TestReply>
         {
             public int Test;

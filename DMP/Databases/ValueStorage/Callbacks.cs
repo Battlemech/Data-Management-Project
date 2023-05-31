@@ -32,10 +32,12 @@ namespace DMP.Databases.ValueStorage
                     return AddCallback(onValueChange, name, invokeCallback, unique, removeOnError);
                 
             } else if (unique) return false;
-                
-            //todo: this is probably not thread-safe
-            callbacks.Add(new Callback(onValueChange, removeOnError));
             
+            lock (callbacks)
+            {
+                callbacks.Add(new Callback(onValueChange, removeOnError));   
+            }
+
             //invoke callback if desired
             if (!invokeCallback) return true;
             
