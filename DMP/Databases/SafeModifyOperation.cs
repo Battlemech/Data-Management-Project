@@ -51,10 +51,10 @@ namespace DMP.Databases
                         bytes = InvokeDelegate(bytes, type, modify, out type);
 
                         //notify peers that value was changed
-                        Client.SendMessage(new SetValueMessage(Id, id, bytes, type, modCount));
+                        Client.SendMessage(new SetValueMessage(Id, id, bytes, type, reply.ExpectedModCount));
 
                         //process set locally
-                        OnRemoteSet(id, bytes, type, modCount, true);
+                        OnRemoteSet(id, bytes, type, reply.ExpectedModCount, true);
                         return;
                     }
 

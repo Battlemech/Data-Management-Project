@@ -112,7 +112,7 @@ namespace Tests
             TestUtility.AreEqual(new List<int>(){25}, (() => Database3.GetValue<List<int>>(id)), "Test remote set before first get");
         }
 
-        [Test]
+        [Test, Timeout(10000)]
         public static void TestConcurrentSets()
         {
             string id = nameof(TestConcurrentSets);

@@ -52,8 +52,14 @@ namespace DMP.Databases
             Client.SendRequest<SetValueRequest, SetValueReply>(new SetValueRequest(Id, id, modCount, value, type),
                 reply =>
                 {
+                    //client had the most up-to-date data when request was sent
+                    bool success = modCount == reply.ExpectedModCount ||
+                                   //client received up-to-date data while waiting for reply
+                                   (TryGetConfirmedModCount(id, out uint confirmedCount) &&
+                                    confirmedCount + 1 >= reply.ExpectedModCount);
+
                     //value was synchronised successfully
-                    if (modCount == reply.ExpectedModCount)
+                    if (success)
                     {
                         onResultConfirmed?.Invoke((T)Serialization.Deserialize(value, type));
                         return;
