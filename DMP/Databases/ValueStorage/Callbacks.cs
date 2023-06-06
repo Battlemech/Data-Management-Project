@@ -32,10 +32,12 @@ namespace DMP.Databases.ValueStorage
                     return AddCallback(onValueChange, name, invokeCallback, unique, removeOnError);
                 
             } else if (unique) return false;
-                
-            //todo: this is probably not thread-safe
-            callbacks.Add(new Callback(onValueChange, removeOnError));
             
+            lock (callbacks)
+            {
+                callbacks.Add(new Callback(onValueChange, removeOnError));   
+            }
+
             //invoke callback if desired
             if (!invokeCallback) return true;
             
@@ -87,14 +89,14 @@ namespace DMP.Databases.ValueStorage
             return count;
         }
         
-        public override int InvokeAllCallbacks() => BlockingGet(InvokeAllCallbacks);
+        public override int InvokeAllCallbacks() => BlockingGet((obj => InvokeAllCallbacks(obj)));
 
         public override int InvokeAllCallbacks(byte[] value, Type type)
         {
             return type == null ? InvokeAllCallbacks(default) : InvokeAllCallbacks((T)Serialization.Deserialize(value, type));
         }
         
-        public int InvokeAllCallbacks(T value)
+        public int InvokeAllCallbacks(T value, bool throwOnError=true)
         {
             int count = 0;
             
@@ -103,7 +105,7 @@ namespace DMP.Databases.ValueStorage
                 //copy list to allow removing during iteration
                 foreach (var callback in new List<Callback>(callbacks))
                 {
-                    if (!callback.Invoke(value)) callbacks.Remove(callback);
+                    if (!callback.Invoke(value, throwOnError)) callbacks.Remove(callback);
                 }
                 count += callbacks.Count;
             }
@@ -121,7 +123,7 @@ namespace DMP.Databases.ValueStorage
                 RemoveOnError = removeOnError;
             }
 
-            public bool Invoke(T value)
+            public bool Invoke(T value, bool throwOnError=true)
             {
                 try
                 {
@@ -129,9 +131,15 @@ namespace DMP.Databases.ValueStorage
                 }
                 catch (Exception e)
                 {
+                    //exception was anticipated. Remove callback
                     if (RemoveOnError)
                         LogWriter.Log($"Removing callback because it caused an exception.\nException: " + e);
-                    else throw;
+                    //possibility of exception was anticipated. Log it, but continue program execution
+                    else if (!throwOnError)
+                        LogWriter.LogException(e);
+                    //exception wasn't anticipated. Throw it
+                    else
+                        throw;
                     
                     return false;
                 }

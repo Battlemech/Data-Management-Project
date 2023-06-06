@@ -16,7 +16,7 @@ namespace DMP.Networking.Synchronisation.Messages
         {
             DatabaseId = request.DatabaseId;
             ValueId = request.ValueId;
-            Type = request.Type;
+            Type = request.TypeAsString;
             ModCount = request.ModCount;
             Value = request.Value;
         }
@@ -32,7 +32,7 @@ namespace DMP.Networking.Synchronisation.Messages
 
         public override string ToString()
         {
-            return $"Database={DatabaseId}, ValueId={ValueId}, ModCount={ModCount}, Value={LogWriter.StringifyCollection(Value)}";
+            return $"Database={DatabaseId}, ValueId={ValueId}, ModCount={ModCount}";
         }
     }
 }

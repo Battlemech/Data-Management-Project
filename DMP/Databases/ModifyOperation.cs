@@ -41,7 +41,7 @@ namespace DMP.Databases
             //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
             //allowing the delegation of callbacks to a task
             if(_isSynchronised && Client.IsConnected) OnModifyValueSynchronised(id, serializedBytes, type, modify, onResultConfirmed);
-            else onResultConfirmed?.Invoke((T)Serialization.Deserialize(serializedBytes, type));
+            else onResultConfirmed?.Invoke((T) Serialization.Deserialize(serializedBytes, type));
             if(_isPersistent) OnSetPersistent(id, serializedBytes, type);
         }
 
@@ -49,76 +49,35 @@ namespace DMP.Databases
         {
             uint modCount = IncrementModCount(id);
 
-            SetValueRequest request = new SetValueRequest(Id, id, modCount, value, type);
-
-            //start saving bytes which arrive from network in case they are required later
-            IncrementPendingCount(id);
-            
-            bool success = Client.SendRequest<SetValueRequest, SetValueReply>(request, (reply) =>
-            {
-                uint expectedModCount = reply.ExpectedModCount;
-                
-                //modCount was like client expected
-                bool success = expectedModCount == modCount;
-
-                //result got confirmed by remote. Invoke delegate
-                if (success) onResultConfirmed?.Invoke(Serialization.Deserialize<T>(value));
-                //modCount wasn't like client expected, but client updated modCount while waiting for a reply
-                else if (TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+            Client.SendRequest<SetValueRequest, SetValueReply>(new SetValueRequest(Id, id, modCount, value, type),
+                reply =>
                 {
-                    //todo: failed to reproduce this corner case randomly. Design test?
-                    
-                    //repeat operation
-                    //make sure the value isn't changed while modifying it //todo: why is this necessary?
-                    lock (_values)
+                    //client had the most up-to-date data when request was sent
+                    bool success = modCount == reply.ExpectedModCount ||
+                                   //client received up-to-date data while waiting for reply
+                                   (TryGetConfirmedModCount(id, out uint confirmedCount) &&
+                                    confirmedCount + 1 >= reply.ExpectedModCount);
+
+                    //value was synchronised successfully
+                    if (success)
                     {
-                        T newValue = modify.Invoke(Serialization.Deserialize<T>(GetConfirmedValue(id)));
-                        
-                        //result got confirmed by remote. Invoke delegate
-                        onResultConfirmed?.Invoke(newValue);
-                        
-                        value = Serialization.Serialize(newValue);
+                        onResultConfirmed?.Invoke((T)Serialization.Deserialize(value, type));
+                        return;
                     }
                     
-                    ExecuteDelayedSet(id, value, type, expectedModCount, false);
-                    success = true;
-                }
-                
-                
-                //bytes no longer need to be saved for this request
-                DecrementPendingCount(id);
+                    //modify request failed. Repeating operation once up to date value exists locally
+                    EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, reply.ExpectedModCount, (currentValue =>
+                    {
+                        //invoke modify delegate
+                        T newValue = modify.Invoke(currentValue);
+                        
+                        //invoke onResultConfirmed, if necessary
+                        onResultConfirmed?.Invoke(newValue);
 
-                if (success) return;
-                
-                //update queue with expected modification count
-                request.ModCount = reply.ExpectedModCount;
-
-                //enqueue the request: It will be processed later
-                EnqueueFailedRequest(new FailedModifyRequest<T>(request, (currentValue =>
-                {
-                    //invoke modify delegate, generating new value
-                    T newValue = modify.Invoke(currentValue);
-                    
-                    //call onResultConfirmed if necessary
-                    onResultConfirmed?.Invoke(newValue);
-
-                    //return newValue to Callee (OnRemoteSet())
-                    return newValue;
-                })));
-            });
-            
-            if (success) return;
-
-            throw new NotConnectedException();
-        }
-
-        private void ExecuteDelayedSet(string id, byte[] serializedBytes, Type type, uint modCount, bool incrementModCount)
-        {
-            //notify peers of new value
-            Client.SendMessage(new SetValueMessage(Id, id, serializedBytes, type, modCount));
-
-            //update values locally
-            OnRemoteSet(id, serializedBytes, type, modCount, incrementModCount);
+                        //return updated value
+                        return newValue;
+                    })));
+                });
         }
     }
 }

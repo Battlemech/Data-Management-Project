@@ -42,7 +42,7 @@ namespace Tests
         [Test]
         public static void TestSyncRequired()
         {
-            int port = TestUtility.GetPort(nameof(PersistenceTests), nameof(TestSyncRequired));
+            int port = TestUtility.GetFreePort();
             string id = nameof(TestSyncRequired);
             PersistentData.DeleteDatabase(id);
 
@@ -107,7 +107,7 @@ namespace Tests
             string id = "IntList";
             
             //setup networking
-            int port = TestUtility.GetPort(nameof(PersistenceTests), nameof(OfflineModification));
+            int port = TestUtility.GetFreePort();
             SynchronisedServer server = new SynchronisedServer("127.0.0.1", port);
             server.Start();
 

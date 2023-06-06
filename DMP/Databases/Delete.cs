@@ -44,13 +44,8 @@ namespace DMP.Databases
             
             _values.Clear();
             _confirmedValues.Clear();
-            _failedGets.Clear();
             _failedRequests.Clear();
-            _modificationCount.Clear();
-            _pendingReplies.Clear();
             _serializedData.Clear();
-            _confirmedModCount.Clear();
-            _confirmedModCount.Clear();
             _onInitializedTracker = 0;
         }
     }
