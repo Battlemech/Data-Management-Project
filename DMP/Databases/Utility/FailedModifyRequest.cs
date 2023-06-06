@@ -1,5 +1,6 @@
 ﻿using System;
 using DMP.Networking.Synchronisation.Messages;
+using DMP.Utility;
 
 namespace DMP.Databases.Utility
 {
@@ -7,9 +8,9 @@ namespace DMP.Databases.Utility
     {
         public readonly bool IncrementModCount;
         
-        public abstract object RepeatModification(object current);
+        public abstract byte[] RepeatModification(byte[] value, Type type, out Type newType);
 
-        protected FailedModifyRequest(string databaseId, string valueId, uint modCount, Type type, bool incrementModCount=false) : base(databaseId, valueId, modCount, null, type)
+        protected FailedModifyRequest(string databaseId, string valueId, uint modCount, bool incrementModCount=false) : base(databaseId, valueId, modCount, null, null)
         {
             IncrementModCount = incrementModCount;
         }
@@ -24,8 +25,8 @@ namespace DMP.Databases.Utility
     {
         private readonly ModifyValueDelegate<T> _modify;
 
-        public FailedModifyRequest(string databaseId, string valueId, uint modCount, Type type, ModifyValueDelegate<T> modify, bool incrementModCount = false)
-            : base(databaseId, valueId, modCount, type, incrementModCount)
+        public FailedModifyRequest(string databaseId, string valueId, uint modCount, ModifyValueDelegate<T> modify, bool incrementModCount = false)
+            : base(databaseId, valueId, modCount, incrementModCount)
         {
             _modify = modify;
         }
@@ -35,11 +36,18 @@ namespace DMP.Databases.Utility
             _modify = modify;
         }
 
-        public override object RepeatModification(object current)
+        public override byte[] RepeatModification(byte[] value, Type type, out Type newType)
         {
-            if (current is T data) return _modify.Invoke(data);
+            //deserialize object
+            object o = type == null ? null : Serialization.Deserialize(value, type);
 
-            throw new ArgumentException($"Expected {typeof(T)}, but got {current?.GetType()}");
+            //repeat the operation
+            if (o is T data) o = _modify.Invoke(data);
+            else if (o is null) o = _modify.Invoke(default);
+            else throw new ArgumentException($"Expected {typeof(T)}, but got {o.GetType()}");
+
+            newType = o?.GetType();
+            return Serialization.Serialize(newType, o);
         }
     }
 }

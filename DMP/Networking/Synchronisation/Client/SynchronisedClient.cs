@@ -48,8 +48,11 @@ namespace DMP.Networking.Synchronisation.Client
             
             AddCallback<SetValueMessage>((message =>
             {
+                //extract type from message
+                Type type = message.Type == null ? null : Type.GetType(message.Type, true);
+                
                 //forward set value message to database
-                Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, Type.GetType(message.Type, true), message.ModCount, true);
+                Get(message.DatabaseId).OnRemoteSet(message.ValueId, message.Value, type, message.ModCount, true);
             }));
             
             AddCallback<GetValueRequest>((message) =>

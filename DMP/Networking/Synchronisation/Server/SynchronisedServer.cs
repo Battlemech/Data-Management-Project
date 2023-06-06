@@ -71,12 +71,12 @@ namespace DMP.Networking.Synchronisation.Server
                 if (!success)
                 {
                     LogWriter.LogError($"{session} tried to set data globally in wrong execution order!" +
-                                       $" Can't execute modCount={message.ModCount}");
+                                       $" Can't execute id={message.ValueId}, mod={message.ModCount}");
                     return;
                 }
 
                 BroadcastToOthers(message, session);
-                
+
                 //checks if, after processing the delayed set, a delayed database delete may be processed
                 if(deleteDatabase) Broadcast(new DeleteDatabaseMessage() { DatabaseId = message.DatabaseId});
             }));
@@ -86,7 +86,7 @@ namespace DMP.Networking.Synchronisation.Server
                 string databaseId = request.DatabaseId;
                 string valueId = request.ValueId;
                 uint expected = IncrementModCount(databaseId, valueId);
-                
+
                 //a set request will be received later. Make sure server expects it
                 GetTracker(databaseId).EnqueueDelayedSetRequest(valueId, expected, session);
 

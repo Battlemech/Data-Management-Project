@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP.Databases.Utility;
@@ -27,64 +28,39 @@ namespace DMP.Databases
         /// </remarks>
         public void SafeModify<T>(string id, ModifyValueDelegate<T> modify)
         {
-            //if client isn't connected: No need to request access
-            if (!_isSynchronised || !Client.IsConnected)
-            {
-                ExecuteModification(id, modify);
-                return;
-            }
-
-            //serialize bytes to save current value (safe from modification)
-            byte[] bytes = Get<T>(id).Serialize(out Type type);
-
-            //wait for access from server
             uint modCount = GetModCount(id);
-            LockValueRequest request = new LockValueRequest
-            {
-                DatabaseId = Id,
-                ValueId = id,
-                ModCount = modCount
-            };
-
-            //start saving bytes which arrive from network in case they are required later
-            IncrementPendingCount(id);
             
-            bool success = Client.SendRequest<LockValueRequest, LockValueReply>(request, lockReply =>
-            {
-                if(lockReply == null) throw new TimeoutException($"Received no reply from server within {Options.DefaultTimeout} ms!");
-
-                uint expectedModCount = lockReply.ExpectedModCount;
-                    
-                //modCount was like client expected
-                bool success = modCount == expectedModCount;
-                    
-                //modCount wasn't like client expected, but client updated modCount while waiting for a reply
-                if (!success && TryGetConfirmedModCount(id, out uint confirmedModCount) && confirmedModCount + 1 >= expectedModCount)
+            //serialize type when SafeModify operation is executed to prevent changes to it while a reply is awaited
+            byte[] bytes = Get<T>(id).Serialize(out Type type);
+            
+            bool success = Client.SendRequest<LockValueRequest, LockValueReply>(new LockValueRequest(Id, id, modCount), (
+                reply =>
                 {
-                    bytes = GetConfirmedValue(id);
-                    success = true;
-                }
-                    
-                //bytes no longer need to be saved for this request
-                DecrementPendingCount(id);
-                    
-                //if request was successful: execute modify now
-                if (success)
-                {
-                    T newValue = ValueStorage<T>.TryModify(modify, (T)Serialization.Deserialize(bytes, type));
-                    ExecuteDelayedSet(id, Serialization.Serialize(newValue), type, expectedModCount, true);
-                    return;
-                }
-                    
-                //request failed. Execute modify later
-                //update failed get to allow deserialization of later remote set messages
-                if(!TryGetType(id)) _failedGets[id] = typeof(T);
+                    //client had the most up-to-date data when request was sent
+                    bool success = modCount == reply.ExpectedModCount ||
+                                   //client received up-to-date data while waiting for reply
+                                   (TryGetConfirmedValue(id, out uint confirmedCount, out bytes, out type) &&
+                                    confirmedCount + 1 >= reply.ExpectedModCount);
 
-                //enqueue failed request
-                EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, lockReply.ExpectedModCount, type, modify, true));
-            });
+                    //modification can be invoked now
+                    if (success)
+                    {
+                        //invoke modification, updating bytes and type
+                        bytes = InvokeDelegate(bytes, type, modify, out type);
 
-            if(!success) throw new NotConnectedException();
+                        //notify peers that value was changed
+                        Client.SendMessage(new SetValueMessage(Id, id, bytes, type, reply.ExpectedModCount));
+
+                        //process set locally
+                        OnRemoteSet(id, bytes, type, reply.ExpectedModCount, true);
+                        return;
+                    }
+
+                    //modification needs to be delayed
+                    EnqueueFailedRequest(new FailedModifyRequest<T>(Id, id, reply.ExpectedModCount, modify, true));
+                }));
+
+            if (!success) throw new NotConnectedException();
         }
 
         public T SafeModifySync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
@@ -107,18 +83,21 @@ namespace DMP.Databases
 
             throw new TimeoutException($"Failed to execute modify operation within {timeout} ms!");
         }
-
-        private void ExecuteModification<T>(string id, ModifyValueDelegate<T> modify)
+        
+        private static byte[] InvokeDelegate<T>(byte[] bytes, Type type, ModifyValueDelegate<T> modify, out Type resultType)
         {
-            byte[] serializedBytes = Get<T>(id).InternalSet(modify, out Type type);
+            //Deserialize value
+            T value = type == null ? default : (T) Serialization.Deserialize(bytes, type);
             
-            Delegate(id, (() =>
-            {
-                //Using serialized bytes in callback to make sure "value" wasn't changed in the meantime,
-                //allowing the delegation of callbacks to a task
-                InvokeAllCallbacks(id, serializedBytes, type);
-                if(_isPersistent) OnSetPersistent(id, serializedBytes, type);
-            }));
+            //update value
+            value = modify.Invoke(value);
+            
+            //extract type
+            resultType = value?.GetType();
+                
+            //return serialized bytes
+            return resultType == null ? null : Serialization.Serialize(resultType, value);
         }
+        
     }
 }

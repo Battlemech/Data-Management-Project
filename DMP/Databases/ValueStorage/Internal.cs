@@ -43,18 +43,27 @@ namespace DMP.Databases.ValueStorage
         {
             lock (Id)
             {
-                return _data.GetType();
+                return _data?.GetType();
             }
         }
 
         public override object GetObject()
         {
-            return _data;
+            lock (Id)
+            {
+                return _data;
+            }
         }
         
         public override void UnsafeSet(byte[] bytes, Type type)
         {
-            lock (Id) {_data = (T)Serialization.Deserialize(bytes, type);}
+            lock (Id)
+            {
+                _data = (T) Serialization.Deserialize(bytes, type);
+                
+                //dont throw on exceptions to prevent receiving thread to terminate
+                InvokeAllCallbacks(_data, false);
+            }
         }
 
         public override byte[] Serialize(out Type type)
@@ -69,16 +78,6 @@ namespace DMP.Databases.ValueStorage
         protected internal override ValueStorage Copy()
         {
             return BlockingGet((obj => new ValueStorage<T>(null, Id, obj)));
-        }
-
-        protected internal byte[] InternalSet(ModifyValueDelegate<T> modify, out Type type)
-        {
-            lock (Id)
-            {
-                _data = modify.Invoke(_data);
-                type = _data?.GetType();
-                return Serialization.Serialize(_data);
-            }
         }
 
         public static implicit operator T(ReadOnlyStorage<T> valueStorage) => valueStorage.Get();

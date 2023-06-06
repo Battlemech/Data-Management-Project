@@ -85,5 +85,42 @@ namespace DMP.Networking.Messaging.Server
             //send the request
             return SendMessage(requestMessage);
         }
+        
+        public Task<TReply> SendRequest<TRequest, TReply>(TRequest requestMessage, int timeout = Options.DefaultTimeout)
+            where TReply : ReplyMessage
+            where TRequest : RequestMessage<TReply>
+        {
+            Task<TReply> requestTask = new Task<TReply>((() =>
+            {
+                TReply reply = default;
+                
+                //allow new task to wait for reply
+                ManualResetEvent resetEvent = new ManualResetEvent(false);
+                
+                bool success = SendRequest<TRequest, TReply>(requestMessage, (r =>
+                {
+                    //update reply
+                    reply = r;
+                
+                    //signal waiting task that reply was received
+                    resetEvent.Set();
+                }), timeout);
+
+                //make sure message was sent
+                if (!success)
+                    throw new NotConnectedException();
+                
+                //make sure reply was received
+                if (!resetEvent.WaitOne(timeout))
+                    throw new ReplyTimedOutException(timeout);
+
+                return reply;
+            }));
+
+            //delegate task
+            Delegation.DelegateTask(requestTask);
+
+            return requestTask;
+        }
     }
 }

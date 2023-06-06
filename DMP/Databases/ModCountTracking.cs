@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace DMP.Databases
 {
@@ -8,11 +9,12 @@ namespace DMP.Databases
         /// Tracks the locally expected mod count
         /// </summary>
         private readonly Dictionary<string, uint> _modificationCount = new Dictionary<string, uint>();
-        
+
         /// <summary>
-        /// Tracks which modification count was confirmed by the server
+        /// Tracks which values were confirmed by server
         /// </summary>
-        private readonly Dictionary<string, uint> _confirmedModCount = new Dictionary<string, uint>();
+        private readonly Dictionary<string, ConfirmedValue> _confirmedValues =
+            new Dictionary<string, ConfirmedValue>();
 
         /// <summary>
         /// Increase modification count by 1 after retrieving it
@@ -64,10 +66,63 @@ namespace DMP.Databases
                 return _modificationCount.TryGetValue(id, out uint modCount) ? modCount : 0;
             }
         }
-        
+
+        private void UpdateConfirmedValues(string id, uint modCount, byte[] value, Type type)
+        {
+            lock (_confirmedValues)
+            {
+                _confirmedValues[id] = new ConfirmedValue(modCount, value, type);
+            }
+        }
+
         private bool TryGetConfirmedModCount(string id, out uint modCount)
         {
-            lock (_confirmedModCount) return _confirmedModCount.TryGetValue(id, out modCount);
+            lock (_confirmedValues)
+            {
+                if (_confirmedValues.TryGetValue(id, out ConfirmedValue value))
+                {
+                    modCount = value.ModCount;
+                    return true;
+                }
+
+                modCount = default;
+                return false;
+            }
+        }
+        
+        private bool TryGetConfirmedValue(string id, out uint modCount, out byte[] bytes, out Type type)
+        {
+            lock (_confirmedValues)
+            {
+                //value exists
+                if (_confirmedValues.TryGetValue(id, out ConfirmedValue confirmed))
+                {
+                    modCount = confirmed.ModCount;
+                    bytes = confirmed.Value;
+                    type = confirmed.Type;
+                    return true;
+                }
+
+                //value doesn't exist
+                modCount = default;
+                bytes = default;
+                type = default;
+                return false;
+            }
+        }
+        
+        private struct ConfirmedValue
+        {
+            public readonly uint ModCount;
+            public readonly byte[] Value;
+            public readonly Type Type;
+
+            public ConfirmedValue(uint modCount, byte[] value, Type type)
+            {
+                ModCount = modCount;
+                Value = value;
+                Type = type;
+            }
         }
     }
 }

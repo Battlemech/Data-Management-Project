@@ -1,4 +1,5 @@
-﻿using DMP.Utility;
+﻿using System;
+using DMP.Utility;
 
 namespace DMP.Networking.Messaging
 {
@@ -7,7 +8,12 @@ namespace DMP.Networking.Messaging
         public readonly string SerializedType;
         protected Message()
         {
-            SerializedType = GetType().FullName;
+            SerializedType = GetType().AssemblyQualifiedName;
+        }
+
+        public Type GetMessageType()
+        {
+            return Type.GetType(SerializedType, true);
         }
     }
     

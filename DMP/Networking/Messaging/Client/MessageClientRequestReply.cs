@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DMP.Threading;
+using DMP.Utility;
 
 namespace DMP.Networking.Messaging.Client
 {
@@ -9,45 +10,6 @@ namespace DMP.Networking.Messaging.Client
     {
         public delegate void OnReply<T>(T reply) where T : ReplyMessage;
 
-        public bool SendRequest<TRequest, TReply>(TRequest requestMessage, out TReply replyMessage,
-            int timeout = Options.DefaultTimeout)
-            where TReply : ReplyMessage
-            where TRequest : RequestMessage<TReply>
-        {
-            //init out parameter
-            replyMessage = null;
-            
-            //init var to save message. Cant use out parameter in lambda expression :/
-            TReply message = null;
-            
-            //reset event to wait for reply
-            ManualResetEvent receivedReply = new ManualResetEvent(false);
-            
-            bool success = SendRequest<TRequest, TReply>(requestMessage, (reply) =>
-            {
-                //save received message
-                message = reply;
-                
-                //signal waiting thread that message was received
-                receivedReply.Set();
-
-            }, timeout);
-
-            //failed to send request
-            if (!success)
-            {
-                return false;
-            }
-            
-            //try waiting for a reply
-            success = receivedReply.WaitOne(timeout);
-
-            //save reply in out parameter if request was received
-            if (success) replyMessage = message;
-            
-            return success;
-        }
-        
         public bool SendRequest<TRequest, TReply>(TRequest requestMessage, OnReply<TReply> onReply, int timeout = Options.DefaultTimeout)
             where TReply : ReplyMessage
             where TRequest : RequestMessage<TReply>
@@ -79,12 +41,84 @@ namespace DMP.Networking.Messaging.Client
                 //remove the callback
                 RemoveCallbacks<TReply>(callbackId);
 
-                //invoke it with null as value
-                onReply.Invoke(null);
+                throw new ReplyTimedOutException(timeout);
             }));
 
             //send the request
             return SendMessage(requestMessage);
+        }
+        
+        public bool SendRequest<TRequest, TReply>(TRequest requestMessage, out TReply replyMessage,
+            int timeout = Options.DefaultTimeout)
+            where TReply : ReplyMessage
+            where TRequest : RequestMessage<TReply>
+        {
+            //init out parameter
+            replyMessage = null;
+            
+            //init var to save message. Cant use out parameter in lambda expression :/
+            TReply message = null;
+            
+            //reset event to wait for reply
+            ManualResetEvent receivedReply = new ManualResetEvent(false);
+            
+            bool success = SendRequest<TRequest, TReply>(requestMessage, (reply) =>
+            {
+                //save received message
+                message = reply;
+                
+                //signal waiting thread that message was received
+                receivedReply.Set();
+
+            }, timeout);
+
+            //failed to send request
+            if (!success) return false;
+            
+            //try waiting for a reply
+            success = receivedReply.WaitOne(timeout);
+
+            //save reply in out parameter if request was received
+            if (success) replyMessage = message;
+            
+            return success;
+        }
+
+        public Task<TReply> SendRequest<TRequest, TReply>(TRequest requestMessage, int timeout = Options.DefaultTimeout)
+            where TReply : ReplyMessage
+            where TRequest : RequestMessage<TReply>
+        {
+            Task<TReply> requestTask = new Task<TReply>((() =>
+            {
+                TReply reply = default;
+                
+                //allow new task to wait for reply
+                ManualResetEvent resetEvent = new ManualResetEvent(false);
+                
+                bool success = SendRequest<TRequest, TReply>(requestMessage, (r =>
+                {
+                    //update reply
+                    reply = r;
+                
+                    //signal waiting task that reply was received
+                    resetEvent.Set();
+                }), timeout);
+
+                //make sure message was sent
+                if (!success)
+                    throw new NotConnectedException();
+                
+                //make sure reply was received
+                if (!resetEvent.WaitOne(timeout))
+                    throw new ReplyTimedOutException(timeout);
+
+                return reply;
+            }));
+
+            //delegate task
+            Delegation.DelegateTask(requestTask);
+
+            return requestTask;
         }
     }
 }

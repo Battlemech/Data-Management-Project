@@ -4,9 +4,16 @@ namespace DMP.Networking.Synchronisation.Messages
 {
     public class LockValueRequest : RequestMessage<LockValueReply>
     {
-        public string DatabaseId;
-        public string ValueId;
-        public uint ModCount;
+        public readonly string DatabaseId;
+        public readonly string ValueId;
+        public readonly uint ModCount;
+
+        public LockValueRequest(string databaseId, string valueId, uint modCount)
+        {
+            DatabaseId = databaseId;
+            ValueId = valueId;
+            ModCount = modCount;
+        }
     }
     
     public class LockValueReply : ReplyMessage
