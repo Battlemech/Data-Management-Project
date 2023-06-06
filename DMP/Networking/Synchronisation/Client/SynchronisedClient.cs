@@ -48,8 +48,6 @@ namespace DMP.Networking.Synchronisation.Client
             
             AddCallback<SetValueMessage>((message =>
             {
-                Console.WriteLine($"{this} received {message}");
-                
                 //extract type from message
                 Type type = message.Type == null ? null : Type.GetType(message.Type, true);
                 

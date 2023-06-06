@@ -76,9 +76,7 @@ namespace DMP.Networking.Synchronisation.Server
                 }
 
                 BroadcastToOthers(message, session);
-                
-                Console.WriteLine($"Server: Broadcasting set id={message.ValueId}, mod={message.ModCount}");
-                
+
                 //checks if, after processing the delayed set, a delayed database delete may be processed
                 if(deleteDatabase) Broadcast(new DeleteDatabaseMessage() { DatabaseId = message.DatabaseId});
             }));

@@ -317,6 +317,7 @@ namespace Tests
         [Test, Timeout(15000)]
         public static void TestSafeModify()
         {
+            //todo: Server sometimes broadcasts message, but response isn't received
             string id = nameof(TestSafeModify);
             
             //test options
