@@ -6,6 +6,7 @@ using DMP.Databases.Utility;
 using DMP.Databases.ValueStorage;
 using DMP.Networking;
 using DMP.Networking.Synchronisation.Messages;
+using DMP.Threading;
 using DMP.Utility;
 
 namespace DMP.Databases
@@ -63,6 +64,15 @@ namespace DMP.Databases
             if (!success) throw new NotConnectedException();
         }
 
+        public Task<T> SafeModifyAsync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
+        {
+            Task<T> task = new Task<T>((() => SafeModifySync(id, modify, timeout)));
+
+            Delegation.DelegateTask(task);
+
+            return task;
+        }
+
         public T SafeModifySync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
         {
             ManualResetEvent modificationExecuted = new ManualResetEvent(false);
@@ -83,7 +93,7 @@ namespace DMP.Databases
 
             throw new TimeoutException($"Failed to execute modify operation within {timeout} ms!");
         }
-        
+
         private static byte[] InvokeDelegate<T>(byte[] bytes, Type type, ModifyValueDelegate<T> modify, out Type resultType)
         {
             //Deserialize value

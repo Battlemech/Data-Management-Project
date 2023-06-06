@@ -9,5 +9,8 @@ namespace DMP.Databases.ValueStorage
 
         public T SafeModifySync(ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
             => Database.SafeModifySync(Id, modify, timeout);
+
+        public Task<T> SafeModifyAsync(ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
+            => Database.SafeModifyAsync(Id, modify, timeout);
     }
 }
