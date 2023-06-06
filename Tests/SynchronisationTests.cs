@@ -465,6 +465,16 @@ namespace Tests
             }
         }
 
+        [Test]
+        public static async Task SafeModifyAsync()
+        {
+            string id = nameof(SafeModifyAsync);
+
+            string result = await Database1.Get<string>(id).SafeModifyAsync((_ => id));
+            
+            Assert.AreEqual(id, result);
+        }
+
         [Test, Repeat(10)]
         public static void TestSimpleConnect()
         {
