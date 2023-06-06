@@ -29,9 +29,10 @@ namespace Tests
         public static Database Database2;
         public static Database Database3;
 
-        public static void Setup(string testName)
+        [SetUp]
+        public static void Setup()
         {
-            int port = TestUtility.GetPort(nameof(NetworkingTests), testName);
+            int port = TestUtility.GetFreePort();
             
             //setup networking
             Server = new SynchronisedServer(Localhost, port);
@@ -64,7 +65,7 @@ namespace Tests
             Database2.IsSynchronised = true;
             Database3.IsSynchronised = true;
         }
-
+        
         [TearDown]
         public static void TearDown()
         {
@@ -82,13 +83,12 @@ namespace Tests
         [Test, Repeat(10)]
         public static void TestSetup()
         {
-            Setup(nameof(TestSetup));
+            
         }
         
         [Test]
         public static void TestSimpleSet()
-        { 
-            Setup(nameof(TestSimpleSet));
+        {
             string id = nameof(TestSimpleSet);
             
             //set value in database 1
@@ -102,7 +102,6 @@ namespace Tests
         [Test]
         public static void TestListSet()
         {
-            Setup(nameof(TestListSet));
             string id = nameof(TestListSet);
             
             //set value in database 1
@@ -113,10 +112,9 @@ namespace Tests
             TestUtility.AreEqual(new List<int>(){25}, (() => Database3.GetValue<List<int>>(id)), "Test remote set before first get");
         }
 
-        [Test]
+        [Test, Timeout(10000)]
         public static void TestConcurrentSets()
         {
-            Setup(nameof(TestConcurrentSets));
             string id = nameof(TestConcurrentSets);
             
             const int setCount = 200;
@@ -202,7 +200,6 @@ namespace Tests
         [Test]
         public static void TestConcurrentAdd()
         {
-            Setup(nameof(TestConcurrentAdd));
             string id = nameof(TestConcurrentAdd);
             
             const int addCount = 2000;
@@ -300,7 +297,6 @@ namespace Tests
         [Test]
         public static void TestSafeModifySimple()
         {
-            Setup(nameof(TestSafeModifySimple));
             string id = nameof(TestSafeModifySimple);
             
             Database1.SafeModify<int>(id, (value) => 100);
@@ -318,15 +314,14 @@ namespace Tests
             Assert.AreEqual(0, Database3.GetOngoingSets(id));
         }
         
-        [Test]
+        [Test, Timeout(15000)]
         public static void TestSafeModify()
         {
-            Setup(nameof(TestSafeModify));
             //todo: Server sometimes broadcasts message, but message isn't received/processed on client
             string id = nameof(TestSafeModify);
             
             //test options
-            const int addCount = 100;
+            const int addCount = 1000;
             
             //track added values
             List<int> addedValues = new List<int>(addCount * 3);
@@ -336,13 +331,16 @@ namespace Tests
                 //init list if necessary
                 value ??= new List<int>();
                 
+                //get value to add
+                int toAdd = value.Count;
+                
                 //add value locally
-                Console.WriteLine($"Adding {value.Count} to {LogWriter.StringifyCollection(value)}");
-                value.Add(value.Count);
+                Console.WriteLine($"Adding {toAdd}");
+                value.Add(toAdd);
                             
                 //make sure global copy doesn't contain new value
-                Assert.IsFalse(addedValues.Contains(value.Count));
-                addedValues.Add(value.Count);
+                Assert.IsFalse(addedValues.Contains(toAdd), $"{toAdd} was already added");
+                addedValues.Add(toAdd);
                             
                 return value;
             };
@@ -420,10 +418,10 @@ namespace Tests
             Console.WriteLine($"All adds completed after: {stopwatch.ElapsedMilliseconds} ms");
             
             Console.WriteLine(LogWriter.StringifyCollection(Database1.GetValue<List<int>>(id)));
-            
-            Assert.AreEqual(addCount * 3, Database1.GetModCount(id));
-            Assert.AreEqual(addCount * 3, Database2.GetModCount(id));
-            Assert.AreEqual(addCount * 3, Database3.GetModCount(id));
+
+            TestUtility.AreEqual<uint>(addCount * 3, () => Database1.GetModCount(id));
+            TestUtility.AreEqual<uint>(addCount * 3, () => Database2.GetModCount(id));
+            TestUtility.AreEqual<uint>(addCount * 3, () => Database3.GetModCount(id));
             
             Assert.AreEqual(0, Database1.GetOngoingSets(id));
             Assert.AreEqual(0, Database2.GetOngoingSets(id));
@@ -434,7 +432,6 @@ namespace Tests
         public static void TestSafeModifySync()
         {
             string id = nameof(TestSafeModifySync);
-            Setup(id);
 
             for (int i = 1; i <= 10; i++)
             {
@@ -472,7 +469,6 @@ namespace Tests
         public static void TestSimpleConnect()
         {
             string id = nameof(TestSimpleConnect);
-            Setup(id);
 
             //disconnect client 1
             //todo: instead, wait until all requests were answered before disconnecting
@@ -526,8 +522,7 @@ namespace Tests
         public static void TestConnectDuringModification()
         {
             string id = nameof(TestConnectDuringModification);
-            Setup(id);
-            
+
             //disconnect client 1
             Assert.IsTrue(Client1.DisconnectAsync());
             
@@ -557,8 +552,7 @@ namespace Tests
             int modifyCount = 10000;
             
             string id = nameof(TestRequestSuccess);
-            Setup(id);
-            
+
             Server.AddCallback<SetValueRequest>(((message, session) =>
             {
                 // -1 because the local mod count was already incremented by the previous SetValueRequest callback
@@ -585,7 +579,6 @@ namespace Tests
             int modCount = 10000;
             
             string id = nameof(TestOnModifyConfirm);
-            Setup(id);
 
             List<int> confirmedValues = new List<int>(modCount * 3);
 
@@ -620,8 +613,7 @@ namespace Tests
         public static void TestClientHostPersistence()
         {
             string id = nameof(TestClientHostPersistence);
-            Setup(id);
-            
+
             TestUtility.AreEqual(1, () =>
             {
                 int hostCount = 0;
@@ -676,8 +668,6 @@ namespace Tests
         [Test]
         public static void TestClientPersistence()
         {
-            Setup(nameof(TestClientPersistence));
-            
             Console.WriteLine("User: Setting client persistence on Database1 to true");
             Database1.ClientPersistence.Set(true);
 
@@ -696,8 +686,6 @@ namespace Tests
         [Test]
         public static void TestOnInitialized()
         {
-            Setup(nameof(TestOnInitialized));
-
             int invocationCount = 0;
             Database1.HostId.OnInitialized((guid =>
             {
@@ -712,8 +700,6 @@ namespace Tests
         [Test]
         public static void TestHostId()
         {
-            Setup(nameof(TestHostId));
-
             Database1.AddCallback<Guid>("HostId", guid => Console.WriteLine($"Set hostId to: {guid}"));
             
             Thread.Sleep(1000);
@@ -730,8 +716,7 @@ namespace Tests
         public static void TestSynchronisedObjectSynchronisation()
         {
             string testName = nameof(TestSynchronisedObjectSynchronisation);
-            Setup(testName);
-            
+
             //make sure callbacks are triggered
             ManualResetEvent triggered1 = new ManualResetEvent(false);
             ManualResetEvent triggered2 = new ManualResetEvent(false);
@@ -784,7 +769,6 @@ namespace Tests
         public static void TestSafeModifyLocalCallback()
         {
             string id = nameof(TestSafeModifyLocalCallback);
-            Setup(id);
 
             ManualResetEvent resetEvent = new ManualResetEvent(false);
             Database1.AddCallback<string>(id, s =>
@@ -802,8 +786,7 @@ namespace Tests
         public static void TestDelete()
         {
             string id = nameof(TestDelete);
-            Setup(id);
-            
+
             Database1.SetValue(id, "Test");
             
             TestUtility.AreEqual("Test", (() => Database1.GetValue<string>(id)));
@@ -822,8 +805,7 @@ namespace Tests
         public static void TestObjectConstructor()
         {
             string id = nameof(TestObjectConstructor);
-            Setup(id);
-            
+
             //init test object
             Database1.SetValue(id, new TestObject("Test"));
 
@@ -862,7 +844,6 @@ namespace Tests
         public static async Task TestModifyTask()
         {
             string id = nameof(TestModifyTask);
-            Setup(id);
 
             string result = await Database1.Get<string>(id).ModifyAsync((value => id));
             
@@ -875,7 +856,6 @@ namespace Tests
             int count = 1000;
             
             string id = nameof(TestConcurrentModifyTask);
-            Setup(id);
 
             //generate ids to modify
             List<string> taskIds = new List<string>();
@@ -911,6 +891,44 @@ namespace Tests
             }
             
             Console.WriteLine($"Count: {count}. Iterative: {(float)iterativeWatch.ElapsedMilliseconds / (float)count} ms/obj. Concurrent: {(float)concurrentWatch.ElapsedMilliseconds / (float)count} ms/obj");
+        }
+
+        [Test]
+        public static async Task TestExceptionHandling()
+        {
+            string id = nameof(TestExceptionHandling);
+
+            //raise exceptions on callbacks
+            Database1.AddCallback<string>(id, (s => throw new NotImplementedException("Local")));
+
+            //catch local exception
+            try
+            {
+                await Database1.Get<string>(id).Set("Test");
+            }
+            catch (NotImplementedException e)
+            {
+                Assert.AreEqual("Local", e.Message);
+            }
+
+            /*
+             * cause remote exceptions
+             */
+            
+            //add callbacks causing exceptions
+            Assert.AreEqual(1, Database1.RemoveCallbacks(id));
+            Database2.AddCallback<string>(id, (s => throw new NotImplementedException("Remote 2")));
+            Database3.AddCallback<string>(id, (s => throw new NotImplementedException("Remote 3")));
+            
+            //add callbacks allowing to make sure all callbacks are still triggered
+            int invokeCount = 0;
+            Database1.AddCallback<string>(id, s => invokeCount++);
+            Database2.AddCallback<string>(id, s => invokeCount++);
+            Database3.AddCallback<string>(id, s => invokeCount++);
+            
+            await Database1.Get<string>(id).Set("Test");
+            
+            TestUtility.AreEqual(3, () => invokeCount, "Invoked all callbacks even after exceptions occour");
         }
         
     }

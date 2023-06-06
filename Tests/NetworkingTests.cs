@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DMP;
+using DMP.Networking;
 using DMP.Networking.Messaging;
 using DMP.Networking.Messaging.Client;
 using DMP.Networking.Messaging.Server;
@@ -20,7 +21,7 @@ namespace Tests
         {
             string localhost = "127.0.0.1";
             string messageContent = "Yes this is very fun!";
-            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestSimpleSend));
+            int port = TestUtility.GetFreePort();
             
             MessageServer server = new MessageServer(localhost, port);
             server.Start();
@@ -76,7 +77,7 @@ namespace Tests
         {
             const int messagesToSend = 10000;
             const int clientCount = 10;
-            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestNetworkLoad));
+            int port = TestUtility.GetFreePort();
             
             int receivedMessages = 0;
             //start client and server
@@ -152,7 +153,7 @@ namespace Tests
         {
             string localhost = "127.0.0.1";
             int toTransform = 100;
-            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestRequestReply));
+            int port = TestUtility.GetFreePort();
 
             MessageServer server = new MessageServer(localhost, port);
             server.Start();
@@ -204,7 +205,7 @@ namespace Tests
         {
             string localhost = "127.0.0.1";
             int toTransform = 100;
-            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestRequestReply));
+            int port = TestUtility.GetFreePort();
 
             MessageServer server = new MessageServer(localhost, port);
             server.Start();
@@ -252,7 +253,7 @@ namespace Tests
         public static void TestBroadcastToOthers()
         {
             string localhost = "127.0.0.1";
-            int port = TestUtility.GetPort(nameof(NetworkingTests), nameof(TestBroadcastToOthers));
+            int port = TestUtility.GetFreePort();
             
             MessageServer server = new MessageServer(localhost, port);
             server.Start();
@@ -304,6 +305,127 @@ namespace Tests
             
             //wait for reply, expecting none to come
             Assert.IsFalse(originReceived.WaitOne(1000));
+        }
+
+        [Test]
+        public static async Task TestAsyncSend()
+        {
+            string localhost = "127.0.0.1";
+            int toTransform = 100;
+            int port = TestUtility.GetFreePort();
+
+            MessageServer server = new MessageServer(localhost, port);
+            server.Start();
+
+            MessageClient client = new MessageClient(localhost, port);
+            client.ConnectAsync();
+
+            Assert.IsTrue(client.WaitForConnect());
+
+            TestRequest request = new TestRequest() { PleaseTransform = toTransform };
+            Console.WriteLine($"Client: Requesting {request.PleaseTransform} to be transformed");
+            
+            //make sure the value is serialized correctly
+            TestRequest copy = Serialization.Deserialize<TestRequest>(Serialization.Serialize(request));
+            Assert.AreEqual(toTransform, request.PleaseTransform);
+            Assert.AreEqual(request.PleaseTransform, copy.PleaseTransform);
+            Console.WriteLine("Local serialization succeeded");
+
+            //add request callback to server
+            server.AddCallback<TestRequest>(((message, session) =>
+            {
+                //ensure server received correct number
+                Assert.AreEqual(toTransform, message.PleaseTransform, "Server received wrong int value!");
+                
+                //transform int
+                var testReply = new TestReply(message) { Transformed = message.PleaseTransform.ToString() };
+
+                Console.WriteLine($"Server: Transformed {message.PleaseTransform} to {testReply.Transformed}");
+                
+                //send reply
+                session.SendMessage(testReply);
+            }));
+
+            TestReply reply = await client.SendRequest<TestRequest, TestReply>(request);
+            
+            Assert.IsTrue(reply != null, "Received reply");
+            Assert.AreEqual(request.Id, reply.Id, "Id persistence");
+            Assert.AreEqual(toTransform.ToString(), reply.Transformed, "server value transformation");
+
+            //remove callback from server
+            Assert.AreEqual(1, server.RemoveCallbacks<TestRequest>());
+            
+            try
+            {
+                reply = await client.SendRequest<TestRequest, TestReply>(request, 1000);
+                
+                Assert.Fail("Received no reply, but failed to throw exception");
+            }
+            catch (ReplyTimedOutException)
+            {
+                Console.WriteLine("Received no reply: callback was removed");
+            }
+            
+            
+            server.Stop();
+            client.DisconnectAsync();
+            
+            try
+            {
+                reply = await client.SendRequest<TestRequest, TestReply>(request, 1000);
+                
+                Assert.Fail("Failed to send message, but failed to throw exception");
+            }
+            catch (NotConnectedException)
+            {
+                Console.WriteLine("Received no reply: client isn't connected");
+            }
+        }
+
+        [Test]
+        public static async Task TestCallbackExceptions()
+        {
+            //setup networking
+            string localhost = "127.0.0.1";
+            int port = TestUtility.GetFreePort();
+
+            MessageServer server = new MessageServer(localhost, port);
+            server.Start();
+
+            MessageClient client = new MessageClient(localhost, port);
+            client.ConnectAsync();
+
+            Assert.IsTrue(client.WaitForConnect());
+            
+            //throw exceptions when receiving a message, simulating faulty callback
+            client.AddCallback<TestRequest>((request => throw new NotImplementedException()));
+            server.AddCallback<TestRequest>(((request, session) => throw new NotImplementedException()));
+            
+            //save client session guid
+            Guid clientGuid = default;
+            
+            //return simple reply as client and server
+            server.AddCallback<TestRequest>(((request, session) =>
+            {
+                Console.WriteLine("Server received request");
+                clientGuid = session.Id;
+                session.SendMessage(new TestReply(request));
+            }));
+            client.AddCallback<TestRequest>((reply =>
+            {
+                Console.WriteLine("Client received request");
+                client.SendMessage(new TestReply(reply));
+            }));
+
+            //client tries to receive a reply
+            TestReply reply = await client.SendRequest<TestRequest, TestReply>(new TestRequest() { PleaseTransform = 100 });
+            Assert.NotNull(reply);
+            
+            //server tries to receive a reply
+            reply = await ((MessageSession)server.FindSession(clientGuid)).SendRequest<TestRequest, TestReply>(
+                new TestRequest() { PleaseTransform = 10 });
+            
+            Assert.NotNull(reply);
         }
     }
 }

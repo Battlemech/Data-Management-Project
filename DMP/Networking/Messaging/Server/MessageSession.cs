@@ -8,7 +8,7 @@ namespace DMP.Networking.Messaging.Server
     public partial class MessageSession : TcpSession
     {
         private readonly NetworkSerializer _networkSerializer = new NetworkSerializer();
-        private readonly CallbackHandler<string> _requestHandler = new CallbackHandler<string>();
+        private readonly CallbackHandler<Type> _requestHandler = new CallbackHandler<Type>();
         private readonly MessageServer _server;
         
         public MessageSession(MessageServer server) : base(server)
@@ -29,23 +29,29 @@ namespace DMP.Networking.Messaging.Server
             }
         }
 
-        protected void OnReceived(Message message, byte[] serializedMessage)
+        private void OnReceived(Message message, byte[] serializedMessage)
         {
+            //extract type
+            Type type = message.GetMessageType();
+
+            //deserialize message
+            object deserializedMessage = Serialization.Deserialize(serializedMessage, type);
+
             //invoke global callbacks
-            _server.InvokeCallbacks(message.SerializedType, serializedMessage,this);
-            
+            _server.InvokeCallbacks(type, deserializedMessage, this);
+
             //invoke callbacks specific to this message session
-            _requestHandler.InvokeAllCallbacks(message.SerializedType, serializedMessage);
+            _requestHandler.UnsafeInvokeCallbacks(type, deserializedMessage);
         }
         
         public void AddCallback<T>(Action<T> onValueChange, string name = "") where T : Message
         {
-            _requestHandler.AddCallback(typeof(T).FullName, onValueChange, name);
+            _requestHandler.AddCallback(typeof(T), onValueChange, name);
         }
 
         public int RemoveCallbacks<T>(string name = "") where T : Message
         {
-            return _requestHandler.RemoveCallbacks(typeof(T).FullName, name);
+            return _requestHandler.RemoveCallbacks(typeof(T), name);
         }
     }
 }

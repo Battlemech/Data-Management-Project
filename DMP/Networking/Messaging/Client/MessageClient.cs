@@ -56,7 +56,13 @@ namespace DMP.Networking.Messaging.Client
 
         protected void OnReceived(Message message, byte[] serializedBytes)
         {
-            _callbackHandler.InvokeAllCallbacks(message.SerializedType, serializedBytes);
+            //extract exact type of message
+            Type type = message.GetMessageType();
+
+            object deserializedMessage = Serialization.Deserialize(serializedBytes, type);
+
+            //deserialize message and invoke callbacks
+            _callbackHandler.UnsafeInvokeCallbacks(type, deserializedMessage);
         }
     }
 }

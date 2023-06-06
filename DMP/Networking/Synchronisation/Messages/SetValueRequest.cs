@@ -9,7 +9,7 @@ namespace DMP.Networking.Synchronisation.Messages
         public readonly string ValueId;
         public uint ModCount;
         public byte[] Value;
-        public string Type;
+        public string TypeAsString;
 
         public SetValueRequest(string databaseId, string valueId, uint modCount, byte[] value, Type type)
         {
@@ -26,7 +26,7 @@ namespace DMP.Networking.Synchronisation.Messages
             ValueId = other.ValueId;
             ModCount = other.ModCount;
             Value = other.Value;
-            Type = other.Type;
+            TypeAsString = other.TypeAsString;
         }
 
         public override string ToString()
@@ -36,7 +36,12 @@ namespace DMP.Networking.Synchronisation.Messages
 
         public void SetType(Type type)
         {
-            Type = type?.AssemblyQualifiedName;
+            TypeAsString = type?.AssemblyQualifiedName;
+        }
+
+        public Type GetValueType()
+        {
+            return TypeAsString == null ? null : Type.GetType(TypeAsString, true);
         }
     }
     
