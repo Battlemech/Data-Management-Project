@@ -322,6 +322,7 @@ namespace Tests
         public static void TestSafeModify()
         {
             Setup(nameof(TestSafeModify));
+            //todo: Server sometimes broadcasts message, but message isn't received/processed on client
             string id = nameof(TestSafeModify);
             
             //test options
