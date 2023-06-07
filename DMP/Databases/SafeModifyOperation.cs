@@ -33,7 +33,7 @@ namespace DMP.Databases
             
             //serialize type when SafeModify operation is executed to prevent changes to it while a reply is awaited
             byte[] bytes = Get<T>(id).Serialize(out Type type);
-            
+
             bool success = Client.SendRequest<LockValueRequest, LockValueReply>(new LockValueRequest(Id, id, modCount), (
                 reply =>
                 {
@@ -66,11 +66,7 @@ namespace DMP.Databases
 
         public Task<T> SafeModifyAsync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)
         {
-            Task<T> task = new Task<T>((() => SafeModifySync(id, modify, timeout)));
-
-            Delegation.DelegateTask(task);
-
-            return task;
+            return Delegation.DelegateTask(new Task<T>((() => SafeModifySync(id, modify, timeout))));
         }
 
         public T SafeModifySync<T>(string id, ModifyValueDelegate<T> modify, int timeout = Options.DefaultTimeout)

@@ -23,7 +23,7 @@ namespace DMP.Threading
         /// <summary>
         /// Delegate a task, attempting to execute it as soon as possible
         /// </summary>
-        public static Task DelegateTask(Task task)
+        public static T DelegateTask<T>(T task) where T : Task
         {
             task.Start(ConcurrentScheduler);
             return task;
